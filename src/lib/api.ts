@@ -189,7 +189,7 @@ export const chat = {
           } else if (parsed.event === 'done') {
             onDone?.(parsed.usage);
           }
-        } catch {
+        } catch (_) {
           // Partial or non-JSON line — skip
         }
       }
