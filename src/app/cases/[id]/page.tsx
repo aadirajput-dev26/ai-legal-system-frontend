@@ -217,12 +217,35 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
     // Optimistic user message
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
 
+    // Add an empty assistant placeholder to stream into
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
     try {
-      const res = await chatApi.sendMessage(caseId, activeThread.id, msg);
-      const assistantText = res.response?.data?.content || (typeof res.response?.data === 'string' ? res.response.data : null) || res.response?.message || JSON.stringify(res.response);
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantText }]);
+      await chatApi.sendMessageStream(
+        caseId,
+        activeThread.id,
+        msg,
+        (delta) => {
+          // Append each delta chunk to the last assistant message
+          setMessages(prev => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last?.role === 'assistant') {
+              updated[updated.length - 1] = { ...last, content: last.content + delta };
+            }
+            return updated;
+          });
+        }
+      );
     } catch (err: any) {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Error: ' + err.message }]);
+      setMessages(prev => {
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        if (last?.role === 'assistant' && last.content === '') {
+          updated[updated.length - 1] = { role: 'assistant', content: 'Error: ' + err.message };
+        }
+        return updated;
+      });
     } finally {
       setSendingMsg(false);
     }

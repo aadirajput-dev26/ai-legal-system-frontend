@@ -141,6 +141,60 @@ export const chat = {
     request<any>(`/cases/${caseId}/chats/${chatId}/history`),
   sendMessage: (caseId: string, chatId: string, message: string) =>
     request<any>(`/cases/${caseId}/chats/${chatId}/message`, { method: 'POST', body: JSON.stringify({ message }) }),
+
+  sendMessageStream: async (
+    caseId: string,
+    chatId: string,
+    message: string,
+    onDelta: (chunk: string) => void,
+    onDone?: (usage: any) => void,
+  ): Promise<void> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    const res = await fetch(`${API_BASE}/cases/${caseId}/chats/${chatId}/message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: 'include',
+      body: JSON.stringify({ message }),
+    });
+
+    if (!res.ok || !res.body) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error || `API Error: ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process complete lines
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? ''; // keep incomplete last line
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (parsed.event === 'delta' && parsed.content) {
+            onDelta(parsed.content);
+          } else if (parsed.event === 'done') {
+            onDone?.(parsed.usage);
+          }
+        } catch {
+          // Partial or non-JSON line — skip
+        }
+      }
+    }
+  },
 };
 
 // ── Hearings ──────────────────────────────────────────────────────
