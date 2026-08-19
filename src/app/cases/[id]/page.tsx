@@ -164,8 +164,20 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
   const [uploadDescription, setUploadDescription] = useState('');
 
   const handleUpload = async () => {
-    if (!uploadDescription.trim()) {
-      alert('Description is required.');
+    if (!uploadTitle.trim()) {
+      alert('Title is required.');
+      return;
+    }
+    if (uploadType === 'LINK' && !uploadContent.trim()) {
+      alert('URL is required for Link type.');
+      return;
+    }
+    if (uploadType === 'TEXT' && !uploadContent.trim()) {
+      alert('Content is required for Text type.');
+      return;
+    }
+    if (uploadType === 'PDF' && !uploadFile) {
+      alert('Please select a PDF file.');
       return;
     }
     setUploading(true);
@@ -175,14 +187,18 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
         formData.append('file', uploadFile);
         formData.append('title', uploadTitle || uploadFile.name);
         formData.append('type', 'PDF');
-        formData.append('description', uploadDescription);
         await docsApi.create(caseId, formData);
+      } else if (uploadType === 'LINK') {
+        await docsApi.create(caseId, {
+          type: 'LINK',
+          title: uploadTitle,
+          url: uploadContent,  // backend expects 'url' for LINK type
+        });
       } else {
         await docsApi.create(caseId, {
-          type: uploadType,
+          type: 'TEXT',
           title: uploadTitle,
           content: uploadContent,
-          description: uploadDescription,
         });
       }
       // Refresh docs
@@ -191,10 +207,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       setShowUpload(false);
       setUploadTitle('');
       setUploadContent('');
-      setUploadDescription('');
       setUploadFile(null);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      alert('Upload failed: ' + (err?.message || 'Unknown error'));
     } finally {
       setUploading(false);
     }
@@ -472,20 +487,19 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                         </TabsList>
                         <div className="space-y-4 mt-4">
                           <div className="space-y-2">
-                            <Label>Title</Label>
-                            <Input placeholder="Document title" value={uploadTitle} onChange={e => setUploadTitle(e.target.value)} className="bg-background/50" />
+                            <Label>Title <span className="text-red-400">*</span></Label>
+                            <Input placeholder="E.g. Witness Statement" value={uploadTitle} onChange={e => setUploadTitle(e.target.value)} className="bg-background/50" />
                           </div>
-                          <div className="space-y-2">
-                            <Label>Description *</Label>
-                            <Input placeholder="E.g. Witness statement or case brief" value={uploadDescription} onChange={e => setUploadDescription(e.target.value)} className="bg-background/50" />
-                          </div>
-                          <TabsContent value="PDF" className="mt-0">
+                          <TabsContent value="PDF" className="mt-0 space-y-2">
+                            <Label>PDF File <span className="text-red-400">*</span></Label>
                             <Input type="file" accept=".pdf" onChange={e => setUploadFile(e.target.files?.[0] || null)} className="bg-background/50" />
                           </TabsContent>
-                          <TabsContent value="TEXT" className="mt-0">
+                          <TabsContent value="TEXT" className="mt-0 space-y-2">
+                            <Label>Text Content <span className="text-red-400">*</span></Label>
                             <Textarea placeholder="Paste text content..." value={uploadContent} onChange={e => setUploadContent(e.target.value)} rows={5} className="bg-background/50" />
                           </TabsContent>
-                          <TabsContent value="LINK" className="mt-0">
+                          <TabsContent value="LINK" className="mt-0 space-y-2">
+                            <Label>URL <span className="text-red-400">*</span></Label>
                             <Input placeholder="https://..." value={uploadContent} onChange={e => setUploadContent(e.target.value)} className="bg-background/50" />
                           </TabsContent>
                           <Button onClick={handleUpload} disabled={uploading} className="w-full bg-gradient-to-r from-primary to-primary/80 text-white">
