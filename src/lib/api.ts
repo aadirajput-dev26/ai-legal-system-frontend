@@ -142,3 +142,11 @@ export const chat = {
   sendMessage: (caseId: string, chatId: string, message: string) =>
     request<any>(`/cases/${caseId}/chats/${chatId}/message`, { method: 'POST', body: JSON.stringify({ message }) }),
 };
+
+// ── Hearings ──────────────────────────────────────────────────────
+export const hearings = {
+  list: (caseId: string) =>
+    request<any>(`/cases/${caseId}/hearings`),
+  create: (caseId: string, body: { date: string; notes?: string }) =>
+    request<any>(`/cases/${caseId}/hearings`, { method: 'POST', body: JSON.stringify(body) }),
+};
