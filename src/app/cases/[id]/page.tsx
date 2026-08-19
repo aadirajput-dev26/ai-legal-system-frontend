@@ -219,7 +219,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
 
     try {
       const res = await chatApi.sendMessage(caseId, activeThread.id, msg);
-      const assistantText = res.response?.data || res.response?.message || JSON.stringify(res.response);
+      const assistantText = res.response?.data?.content || (typeof res.response?.data === 'string' ? res.response.data : null) || res.response?.message || JSON.stringify(res.response);
       setMessages(prev => [...prev, { role: 'assistant', content: assistantText }]);
     } catch (err: any) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Error: ' + err.message }]);
@@ -541,7 +541,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                      className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
                         msg.role === 'user'
                           ? 'bg-gradient-to-r from-primary to-primary/80 text-white rounded-br-md'
                           : 'bg-white/[0.04] border border-white/5 text-foreground rounded-bl-md'
