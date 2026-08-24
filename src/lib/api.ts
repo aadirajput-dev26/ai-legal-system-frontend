@@ -203,8 +203,16 @@ export const chat = {
       buffer = lines.pop() ?? ''; // keep incomplete last line
 
       for (const line of lines) {
-        const trimmed = line.trim();
+        let trimmed = line.trim();
         if (!trimmed) continue;
+        
+        // SSE lines often start with "data: "
+        if (trimmed.startsWith('data:')) {
+          trimmed = trimmed.substring(5).trim();
+        }
+        
+        if (!trimmed) continue;
+
         try {
           const parsed = JSON.parse(trimmed);
           if (parsed.event === 'delta' && parsed.content) {
