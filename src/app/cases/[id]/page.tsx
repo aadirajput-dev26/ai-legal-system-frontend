@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useRef } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { cases as casesApi, documents as docsApi, chat as chatApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -20,10 +20,9 @@ import {
   Sparkles, FolderOpen, Clock,
 } from 'lucide-react';
 
-export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
-  const isPromise = params && typeof (params as any).then === 'function';
-  const unwrappedParams = isPromise ? use(params as Promise<{ id: string }>) : (params as { id: string });
-  const caseId = unwrappedParams.id;
+export default function CaseDetailPage() {
+  const params = useParams();
+  const caseId = params?.id as string;
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
