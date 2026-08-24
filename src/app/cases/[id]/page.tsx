@@ -231,11 +231,12 @@ export default function CaseDetailPage() {
     setChatInput('');
     setSendingMsg(true);
 
-    // Optimistic user message
-    setMessages(prev => [...prev, { role: 'user', content: msg }]);
-
-    // Add an empty assistant placeholder to stream into
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+    // Consolidate optimistic UI update to prevent batching race conditions
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: msg },
+      { role: 'assistant', content: '' }
+    ]);
 
     try {
       await chatApi.sendMessageStream(
@@ -243,12 +244,15 @@ export default function CaseDetailPage() {
         activeThread.id,
         msg,
         (delta) => {
+          console.log("Received delta chunk:", delta);
           // Append each delta chunk to the last assistant message
           setMessages(prev => {
             const updated = [...prev];
             const last = updated[updated.length - 1];
             if (last?.role === 'assistant') {
               updated[updated.length - 1] = { ...last, content: last.content + delta };
+            } else {
+              console.warn("Last message is not assistant! It is:", last);
             }
             return updated;
           });

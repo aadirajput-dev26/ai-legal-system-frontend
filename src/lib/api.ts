@@ -215,13 +215,33 @@ export const chat = {
 
         try {
           const parsed = JSON.parse(trimmed);
-          if (parsed.event === 'delta' && parsed.content) {
+          if (parsed.event === 'delta' && parsed.content !== undefined) {
             onDelta(parsed.content);
           } else if (parsed.event === 'done') {
             onDone?.(parsed.usage);
           }
-        } catch (_) {
-          // Partial or non-JSON line — skip
+        } catch (err) {
+          console.error("SSE Parse Error on line:", trimmed, err);
+        }
+      }
+    }
+
+    // Process any remaining buffer content if it doesn't end with a newline
+    if (buffer.trim()) {
+      let trimmed = buffer.trim();
+      if (trimmed.startsWith('data:')) {
+        trimmed = trimmed.substring(5).trim();
+      }
+      if (trimmed) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (parsed.event === 'delta' && parsed.content !== undefined) {
+            onDelta(parsed.content);
+          } else if (parsed.event === 'done') {
+            onDone?.(parsed.usage);
+          }
+        } catch (err) {
+          console.error("SSE Parse Error on final buffer:", trimmed, err);
         }
       }
     }
