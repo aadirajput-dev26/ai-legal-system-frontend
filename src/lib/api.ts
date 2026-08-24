@@ -149,20 +149,43 @@ export const chat = {
     onDelta: (chunk: string) => void,
     onDone?: (usage: any) => void,
   ): Promise<void> => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    const res = await fetch(`${API_BASE}/cases/${caseId}/chats/${chatId}/message`, {
+    let token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    
+    const makeRequest = (accessToken: string | null) => fetch(`${API_BASE}/cases/${caseId}/chats/${chatId}/message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
       credentials: 'include',
       body: JSON.stringify({ message }),
     });
 
+    let res = await makeRequest(token);
+
+    if (res.status === 401) {
+      // Try refreshing the token
+      const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (refreshRes.ok) {
+        const data = await refreshRes.json();
+        token = data.data.accessToken;
+        localStorage.setItem('accessToken', token as string);
+        res = await makeRequest(token);
+      } else {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('accessToken');
+          window.location.href = '/login';
+        }
+        throw new Error('Session expired');
+      }
+    }
+
     if (!res.ok || !res.body) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error || `API Error: ${res.status}`);
+      throw new Error(err?.error?.message || err?.error || `API Error: ${res.status}`);
     }
 
     const reader = res.body.getReader();
