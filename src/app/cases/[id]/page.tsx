@@ -127,7 +127,8 @@ export default function CaseDetailPage() {
   useEffect(() => {
     if (caseId) {
       docsApi.list(caseId).then(res => {
-        setDocs(res.data || []);
+        const items = Array.isArray(res.data) ? res.data : (res.data?.resources || []);
+        setDocs(items);
         setLoadingDocs(false);
       }).catch(() => setLoadingDocs(false));
     }
@@ -203,7 +204,8 @@ export default function CaseDetailPage() {
       }
       // Refresh docs
       const res = await docsApi.list(caseId);
-      setDocs(res.data || []);
+      const items = Array.isArray(res.data) ? res.data : (res.data?.resources || []);
+      setDocs(items);
       setShowUpload(false);
       setUploadTitle('');
       setUploadContent('');
