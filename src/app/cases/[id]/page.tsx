@@ -20,8 +20,9 @@ import {
   Sparkles, FolderOpen, Clock,
 } from 'lucide-react';
 
-export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const unwrappedParams = use(params);
+export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const isPromise = params && typeof (params as any).then === 'function';
+  const unwrappedParams = isPromise ? use(params as Promise<{ id: string }>) : (params as { id: string });
   const caseId = unwrappedParams.id;
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
