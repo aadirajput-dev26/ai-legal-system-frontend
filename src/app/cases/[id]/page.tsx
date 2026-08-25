@@ -169,6 +169,10 @@ export default function CaseDetailPage() {
       alert('Title is required.');
       return;
     }
+    if (!uploadDescription.trim()) {
+      alert('Description is required.');
+      return;
+    }
     if (uploadType === 'LINK' && !uploadContent.trim()) {
       alert('URL is required for Link type.');
       return;
@@ -501,7 +505,7 @@ export default function CaseDetailPage() {
                             <Input placeholder="E.g. Witness Statement" value={uploadTitle} onChange={e => setUploadTitle(e.target.value)} className="bg-background/50" />
                           </div>
                           <div className="space-y-2">
-                            <Label>Description</Label>
+                            <Label>Description <span className="text-red-400">*</span></Label>
                             <Input placeholder="Brief description of this document" value={uploadDescription} onChange={e => setUploadDescription(e.target.value)} className="bg-background/50" />
                           </div>
                           <TabsContent value="PDF" className="mt-0 space-y-2">
