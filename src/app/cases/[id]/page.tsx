@@ -188,18 +188,21 @@ export default function CaseDetailPage() {
         formData.append('file', uploadFile);
         formData.append('title', uploadTitle || uploadFile.name);
         formData.append('type', 'PDF');
+        if (uploadDescription) formData.append('description', uploadDescription);
         await docsApi.create(caseId, formData);
       } else if (uploadType === 'LINK') {
         await docsApi.create(caseId, {
           type: 'LINK',
           title: uploadTitle,
-          url: uploadContent,  // backend expects 'url' for LINK type
+          url: uploadContent,
+          description: uploadDescription,
         });
       } else {
         await docsApi.create(caseId, {
           type: 'TEXT',
           title: uploadTitle,
           content: uploadContent,
+          description: uploadDescription,
         });
       }
       // Refresh docs
@@ -209,6 +212,7 @@ export default function CaseDetailPage() {
       setShowUpload(false);
       setUploadTitle('');
       setUploadContent('');
+      setUploadDescription('');
       setUploadFile(null);
     } catch (err: any) {
       alert('Upload failed: ' + (err?.message || 'Unknown error'));
@@ -496,6 +500,10 @@ export default function CaseDetailPage() {
                             <Label>Title <span className="text-red-400">*</span></Label>
                             <Input placeholder="E.g. Witness Statement" value={uploadTitle} onChange={e => setUploadTitle(e.target.value)} className="bg-background/50" />
                           </div>
+                          <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Input placeholder="Brief description of this document" value={uploadDescription} onChange={e => setUploadDescription(e.target.value)} className="bg-background/50" />
+                          </div>
                           <TabsContent value="PDF" className="mt-0 space-y-2">
                             <Label>PDF File <span className="text-red-400">*</span></Label>
                             <Input type="file" accept=".pdf" onChange={e => setUploadFile(e.target.files?.[0] || null)} className="bg-background/50" />
@@ -581,8 +589,21 @@ export default function CaseDetailPage() {
                 {messages.map((msg, i) => (
                   <div
                     key={i}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                   >
+                    {/* Tool call pills above assistant bubble */}
+                    {msg.role === 'assistant' && msg.tools?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-1.5 max-w-[80%]">
+                        {msg.tools.map((t: any, ti: number) => {
+                          const toolName = Object.values(t as Record<string, any>)[0]?.name || 'tool';
+                          return (
+                            <span key={ti} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-mono">
+                              ⚡ {toolName}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                     <div
                       className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
                         msg.role === 'user'
