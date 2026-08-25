@@ -589,21 +589,8 @@ export default function CaseDetailPage() {
                 {messages.map((msg, i) => (
                   <div
                     key={i}
-                    className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {/* Tool call pills above assistant bubble */}
-                    {msg.role === 'assistant' && msg.tools?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-1.5 max-w-[80%]">
-                        {msg.tools.map((t: any, ti: number) => {
-                          const toolName = Object.values(t as Record<string, any>)[0]?.name || 'tool';
-                          return (
-                            <span key={ti} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-mono">
-                              ⚡ {toolName}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
                     <div
                       className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
                         msg.role === 'user'
