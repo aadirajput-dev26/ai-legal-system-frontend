@@ -68,6 +68,14 @@ export default function CaseDetailPage() {
     status: 'OPEN'
   });
 
+  // Members
+  const [members, setMembers] = useState<any[]>([]);
+  const [showMembers, setShowMembers] = useState(false);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('VIEWER');
+  const [inviting, setInviting] = useState(false);
+
   // Fetch case details
   useEffect(() => {
     if (caseId) {
@@ -280,6 +288,40 @@ export default function CaseDetailPage() {
     }
   };
 
+  const fetchMembers = async () => {
+    setLoadingMembers(true);
+    try {
+      const res = await casesApi.members.list(caseId);
+      setMembers(res.data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showMembers) fetchMembers();
+  }, [showMembers]);
+
+  const handleInviteMember = async () => {
+    if (!inviteEmail.trim()) {
+      alert('Please enter an email address.');
+      return;
+    }
+    setInviting(true);
+    try {
+      await casesApi.members.add(caseId, { email: inviteEmail.trim(), role: inviteRole });
+      alert('Member invited successfully!');
+      setInviteEmail('');
+      fetchMembers();
+    } catch (err: any) {
+      alert(err.message || 'Failed to invite member');
+    } finally {
+      setInviting(false);
+    }
+  };
+
   const statusColor: Record<string, string> = {
     OPEN: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
     CLOSED: 'bg-red-500/15 text-red-400 border-red-500/20',
@@ -330,6 +372,72 @@ export default function CaseDetailPage() {
               Reopen Case
             </Button>
           )}
+
+          {/* Manage Members dialog */}
+          <Dialog open={showMembers} onOpenChange={setShowMembers}>
+            <DialogTrigger render={<Button variant="outline" size="sm" className="h-7 text-xs border-primary/20 hover:border-primary/50" />}>
+              Manage Members
+            </DialogTrigger>
+            <DialogContent className="bg-card/95 backdrop-blur-xl border-white/5 max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Case Members</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6 pt-2">
+                <div className="flex items-center gap-3">
+                  <Input 
+                    placeholder="Invite by email address..." 
+                    value={inviteEmail}
+                    onChange={e => setInviteEmail(e.target.value)}
+                    className="bg-background/50 flex-1"
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={e => setInviteRole(e.target.value)}
+                    className="h-9 px-3 rounded-md bg-background/50 border border-border text-sm outline-none focus:border-primary"
+                  >
+                    <option value="VIEWER">Viewer</option>
+                    <option value="EDITOR">Editor</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                  <Button 
+                    onClick={handleInviteMember}
+                    disabled={inviting || !inviteEmail.trim()}
+                    className="bg-gradient-to-r from-primary to-primary/80 text-white shadow-md shadow-primary/20"
+                  >
+                    {inviting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Invite
+                  </Button>
+                </div>
+                
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">Current Members</h4>
+                  <ScrollArea className="h-[250px] rounded-lg border border-white/5 bg-background/20 p-4">
+                    {loadingMembers ? (
+                      <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+                    ) : members.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No explicit members added.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {members.map(member => (
+                          <div key={member.user_id} className="flex items-center justify-between p-3 rounded-md bg-white/[0.02] border border-white/5">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">{member.name}</span>
+                              <span className="text-xs text-muted-foreground">{member.email}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                                {member.role}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Full Case Details Edit dialog */}
           <Dialog open={showEditCase} onOpenChange={setShowEditCase}>

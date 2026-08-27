@@ -110,7 +110,7 @@ export const cases = {
   members: {
     list: (caseId: string) =>
       request<any>(`/cases/${caseId}/members`),
-    add: (caseId: string, body: { userId: string; role: string }) =>
+    add: (caseId: string, body: { email: string; role: string }) =>
       request<any>(`/cases/${caseId}/members`, { method: 'POST', body: JSON.stringify(body) }),
     updateRole: (caseId: string, userId: string, body: { role: string }) =>
       request<any>(`/cases/${caseId}/members/${userId}`, { method: 'PATCH', body: JSON.stringify(body) }),
