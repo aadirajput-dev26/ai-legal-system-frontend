@@ -3,7 +3,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { cases as casesApi, documents as docsApi, chat as chatApi } from '@/lib/api';
+import { cases as casesApi, documents as docsApi, chat as chatApi, tools as toolsApi } from '@/lib/api';
+import { useEmbedScriptLoader } from '@/lib/useEmbedScriptLoader';
+import { useViasocketEvents } from '@/lib/useViasocketEvents';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import {
   ArrowLeft, Send, Plus, FileText, Link2, Type, Upload, Loader2,
   Scale, Calendar, Building2, Hash, Briefcase, MessageSquare,
-  Sparkles, FolderOpen, Clock,
+  Sparkles, FolderOpen, Clock, Wrench, Settings,
 } from 'lucide-react';
 
 export default function CaseDetailPage() {
@@ -52,6 +54,68 @@ export default function CaseDetailPage() {
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
   }, [authLoading, user, router]);
+
+  // Viasocket Tools Embed
+  const [embedToken, setEmbedToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (caseId) {
+      toolsApi.getToken(caseId).then(res => {
+        if (res.success && res.token) {
+          setEmbedToken(res.token);
+        }
+      }).catch(err => {
+        console.error("Failed to fetch viasocket token:", err);
+      });
+    }
+  }, [caseId]);
+
+  useEmbedScriptLoader(embedToken);
+
+  const [caseTools, setCaseTools] = useState<any[]>([]);
+  const [loadingTools, setLoadingTools] = useState(true);
+
+  const fetchTools = async () => {
+    if (!caseId) return;
+    try {
+      const res = await toolsApi.list(caseId);
+      setCaseTools(res || []);
+    } catch (err) {
+      console.error('Failed to fetch tools', err);
+    } finally {
+      setLoadingTools(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTools();
+  }, [caseId]);
+
+  useViasocketEvents(caseId, fetchTools);
+
+  const handleOpenViasocket = (scriptId?: string) => {
+    if (!embedToken) {
+      alert("Viasocket token is not loaded yet. Please wait.");
+      return;
+    }
+
+    if (typeof window !== 'undefined' && window.openViasocket) {
+      try {
+        window.openViasocket(scriptId, {
+          embedToken: embedToken,
+          meta: {
+            type: "tool",
+            createFrom: "CASE_DASHBOARD"
+          }
+        });
+      } catch (err: any) {
+        console.error("Viasocket Embed Error:", err);
+        alert("Failed to open Viasocket Builder. Please verify your Viasocket Access Key and configurations in backend/.env are correct.");
+      }
+    } else {
+      alert("Builder is still loading. Please try again in a moment.");
+    }
+  };
 
   // Instructions
   const [instructions, setInstructions] = useState('');
@@ -648,6 +712,45 @@ export default function CaseDetailPage() {
                       <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors text-sm group">
                         <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
                         <span className="truncate flex-1">{doc.title || doc.name || `Document ${i + 1}`}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Separator className="opacity-30" />
+
+              {/* Tools Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <Wrench className="w-3 h-3" /> API Tools
+                  </h3>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/10 hover:text-primary" onClick={() => handleOpenViasocket()}>
+                    <Plus className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+
+                {loadingTools ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mx-auto" />
+                ) : caseTools.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">No tools created</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {caseTools.map((tool: any, i: number) => (
+                      <div key={tool.id || i} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors text-sm group">
+                        <div className="flex items-center gap-2 truncate flex-1 pr-2">
+                          <Settings className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="truncate">{tool.title || `Tool ${i + 1}`}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          onClick={() => handleOpenViasocket(tool.script_id)}
+                        >
+                          <Wrench className="w-3 h-3" />
+                        </Button>
                       </div>
                     ))}
                   </div>

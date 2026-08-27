@@ -255,3 +255,16 @@ export const hearings = {
   create: (caseId: string, body: { date: string; notes?: string }) =>
     request<any>(`/cases/${caseId}/hearings`, { method: 'POST', body: JSON.stringify(body) }),
 };
+
+// ── Tools ─────────────────────────────────────────────────────────
+export const tools = {
+  list: (caseId: string) =>
+    request<any>(`/cases/${caseId}/tools`),
+  createOrUpdate: (caseId: string, body: any) =>
+    request<any>(`/cases/${caseId}/tools`, { method: 'POST', body: JSON.stringify(body) }),
+  delete: (caseId: string, scriptId: string) =>
+    request<any>(`/cases/${caseId}/tools/${scriptId}`, { method: 'DELETE' }),
+  getToken: (caseId: string) =>
+    request<any>(`/cases/${caseId}/tools/token`),
+};
+
