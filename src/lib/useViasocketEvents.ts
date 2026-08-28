@@ -4,8 +4,13 @@ import { tools } from "./api";
 export const useViasocketEvents = (caseId: string, onToolUpdated?: () => void) => {
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
+      // Log event data for debugging
+      console.log("Received viaSocket postMessage:", event.data);
+
+      const metaObj = event.data?.meta || event.data?.metadata;
+      
       // 1. Verify message type
-      if (event.data?.metadata?.type !== "tool") return;
+      if (metaObj?.type !== "tool") return;
       
       const action = event.data?.action; // 'published' | 'updated' | 'deleted'
       const scriptId = event.data?.id;   // The Viasocket script/tool ID
