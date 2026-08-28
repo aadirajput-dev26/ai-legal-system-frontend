@@ -146,8 +146,11 @@
   border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7) !important;
   z-index: 999999 !important;
-  display: flex !important;
   flex-direction: column !important;
+}
+
+#iframe-viasocket-embed-parent-container:not([class*="viasocket-display-none"]) {
+  display: flex !important;
   visibility: visible !important;
 }
 
