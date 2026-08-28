@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import {
   ArrowLeft, Send, Plus, FileText, Link2, Type, Upload, Loader2,
   Scale, Calendar, Building2, Hash, Briefcase, MessageSquare,
-  Sparkles, FolderOpen, Clock, Wrench, Settings,
+  Sparkles, FolderOpen, Clock, Wrench, Settings, PanelLeft, Users,
 } from 'lucide-react';
 
 export default function CaseDetailPage() {
@@ -50,6 +50,9 @@ export default function CaseDetailPage() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Mobile: which pane is active
+  const [mobilePane, setMobilePane] = useState<'chat' | 'info'>('chat');
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
@@ -303,6 +306,8 @@ export default function CaseDetailPage() {
     setThreads(prev => [newThread, ...prev]);
     setActiveThread(newThread);
     setMessages([]);
+    // On mobile, switch to chat pane after creating thread
+    setMobilePane('chat');
   };
 
   const handleSendMessage = async () => {
@@ -400,28 +405,318 @@ export default function CaseDetailPage() {
     );
   }
 
+  // ── Shared Left Pane Content ──
+  const leftPaneContent = (
+    <div className="space-y-6">
+      {/* Case Info */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+          <Briefcase className="w-3 h-3" /> Case Details
+        </h3>
+        <div className="space-y-2.5">
+          {caseData?.case_number && (
+            <div className="flex items-center gap-2 text-sm">
+              <Hash className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">Number:</span>
+              <span className="font-mono text-xs">{caseData.case_number}</span>
+            </div>
+          )}
+          {caseData?.court && (
+            <div className="flex items-center gap-2 text-sm">
+              <Building2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">Court:</span>
+              <span>{caseData.court}</span>
+            </div>
+          )}
+          {caseData?.case_type && (
+            <div className="flex items-center gap-2 text-sm">
+              <Scale className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">Type:</span>
+              <span>{caseData.case_type}</span>
+            </div>
+          )}
+          {caseData?.next_hearing_date && (
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">Next Hearing:</span>
+              <span>{new Date(caseData.next_hearing_date).toLocaleDateString()}</span>
+            </div>
+          )}
+          {caseData?.filing_date && (
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">Filed:</span>
+              <span>{new Date(caseData.filing_date).toLocaleDateString()}</span>
+            </div>
+          )}
+        </div>
+        {caseData?.description && (
+          <p className="text-sm text-muted-foreground leading-relaxed mt-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+            {caseData.description}
+          </p>
+        )}
+      </div>
+
+      <Separator className="opacity-30" />
+
+      {/* Case Instructions */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+          <Sparkles className="w-3 h-3 text-primary" /> AI Instructions
+        </h3>
+        <div className="space-y-2">
+          <Textarea
+            placeholder="E.g. Focus on liability clauses, translate latin terms..."
+            value={instructions}
+            onChange={e => setInstructions(e.target.value)}
+            rows={4}
+            className="text-xs bg-background/50 border-white/[0.04] focus:border-primary/50"
+          />
+          <Button
+            onClick={handleSaveInstructions}
+            disabled={savingInstructions}
+            size="sm"
+            className="w-full text-xs font-semibold"
+          >
+            {savingInstructions ? 'Saving...' : 'Save Instructions'}
+          </Button>
+        </div>
+      </div>
+
+      <Separator className="opacity-30" />
+
+      {/* Documents Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <FolderOpen className="w-3 h-3" /> Documents
+          </h3>
+          <Dialog open={showUpload} onOpenChange={setShowUpload}>
+            <DialogTrigger render={<Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/10 hover:text-primary" />}>
+              <Plus className="w-3.5 h-3.5" />
+            </DialogTrigger>
+            <DialogContent className="bg-card/95 backdrop-blur-xl border-white/5 mx-4 max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add Document</DialogTitle>
+              </DialogHeader>
+              <Tabs value={uploadType} onValueChange={(v) => setUploadType(v as any)} className="pt-2">
+                <TabsList className="w-full">
+                  <TabsTrigger value="PDF" className="flex-1 gap-1.5"><Upload className="w-3.5 h-3.5" />PDF</TabsTrigger>
+                  <TabsTrigger value="TEXT" className="flex-1 gap-1.5"><Type className="w-3.5 h-3.5" />Text</TabsTrigger>
+                  <TabsTrigger value="LINK" className="flex-1 gap-1.5"><Link2 className="w-3.5 h-3.5" />Link</TabsTrigger>
+                </TabsList>
+                <div className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Title <span className="text-red-400">*</span></Label>
+                    <Input placeholder="E.g. Witness Statement" value={uploadTitle} onChange={e => setUploadTitle(e.target.value)} className="bg-background/50" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description <span className="text-red-400">*</span></Label>
+                    <Input placeholder="Brief description of this document" value={uploadDescription} onChange={e => setUploadDescription(e.target.value)} className="bg-background/50" />
+                  </div>
+                  <TabsContent value="PDF" className="mt-0 space-y-2">
+                    <Label>PDF File <span className="text-red-400">*</span></Label>
+                    <Input type="file" accept=".pdf" onChange={e => setUploadFile(e.target.files?.[0] || null)} className="bg-background/50" />
+                  </TabsContent>
+                  <TabsContent value="TEXT" className="mt-0 space-y-2">
+                    <Label>Text Content <span className="text-red-400">*</span></Label>
+                    <Textarea placeholder="Paste text content..." value={uploadContent} onChange={e => setUploadContent(e.target.value)} rows={5} className="bg-background/50" />
+                  </TabsContent>
+                  <TabsContent value="LINK" className="mt-0 space-y-2">
+                    <Label>URL <span className="text-red-400">*</span></Label>
+                    <Input placeholder="https://..." value={uploadContent} onChange={e => setUploadContent(e.target.value)} className="bg-background/50" />
+                  </TabsContent>
+                  <Button onClick={handleUpload} disabled={uploading} className="w-full bg-gradient-to-r from-primary to-primary/80 text-white">
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Upload
+                  </Button>
+                </div>
+              </Tabs>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {loadingDocs ? (
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mx-auto" />
+        ) : docs.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">No documents yet</p>
+        ) : (
+          <div className="space-y-1.5">
+            {docs.map((doc: any, i: number) => (
+              <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors text-sm group">
+                <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="truncate flex-1">{doc.title || doc.name || `Document ${i + 1}`}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Separator className="opacity-30" />
+
+      {/* Tools Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <Wrench className="w-3 h-3" /> API Tools
+          </h3>
+          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/10 hover:text-primary" onClick={() => handleOpenViasocket()}>
+            <Plus className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+
+        {loadingTools ? (
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mx-auto" />
+        ) : caseTools.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">No tools created</p>
+        ) : (
+          <div className="space-y-1.5">
+            {caseTools.map((tool: any, i: number) => (
+              <div key={tool.id || i} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors text-sm group">
+                <div className="flex items-center gap-2 truncate flex-1 pr-2">
+                  <Settings className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="truncate">{tool.title || `Tool ${i + 1}`}</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                  onClick={() => handleOpenViasocket(tool.script_id)}
+                >
+                  <Settings className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── Chat Pane Content ──
+  const chatPaneContent = (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Chat Tabs */}
+      <div className="h-12 border-b border-white/5 bg-card/20 flex items-center gap-2 px-3 md:px-4 shrink-0 overflow-x-auto">
+        <Button variant="ghost" size="sm" onClick={handleNewThread} className="h-7 gap-1.5 text-xs hover:bg-primary/10 hover:text-primary shrink-0">
+          <Plus className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">New Chat</span>
+          <span className="sm:hidden">New</span>
+        </Button>
+        <Separator orientation="vertical" className="h-5 opacity-30" />
+        <div className="flex items-center gap-1 overflow-x-auto flex-1 min-w-0">
+          {threads.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveThread(t)}
+              className={`h-7 px-2 md:px-3 rounded-md text-xs whitespace-nowrap transition-all shrink-0 ${
+                activeThread?.id === t.id
+                  ? 'bg-primary/15 text-primary font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+              }`}
+            >
+              <MessageSquare className="w-3 h-3 inline mr-1" />
+              <span className="max-w-[80px] md:max-w-none truncate inline-block align-middle">{t.title}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Chat Messages */}
+      <ScrollArea className="flex-1 p-3 md:p-5">
+        {!activeThread ? (
+          <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-12 md:py-20 px-4">
+            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+              <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-primary" />
+            </div>
+            <h3 className="font-heading font-semibold text-base md:text-lg">AI Legal Assistant</h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Start a new chat to ask questions about your case, add hearing updates, or schedule reminders.
+            </p>
+          </div>
+        ) : loadingHistory ? (
+          <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        ) : (
+          <div className="space-y-4 max-w-3xl mx-auto">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[90%] md:max-w-[80%] px-3 md:px-4 py-2.5 md:py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                    msg.role === 'user'
+                      ? 'bg-gradient-to-r from-primary to-primary/80 text-white rounded-br-md'
+                      : 'bg-white/[0.04] border border-white/5 text-foreground rounded-bl-md'
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {sendingMsg && (
+              <div className="flex justify-start">
+                <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.04] border border-white/5">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 rounded-full bg-primary/70 animate-bounce" />
+                    <div className="w-2 h-2 rounded-full bg-primary/70 animate-bounce [animation-delay:0.15s]" />
+                    <div className="w-2 h-2 rounded-full bg-primary/70 animate-bounce [animation-delay:0.3s]" />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+        )}
+      </ScrollArea>
+
+      {/* Chat Input */}
+      {activeThread && (
+        <div className="p-3 md:p-4 border-t border-white/5 bg-card/20 backdrop-blur-xl shrink-0">
+          <div className="flex gap-2 md:gap-3 max-w-3xl mx-auto">
+            <Input
+              placeholder="Ask about your case..."
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+              disabled={sendingMsg}
+              className="flex-1 bg-background/50 text-sm"
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={sendingMsg || !chatInput.trim()}
+              className="bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/25 px-3 md:px-4"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* ── Top Bar ── */}
-      <header className="h-14 border-b border-white/5 bg-card/30 backdrop-blur-xl flex items-center gap-4 px-5 shrink-0">
-        <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-8 w-8">
+      <header className="h-12 md:h-14 border-b border-white/5 bg-card/30 backdrop-blur-xl flex items-center gap-2 md:gap-4 px-3 md:px-5 shrink-0">
+        <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')} className="h-8 w-8 shrink-0">
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <div className="flex items-center gap-2">
-          <Scale className="w-4 h-4 text-primary" />
-          <span className="font-heading font-semibold truncate">{caseData?.title}</span>
-          <Badge variant="outline" className={`text-[10px] ${statusColor[caseData?.status] || ''}`}>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <Scale className="w-4 h-4 text-primary shrink-0 hidden sm:block" />
+          <span className="font-heading font-semibold truncate text-sm md:text-base">{caseData?.title}</span>
+          <Badge variant="outline" className={`text-[10px] shrink-0 ${statusColor[caseData?.status] || ''}`}>
             {caseData?.status}
           </Badge>
         </div>
         
-        <div className="ml-auto flex items-center gap-2">
-          {/* Quick status change buttons */}
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+          {/* Quick status change buttons — hidden on very small screens */}
           {caseData?.status === 'OPEN' ? (
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              className="h-7 text-xs border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300 hidden sm:inline-flex"
               onClick={() => handleQuickStatusUpdate('CLOSED')}
             >
               Close Case
@@ -430,7 +725,7 @@ export default function CaseDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+              className="h-7 text-xs border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 hidden sm:inline-flex"
               onClick={() => handleQuickStatusUpdate('OPEN')}
             >
               Reopen Case
@@ -440,42 +735,45 @@ export default function CaseDetailPage() {
           {/* Manage Members dialog */}
           <Dialog open={showMembers} onOpenChange={setShowMembers}>
             <DialogTrigger render={<Button variant="outline" size="sm" className="h-7 text-xs border-primary/20 hover:border-primary/50" />}>
-              Manage Members
+              <span className="hidden sm:inline">Manage Members</span>
+              <span className="sm:hidden"><Users className="w-3.5 h-3.5" /></span>
             </DialogTrigger>
-            <DialogContent className="bg-card/95 backdrop-blur-xl border-white/5 max-w-2xl">
+            <DialogContent className="bg-card/95 backdrop-blur-xl border-white/5 max-w-2xl mx-4">
               <DialogHeader>
                 <DialogTitle>Case Members</DialogTitle>
               </DialogHeader>
               <div className="space-y-6 pt-2">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                   <Input 
                     placeholder="Invite by email address..." 
                     value={inviteEmail}
                     onChange={e => setInviteEmail(e.target.value)}
                     className="bg-background/50 flex-1"
                   />
-                  <select
-                    value={inviteRole}
-                    onChange={e => setInviteRole(e.target.value)}
-                    className="h-9 px-3 rounded-md bg-background/50 border border-border text-sm outline-none focus:border-primary"
-                  >
-                    <option value="VIEWER">Viewer</option>
-                    <option value="EDITOR">Editor</option>
-                    <option value="ADMIN">Admin</option>
-                  </select>
-                  <Button 
-                    onClick={handleInviteMember}
-                    disabled={inviting || !inviteEmail.trim()}
-                    className="bg-gradient-to-r from-primary to-primary/80 text-white shadow-md shadow-primary/20"
-                  >
-                    {inviting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Invite
-                  </Button>
+                  <div className="flex gap-2">
+                    <select
+                      value={inviteRole}
+                      onChange={e => setInviteRole(e.target.value)}
+                      className="h-9 px-3 rounded-md bg-background/50 border border-border text-sm outline-none focus:border-primary flex-1 sm:flex-none"
+                    >
+                      <option value="VIEWER">Viewer</option>
+                      <option value="EDITOR">Editor</option>
+                      <option value="ADMIN">Admin</option>
+                    </select>
+                    <Button 
+                      onClick={handleInviteMember}
+                      disabled={inviting || !inviteEmail.trim()}
+                      className="bg-gradient-to-r from-primary to-primary/80 text-white shadow-md shadow-primary/20"
+                    >
+                      {inviting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Invite
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="space-y-3">
                   <h4 className="text-sm font-medium text-muted-foreground">Current Members</h4>
-                  <ScrollArea className="h-[250px] rounded-lg border border-white/5 bg-background/20 p-4">
+                  <ScrollArea className="h-[200px] sm:h-[250px] rounded-lg border border-white/5 bg-background/20 p-4">
                     {loadingMembers ? (
                       <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
                     ) : members.length === 0 ? (
@@ -484,11 +782,11 @@ export default function CaseDetailPage() {
                       <div className="space-y-2">
                         {members.map(member => (
                           <div key={member.user_id} className="flex items-center justify-between p-3 rounded-md bg-white/[0.02] border border-white/5">
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium">{member.name}</span>
-                              <span className="text-xs text-muted-foreground">{member.email}</span>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-medium truncate">{member.name}</span>
+                              <span className="text-xs text-muted-foreground truncate">{member.email}</span>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 shrink-0">
                               <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
                                 {member.role}
                               </Badge>
@@ -506,9 +804,10 @@ export default function CaseDetailPage() {
           {/* Full Case Details Edit dialog */}
           <Dialog open={showEditCase} onOpenChange={setShowEditCase}>
             <DialogTrigger render={<Button variant="outline" size="sm" className="h-7 text-xs border-primary/20 hover:border-primary/50" />}>
-              Edit Case
+              <span className="hidden sm:inline">Edit Case</span>
+              <span className="sm:hidden"><Settings className="w-3.5 h-3.5" /></span>
             </DialogTrigger>
-            <DialogContent className="bg-card/95 backdrop-blur-xl border-white/5">
+            <DialogContent className="bg-card/95 backdrop-blur-xl border-white/5 mx-4 max-w-lg">
               <DialogHeader>
                 <DialogTitle>Update Case Details</DialogTitle>
               </DialogHeader>
@@ -521,7 +820,7 @@ export default function CaseDetailPage() {
                     className="bg-background/50"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Case Number</Label>
                     <Input
@@ -552,7 +851,7 @@ export default function CaseDetailPage() {
                   <select
                     value={editCaseForm.status}
                     onChange={e => setEditCaseForm(p => ({ ...p, status: e.target.value }))}
-                    className="w-full h-8 px-2 rounded-lg bg-background/50 border border-border text-sm outline-none focus:border-primary"
+                    className="w-full h-9 px-3 rounded-md bg-background/50 border border-border text-sm outline-none focus:border-primary"
                   >
                     <option value="OPEN">Open</option>
                     <option value="CLOSED">Closed</option>
@@ -568,293 +867,53 @@ export default function CaseDetailPage() {
         </div>
       </header>
 
-      {/* ── Three-Pane Layout ── */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* ── LEFT PANE: Case Details ── */}
+      {/* ── Desktop: Three-Pane Layout ── */}
+      <div className="flex-1 hidden md:flex overflow-hidden">
+        {/* LEFT PANE: Case Details */}
         <aside className="w-80 border-r border-white/5 bg-card/30 backdrop-blur-xl flex flex-col shrink-0 overflow-hidden">
           <ScrollArea className="flex-1 p-5">
-            <div className="space-y-6">
-              {/* Case Info */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Briefcase className="w-3 h-3" /> Case Details
-                </h3>
-                <div className="space-y-2.5">
-                  {caseData?.case_number && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Hash className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <span className="text-muted-foreground">Number:</span>
-                      <span className="font-mono text-xs">{caseData.case_number}</span>
-                    </div>
-                  )}
-                  {caseData?.court && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Building2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <span className="text-muted-foreground">Court:</span>
-                      <span>{caseData.court}</span>
-                    </div>
-                  )}
-                  {caseData?.case_type && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Scale className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <span className="text-muted-foreground">Type:</span>
-                      <span>{caseData.case_type}</span>
-                    </div>
-                  )}
-                  {caseData?.next_hearing_date && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <span className="text-muted-foreground">Next Hearing:</span>
-                      <span>{new Date(caseData.next_hearing_date).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                  {caseData?.filing_date && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <span className="text-muted-foreground">Filed:</span>
-                      <span>{new Date(caseData.filing_date).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                </div>
-                {caseData?.description && (
-                  <p className="text-sm text-muted-foreground leading-relaxed mt-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
-                    {caseData.description}
-                  </p>
-                )}
-              </div>
-
-              <Separator className="opacity-30" />
-
-              {/* Case Instructions */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Sparkles className="w-3 h-3 text-primary" /> AI Instructions
-                </h3>
-                <div className="space-y-2">
-                  <Textarea
-                    placeholder="E.g. Focus on liability clauses, translate latin terms..."
-                    value={instructions}
-                    onChange={e => setInstructions(e.target.value)}
-                    rows={4}
-                    className="text-xs bg-background/50 border-white/[0.04] focus:border-primary/50"
-                  />
-                  <Button
-                    onClick={handleSaveInstructions}
-                    disabled={savingInstructions}
-                    size="sm"
-                    className="w-full text-xs font-semibold"
-                  >
-                    {savingInstructions ? 'Saving...' : 'Save Instructions'}
-                  </Button>
-                </div>
-              </div>
-
-              <Separator className="opacity-30" />
-
-              {/* Documents Section */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <FolderOpen className="w-3 h-3" /> Documents
-                  </h3>
-                  <Dialog open={showUpload} onOpenChange={setShowUpload}>
-                    <DialogTrigger render={<Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/10 hover:text-primary" />}>
-                      <Plus className="w-3.5 h-3.5" />
-                    </DialogTrigger>
-                    <DialogContent className="bg-card/95 backdrop-blur-xl border-white/5">
-                      <DialogHeader>
-                        <DialogTitle>Add Document</DialogTitle>
-                      </DialogHeader>
-                      <Tabs value={uploadType} onValueChange={(v) => setUploadType(v as any)} className="pt-2">
-                        <TabsList className="w-full">
-                          <TabsTrigger value="PDF" className="flex-1 gap-1.5"><Upload className="w-3.5 h-3.5" />PDF</TabsTrigger>
-                          <TabsTrigger value="TEXT" className="flex-1 gap-1.5"><Type className="w-3.5 h-3.5" />Text</TabsTrigger>
-                          <TabsTrigger value="LINK" className="flex-1 gap-1.5"><Link2 className="w-3.5 h-3.5" />Link</TabsTrigger>
-                        </TabsList>
-                        <div className="space-y-4 mt-4">
-                          <div className="space-y-2">
-                            <Label>Title <span className="text-red-400">*</span></Label>
-                            <Input placeholder="E.g. Witness Statement" value={uploadTitle} onChange={e => setUploadTitle(e.target.value)} className="bg-background/50" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Description <span className="text-red-400">*</span></Label>
-                            <Input placeholder="Brief description of this document" value={uploadDescription} onChange={e => setUploadDescription(e.target.value)} className="bg-background/50" />
-                          </div>
-                          <TabsContent value="PDF" className="mt-0 space-y-2">
-                            <Label>PDF File <span className="text-red-400">*</span></Label>
-                            <Input type="file" accept=".pdf" onChange={e => setUploadFile(e.target.files?.[0] || null)} className="bg-background/50" />
-                          </TabsContent>
-                          <TabsContent value="TEXT" className="mt-0 space-y-2">
-                            <Label>Text Content <span className="text-red-400">*</span></Label>
-                            <Textarea placeholder="Paste text content..." value={uploadContent} onChange={e => setUploadContent(e.target.value)} rows={5} className="bg-background/50" />
-                          </TabsContent>
-                          <TabsContent value="LINK" className="mt-0 space-y-2">
-                            <Label>URL <span className="text-red-400">*</span></Label>
-                            <Input placeholder="https://..." value={uploadContent} onChange={e => setUploadContent(e.target.value)} className="bg-background/50" />
-                          </TabsContent>
-                          <Button onClick={handleUpload} disabled={uploading} className="w-full bg-gradient-to-r from-primary to-primary/80 text-white">
-                            {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                            Upload
-                          </Button>
-                        </div>
-                      </Tabs>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-
-                {loadingDocs ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mx-auto" />
-                ) : docs.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">No documents yet</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {docs.map((doc: any, i: number) => (
-                      <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors text-sm group">
-                        <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span className="truncate flex-1">{doc.title || doc.name || `Document ${i + 1}`}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <Separator className="opacity-30" />
-
-              {/* Tools Section */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <Wrench className="w-3 h-3" /> API Tools
-                  </h3>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/10 hover:text-primary" onClick={() => handleOpenViasocket()}>
-                    <Plus className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-
-                {loadingTools ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mx-auto" />
-                ) : caseTools.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">No tools created</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {caseTools.map((tool: any, i: number) => (
-                      <div key={tool.id || i} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors text-sm group">
-                        <div className="flex items-center gap-2 truncate flex-1 pr-2">
-                          <Settings className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <span className="truncate">{tool.title || `Tool ${i + 1}`}</span>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                          onClick={() => handleOpenViasocket(tool.script_id)}
-                        >
-                          <Wrench className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            {leftPaneContent}
           </ScrollArea>
         </aside>
 
-        {/* ── MIDDLE PANE: Chat ── */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Chat Tabs */}
-          <div className="h-12 border-b border-white/5 bg-card/20 flex items-center gap-2 px-4 shrink-0 overflow-x-auto">
-            <Button variant="ghost" size="sm" onClick={handleNewThread} className="h-7 gap-1.5 text-xs hover:bg-primary/10 hover:text-primary shrink-0">
-              <Plus className="w-3.5 h-3.5" />
-              New Chat
-            </Button>
-            <Separator orientation="vertical" className="h-5 opacity-30" />
-            {threads.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setActiveThread(t)}
-                className={`h-7 px-3 rounded-md text-xs whitespace-nowrap transition-all ${
-                  activeThread?.id === t.id
-                    ? 'bg-primary/15 text-primary font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
-                }`}
-              >
-                <MessageSquare className="w-3 h-3 inline mr-1.5" />
-                {t.title}
-              </button>
-            ))}
-          </div>
+        {/* MIDDLE PANE: Chat */}
+        {chatPaneContent}
+      </div>
 
-          {/* Chat Messages */}
-          <ScrollArea className="flex-1 p-5">
-            {!activeThread ? (
-              <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-20">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-heading font-semibold text-lg">AI Legal Assistant</h3>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                  Start a new chat to ask questions about your case, add hearing updates, or schedule reminders.
-                </p>
-              </div>
-            ) : loadingHistory ? (
-              <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-            ) : (
-              <div className="space-y-4 max-w-3xl mx-auto">
-                {messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
-                        msg.role === 'user'
-                          ? 'bg-gradient-to-r from-primary to-primary/80 text-white rounded-br-md'
-                          : 'bg-white/[0.04] border border-white/5 text-foreground rounded-bl-md'
-                      }`}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                ))}
-                {sendingMsg && (
-                  <div className="flex justify-start">
-                    <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.04] border border-white/5">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 rounded-full bg-primary/70 animate-bounce" />
-                        <div className="w-2 h-2 rounded-full bg-primary/70 animate-bounce [animation-delay:0.15s]" />
-                        <div className="w-2 h-2 rounded-full bg-primary/70 animate-bounce [animation-delay:0.3s]" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-            )}
-          </ScrollArea>
-
-          {/* Chat Input */}
-          {activeThread && (
-            <div className="p-4 border-t border-white/5 bg-card/20 backdrop-blur-xl shrink-0">
-              <div className="flex gap-3 max-w-3xl mx-auto">
-                <Input
-                  placeholder="Ask about your case..."
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                  disabled={sendingMsg}
-                  className="flex-1 bg-background/50"
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={sendingMsg || !chatInput.trim()}
-                  className="bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/25 px-4"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+      {/* ── Mobile: Tabbed Layout ── */}
+      <div className="flex-1 flex flex-col md:hidden overflow-hidden">
+        {/* Content */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {mobilePane === 'info' ? (
+            <ScrollArea className="flex-1 p-4">
+              {leftPaneContent}
+            </ScrollArea>
+          ) : (
+            chatPaneContent
           )}
+        </div>
+
+        {/* Mobile Bottom Tab Bar */}
+        <div className="h-14 border-t border-white/5 bg-card/50 backdrop-blur-xl flex items-center shrink-0">
+          <button
+            onClick={() => setMobilePane('chat')}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-colors ${
+              mobilePane === 'chat' ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <MessageSquare className="w-5 h-5" />
+            <span className="text-[10px] font-semibold">Chat</span>
+          </button>
+          <div className="w-px h-6 bg-white/5" />
+          <button
+            onClick={() => setMobilePane('info')}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-colors ${
+              mobilePane === 'info' ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <PanelLeft className="w-5 h-5" />
+            <span className="text-[10px] font-semibold">Case Info</span>
+          </button>
         </div>
       </div>
     </div>
