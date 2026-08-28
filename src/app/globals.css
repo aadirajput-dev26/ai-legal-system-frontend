@@ -210,3 +210,35 @@
   color: #a855f7 !important;
   font-weight: 600 !important;
 }
+
+/* ── Mobile Responsive Overrides ──────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Viasocket embed takes full width on mobile */
+  #iframe-viasocket-embed-parent-container {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border-left: none !important;
+  }
+
+  /* Smoother scrolling on mobile */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent overscroll bounce on iOS */
+  html, body {
+    overscroll-behavior: none;
+  }
+
+  /* Dialog content padding */
+  [data-radix-popper-content-wrapper] {
+    max-width: calc(100vw - 2rem) !important;
+  }
+}
+
+/* ── Safe area insets for notched phones ──────────────────────────── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-bottom-bar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
