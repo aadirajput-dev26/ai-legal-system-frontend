@@ -129,6 +129,10 @@ export const documents = {
     }
     return request<any>(`/cases/${caseId}/documents`, { method: 'POST', body: JSON.stringify(body) });
   },
+  update: (caseId: string, resourceId: string, body: { title: string; description?: string; type?: string; content?: string }) =>
+    request<any>(`/cases/${caseId}/documents/${resourceId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  delete: (caseId: string, resourceId: string) =>
+    request<any>(`/cases/${caseId}/documents/${resourceId}`, { method: 'DELETE' }),
 };
 
 // ── Chat ──────────────────────────────────────────────────────────
@@ -266,5 +270,11 @@ export const tools = {
     request<any>(`/cases/${caseId}/tools/${scriptId}`, { method: 'DELETE' }),
   getToken: (caseId: string) =>
     request<any>(`/cases/${caseId}/tools/token`),
+  /** Returns all tools in the org NOT yet imported into this case */
+  listImportable: (orgId: string, caseId: string) =>
+    request<any>(`/organisations/${orgId}/cases/${caseId}/tools/importable`),
+  /** Copies a tool from another case into this case */
+  import: (caseId: string, scriptId: string) =>
+    request<any>(`/cases/${caseId}/tools/import`, { method: 'POST', body: JSON.stringify({ script_id: scriptId }) }),
 };
 

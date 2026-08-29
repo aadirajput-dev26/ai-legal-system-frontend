@@ -20,6 +20,7 @@ import {
   ArrowLeft, Send, Plus, FileText, Link2, Type, Upload, Loader2,
   Scale, Calendar, Building2, Hash, Briefcase, MessageSquare,
   Sparkles, FolderOpen, Clock, Wrench, Settings, PanelLeft, Users,
+  Pencil, Trash2, Download,
 } from 'lucide-react';
 
 export default function CaseDetailPage() {
@@ -41,6 +42,14 @@ export default function CaseDetailPage() {
   const [uploadContent, setUploadContent] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Document edit/delete state
+  const [editingDoc, setEditingDoc] = useState<any | null>(null);
+  const [editDocTitle, setEditDocTitle] = useState('');
+  const [editDocDescription, setEditDocDescription] = useState('');
+  const [editDocContent, setEditDocContent] = useState('');
+  const [savingDoc, setSavingDoc] = useState(false);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
   // Chat
   const [threads, setThreads] = useState<any[]>([]);
@@ -77,6 +86,11 @@ export default function CaseDetailPage() {
 
   const [caseTools, setCaseTools] = useState<any[]>([]);
   const [loadingTools, setLoadingTools] = useState(true);
+  // Tool import state
+  const [showImportTools, setShowImportTools] = useState(false);
+  const [importableTools, setImportableTools] = useState<any[]>([]);
+  const [loadingImportable, setLoadingImportable] = useState(false);
+  const [importingScriptId, setImportingScriptId] = useState<string | null>(null);
 
   const fetchTools = async () => {
     if (!caseId) return;
@@ -87,6 +101,35 @@ export default function CaseDetailPage() {
       console.error('Failed to fetch tools', err);
     } finally {
       setLoadingTools(false);
+    }
+  };
+
+  const handleOpenImportTools = async () => {
+    const orgId = caseData?.organisation_id;
+    if (!orgId) return;
+    setShowImportTools(true);
+    setLoadingImportable(true);
+    try {
+      const res = await toolsApi.listImportable(orgId, caseId);
+      setImportableTools(res.tools || []);
+    } catch (err) {
+      console.error('Failed to fetch importable tools', err);
+    } finally {
+      setLoadingImportable(false);
+    }
+  };
+
+  const handleImportTool = async (scriptId: string) => {
+    setImportingScriptId(scriptId);
+    try {
+      await toolsApi.import(caseId, scriptId);
+      // Remove from importable list and refresh tools
+      setImportableTools(prev => prev.filter(t => t.script_id !== scriptId));
+      await fetchTools();
+    } catch (err: any) {
+      alert('Failed to import tool: ' + err.message);
+    } finally {
+      setImportingScriptId(null);
     }
   };
 
@@ -106,10 +149,10 @@ export default function CaseDetailPage() {
       try {
         window.openViasocket(scriptId, {
           embedToken: embedToken,
-          meta: {
+          meta: JSON.stringify({
             type: "tool",
             createFrom: "CASE_DASHBOARD"
-          }
+          })
         });
       } catch (err: any) {
         console.error("Viasocket Embed Error:", err);
@@ -297,6 +340,47 @@ export default function CaseDetailPage() {
       alert('Upload failed: ' + (err?.message || 'Unknown error'));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const refreshDocs = async () => {
+    const res = await docsApi.list(caseId);
+    const items = Array.isArray(res.data) ? res.data : (res.data?.resources || []);
+    setDocs(items);
+  };
+
+  const handleSaveDoc = async () => {
+    if (!editingDoc || !editDocTitle.trim()) return;
+    setSavingDoc(true);
+    try {
+      // Detect resource type: Hippocampus stores url for LINK/PDF, content for TEXT
+      const resourceType = editingDoc.url ? (editingDoc.url.endsWith('.pdf') ? 'PDF' : 'LINK') : 'TEXT';
+      await docsApi.update(caseId, editingDoc._id, {
+        title: editDocTitle.trim(),
+        description: editDocDescription.trim(),
+        type: resourceType,
+        // Only send content for TEXT resources
+        ...(resourceType === 'TEXT' && editDocContent.trim() ? { content: editDocContent.trim() } : {}),
+      });
+      setEditingDoc(null);
+      await refreshDocs();
+    } catch (err: any) {
+      alert('Failed to update document: ' + err.message);
+    } finally {
+      setSavingDoc(false);
+    }
+  };
+
+  const handleDeleteDoc = async (resourceId: string) => {
+    if (!window.confirm('Are you sure you want to delete this document? This cannot be undone.')) return;
+    setDeletingDocId(resourceId);
+    try {
+      await docsApi.delete(caseId, resourceId);
+      await refreshDocs();
+    } catch (err: any) {
+      alert('Failed to delete document: ' + err.message);
+    } finally {
+      setDeletingDocId(null);
     }
   };
 
@@ -536,6 +620,55 @@ export default function CaseDetailPage() {
           </Dialog>
         </div>
 
+        {/* Edit Document Dialog */}
+        <Dialog open={!!editingDoc} onOpenChange={(open) => !open && setEditingDoc(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Document</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label>Title <span className="text-red-400">*</span></Label>
+                <Input
+                  value={editDocTitle}
+                  onChange={e => setEditDocTitle(e.target.value)}
+                  className="bg-background/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Input
+                  value={editDocDescription}
+                  onChange={e => setEditDocDescription(e.target.value)}
+                  className="bg-background/50"
+                  placeholder="Brief description..."
+                />
+              </div>
+              {/* Show content editor only for TEXT resources (no url field) */}
+              {editingDoc && !editingDoc.url && (
+                <div className="space-y-2">
+                  <Label>Content</Label>
+                  <Textarea
+                    value={editDocContent}
+                    onChange={e => setEditDocContent(e.target.value)}
+                    className="bg-background/50"
+                    placeholder="Update text content..."
+                    rows={5}
+                  />
+                </div>
+              )}
+              <Button
+                onClick={handleSaveDoc}
+                disabled={savingDoc || !editDocTitle.trim()}
+                className="w-full bg-gradient-to-r from-primary to-primary/80 text-white"
+              >
+                {savingDoc ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Save Changes
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {loadingDocs ? (
           <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mx-auto" />
         ) : docs.length === 0 ? (
@@ -543,9 +676,41 @@ export default function CaseDetailPage() {
         ) : (
           <div className="space-y-1.5">
             {docs.map((doc: any, i: number) => (
-              <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors text-sm group">
+              <div key={doc._id || i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-colors text-sm group">
                 <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
-                <span className="truncate flex-1">{doc.title || doc.name || `Document ${i + 1}`}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="truncate">{doc.title || doc.name || `Document ${i + 1}`}</p>
+                  {doc.description && doc.description !== doc.title && (
+                    <p className="text-xs text-muted-foreground truncate">{doc.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 hover:bg-primary/10 hover:text-primary"
+                    onClick={() => {
+                      setEditingDoc(doc);
+                      setEditDocTitle(doc.title || '');
+                      setEditDocDescription(doc.description || '');
+                      setEditDocContent(doc.content || '');
+                    }}
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 hover:bg-red-500/10 hover:text-red-400"
+                    disabled={deletingDocId === doc._id}
+                    onClick={() => handleDeleteDoc(doc._id)}
+                  >
+                    {deletingDocId === doc._id
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <Trash2 className="w-3 h-3" />
+                    }
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -556,13 +721,78 @@ export default function CaseDetailPage() {
 
       {/* Tools Section */}
       <div className="space-y-3">
+        {/* Import Tool Dialog */}
+        <Dialog open={showImportTools} onOpenChange={setShowImportTools}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Import Tool from Another Case</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground -mt-2">
+              Reuse a Viasocket tool (and its existing connection) from any case you have access to.
+            </p>
+            <div className="mt-2 max-h-80 overflow-y-auto space-y-2 pr-1">
+              {loadingImportable ? (
+                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+              ) : importableTools.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No tools available to import. Create tools in other cases first.</p>
+              ) : (
+                (() => {
+                  // Group by source case
+                  const grouped = importableTools.reduce((acc: any, t: any) => {
+                    if (!acc[t.case_title]) acc[t.case_title] = [];
+                    acc[t.case_title].push(t);
+                    return acc;
+                  }, {});
+                  return Object.entries(grouped).map(([caseTitle, caseToolsList]: [string, any]) => (
+                    <div key={caseTitle} className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">{caseTitle}</p>
+                      {caseToolsList.map((t: any) => (
+                        <div key={t.script_id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5">
+                          <div className="flex-1 min-w-0 pr-3">
+                            <p className="text-sm font-medium truncate">{t.title}</p>
+                            {t.description && <p className="text-xs text-muted-foreground truncate">{t.description}</p>}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1.5 shrink-0 hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                            disabled={importingScriptId === t.script_id}
+                            onClick={() => handleImportTool(t.script_id)}
+                          >
+                            {importingScriptId === t.script_id
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <Download className="w-3 h-3" />
+                            }
+                            Import
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ));
+                })()
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
             <Wrench className="w-3 h-3" /> API Tools
           </h3>
-          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/10 hover:text-primary" onClick={() => handleOpenViasocket()}>
-            <Plus className="w-3.5 h-3.5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:bg-primary/10 hover:text-primary"
+              title="Import tool from another case"
+              onClick={handleOpenImportTools}
+            >
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/10 hover:text-primary" onClick={() => handleOpenViasocket()}>
+              <Plus className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
 
         {loadingTools ? (

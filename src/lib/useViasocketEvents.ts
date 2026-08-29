@@ -7,7 +7,11 @@ export const useViasocketEvents = (caseId: string, onToolUpdated?: () => void) =
       // Log event data for debugging
       console.log("Received viaSocket postMessage:", event.data);
 
-      const metaObj = event.data?.meta || event.data?.metadata;
+      // meta can be a JSON string (per official docs) or an object (legacy)
+      let metaObj = event.data?.meta || event.data?.metadata;
+      if (typeof metaObj === 'string') {
+        try { metaObj = JSON.parse(metaObj); } catch { metaObj = null; }
+      }
       
       // 1. Verify message type
       if (metaObj?.type !== "tool") return;
