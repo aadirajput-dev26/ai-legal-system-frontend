@@ -115,10 +115,10 @@ export default function CaseDetailPage() {
       try {
         window.openViasocket(scriptId, {
           embedToken: embedToken,
-          meta: {
+          meta: JSON.stringify({
             type: "tool",
             createFrom: "CASE_DASHBOARD"
-          }
+          })
         });
       } catch (err: any) {
         console.error("Viasocket Embed Error:", err);
