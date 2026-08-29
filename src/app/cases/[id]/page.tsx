@@ -20,7 +20,7 @@ import {
   ArrowLeft, Send, Plus, FileText, Link2, Type, Upload, Loader2,
   Scale, Calendar, Building2, Hash, Briefcase, MessageSquare,
   Sparkles, FolderOpen, Clock, Wrench, Settings, PanelLeft, Users,
-  Pencil, Trash2,
+  Pencil, Trash2, Download,
 } from 'lucide-react';
 
 export default function CaseDetailPage() {
@@ -86,6 +86,11 @@ export default function CaseDetailPage() {
 
   const [caseTools, setCaseTools] = useState<any[]>([]);
   const [loadingTools, setLoadingTools] = useState(true);
+  // Tool import state
+  const [showImportTools, setShowImportTools] = useState(false);
+  const [importableTools, setImportableTools] = useState<any[]>([]);
+  const [loadingImportable, setLoadingImportable] = useState(false);
+  const [importingScriptId, setImportingScriptId] = useState<string | null>(null);
 
   const fetchTools = async () => {
     if (!caseId) return;
@@ -96,6 +101,35 @@ export default function CaseDetailPage() {
       console.error('Failed to fetch tools', err);
     } finally {
       setLoadingTools(false);
+    }
+  };
+
+  const handleOpenImportTools = async () => {
+    const orgId = caseData?.organisation_id;
+    if (!orgId) return;
+    setShowImportTools(true);
+    setLoadingImportable(true);
+    try {
+      const res = await toolsApi.listImportable(orgId, caseId);
+      setImportableTools(res.tools || []);
+    } catch (err) {
+      console.error('Failed to fetch importable tools', err);
+    } finally {
+      setLoadingImportable(false);
+    }
+  };
+
+  const handleImportTool = async (scriptId: string) => {
+    setImportingScriptId(scriptId);
+    try {
+      await toolsApi.import(caseId, scriptId);
+      // Remove from importable list and refresh tools
+      setImportableTools(prev => prev.filter(t => t.script_id !== scriptId));
+      await fetchTools();
+    } catch (err: any) {
+      alert('Failed to import tool: ' + err.message);
+    } finally {
+      setImportingScriptId(null);
     }
   };
 
@@ -687,13 +721,78 @@ export default function CaseDetailPage() {
 
       {/* Tools Section */}
       <div className="space-y-3">
+        {/* Import Tool Dialog */}
+        <Dialog open={showImportTools} onOpenChange={setShowImportTools}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Import Tool from Another Case</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground -mt-2">
+              Reuse a Viasocket tool (and its existing connection) from any case you have access to.
+            </p>
+            <div className="mt-2 max-h-80 overflow-y-auto space-y-2 pr-1">
+              {loadingImportable ? (
+                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+              ) : importableTools.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No tools available to import. Create tools in other cases first.</p>
+              ) : (
+                (() => {
+                  // Group by source case
+                  const grouped = importableTools.reduce((acc: any, t: any) => {
+                    if (!acc[t.case_title]) acc[t.case_title] = [];
+                    acc[t.case_title].push(t);
+                    return acc;
+                  }, {});
+                  return Object.entries(grouped).map(([caseTitle, caseToolsList]: [string, any]) => (
+                    <div key={caseTitle} className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">{caseTitle}</p>
+                      {caseToolsList.map((t: any) => (
+                        <div key={t.script_id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5">
+                          <div className="flex-1 min-w-0 pr-3">
+                            <p className="text-sm font-medium truncate">{t.title}</p>
+                            {t.description && <p className="text-xs text-muted-foreground truncate">{t.description}</p>}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1.5 shrink-0 hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                            disabled={importingScriptId === t.script_id}
+                            onClick={() => handleImportTool(t.script_id)}
+                          >
+                            {importingScriptId === t.script_id
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <Download className="w-3 h-3" />
+                            }
+                            Import
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ));
+                })()
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
             <Wrench className="w-3 h-3" /> API Tools
           </h3>
-          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/10 hover:text-primary" onClick={() => handleOpenViasocket()}>
-            <Plus className="w-3.5 h-3.5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:bg-primary/10 hover:text-primary"
+              title="Import tool from another case"
+              onClick={handleOpenImportTools}
+            >
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/10 hover:text-primary" onClick={() => handleOpenViasocket()}>
+              <Plus className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
 
         {loadingTools ? (
