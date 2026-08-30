@@ -13,8 +13,8 @@ export const useViasocketEvents = (caseId: string, onToolUpdated?: () => void) =
         try { metaObj = JSON.parse(metaObj); } catch { metaObj = null; }
       }
       
-      // 1. Verify message type
-      if (metaObj?.type !== "tool") return;
+      // 1. Verify message matches the current case
+      if (metaObj?.caseId && metaObj.caseId !== caseId) return;
       
       const action = event.data?.action; // 'published' | 'updated' | 'deleted'
       const scriptId = event.data?.id;   // The Viasocket script/tool ID
