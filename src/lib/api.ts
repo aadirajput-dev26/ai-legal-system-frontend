@@ -123,6 +123,8 @@ export const cases = {
 export const documents = {
   list: (caseId: string) =>
     request<any>(`/cases/${caseId}/documents`),
+  get: (caseId: string, resourceId: string) =>
+    request<any>(`/cases/${caseId}/documents/${resourceId}`),
   create: (caseId: string, body: FormData | object) => {
     if (body instanceof FormData) {
       return request<any>(`/cases/${caseId}/documents`, { method: 'POST', body });

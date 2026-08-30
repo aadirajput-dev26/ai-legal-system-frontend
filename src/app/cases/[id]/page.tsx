@@ -82,7 +82,7 @@ export default function CaseDetailPage() {
     }
   }, [caseId]);
 
-  useEmbedScriptLoader(embedToken);
+  const { loadScript } = useEmbedScriptLoader();
 
   const [caseTools, setCaseTools] = useState<any[]>([]);
   const [loadingTools, setLoadingTools] = useState(true);
@@ -145,22 +145,22 @@ export default function CaseDetailPage() {
       return;
     }
 
-    if (typeof window !== 'undefined' && window.openViasocket) {
-      try {
-        window.openViasocket(scriptId, {
-          embedToken: embedToken,
-          meta: JSON.stringify({
-            type: "tool",
-            createFrom: "CASE_DASHBOARD"
-          })
-        });
-      } catch (err: any) {
-        console.error("Viasocket Embed Error:", err);
-        alert("Failed to open Viasocket Builder. Please verify your Viasocket Access Key and configurations in backend/.env are correct.");
+    loadScript(embedToken, () => {
+      if (typeof window !== 'undefined' && window.openViasocket) {
+        try {
+          window.openViasocket(scriptId, {
+            meta: JSON.stringify({
+              orgId: caseData?.organisation_id || "",
+              caseId: caseId
+            }),
+          });
+        } catch (err) {
+          console.error("Failed to open Viasocket:", err);
+        }
+      } else {
+        console.error("Viasocket embed script did not load properly.");
       }
-    } else {
-      alert("Builder is still loading. Please try again in a moment.");
-    }
+    });
   };
 
   // Instructions
