@@ -11,8 +11,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // Don't set Content-Type for FormData (browser sets boundary automatically)
-  if (!(options.body instanceof FormData)) {
+  // Set Content-Type for JSON bodies, skip for FormData (browser sets boundary automatically)
+  if (options.body && !(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
 
@@ -123,6 +123,8 @@ export const cases = {
 export const documents = {
   list: (caseId: string) =>
     request<any>(`/cases/${caseId}/documents`),
+  get: (caseId: string, resourceId: string) =>
+    request<any>(`/cases/${caseId}/documents/${resourceId}`),
   create: (caseId: string, body: FormData | object) => {
     if (body instanceof FormData) {
       return request<any>(`/cases/${caseId}/documents`, { method: 'POST', body });
