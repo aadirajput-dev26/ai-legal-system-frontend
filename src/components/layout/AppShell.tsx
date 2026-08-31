@@ -111,7 +111,7 @@ export function AppShell({ children, caseId }: AppShellProps) {
     setChatLoading(true);
     try {
       const historyRes = await chatApi.getHistory(caseId!, threadId);
-      const history: any[] = historyRes.data?.messages || historyRes.messages || [];
+      const history: any[] = Array.isArray(historyRes.data) ? historyRes.data : (historyRes.data?.messages || historyRes.messages || []);
 
       if (history.length > 0) {
         const mapped: ChatMessage[] = history.map((m: any, i: number) => ({

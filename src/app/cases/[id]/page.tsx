@@ -123,6 +123,7 @@ export default function CaseDetailPage() {
     content: ''
   });
   const [submittingEditDoc, setSubmittingEditDoc] = useState(false);
+  const [fetchingDocContentId, setFetchingDocContentId] = useState<string | null>(null);
 
   const fetchCaseData = async () => {
     try {
@@ -382,6 +383,39 @@ export default function CaseDetailPage() {
       fetchCaseData();
     } catch (err) {
       console.error('Failed to delete document:', err);
+    }
+  };
+
+  const handleOpenEditDoc = async (doc: DocumentItem) => {
+    const docId = doc.id || doc._id || '';
+    if (!docId) return;
+
+    try {
+      setFetchingDocContentId(docId);
+      const res = await docsApi.get(caseId, docId);
+      const fullDoc = res.data || doc;
+      
+      setSelectedDoc(fullDoc);
+      setEditDocForm({
+        id: fullDoc.id || fullDoc._id || '',
+        title: fullDoc.title || '',
+        description: fullDoc.description || '',
+        content: fullDoc.content || fullDoc.url || '',
+      });
+      setEditDocModalOpen(true);
+    } catch (err) {
+      console.error('Failed to fetch document content:', err);
+      // Fallback to basic data
+      setSelectedDoc(doc);
+      setEditDocForm({
+        id: docId,
+        title: doc.title || '',
+        description: doc.description || '',
+        content: doc.content || doc.url || '',
+      });
+      setEditDocModalOpen(true);
+    } finally {
+      setFetchingDocContentId(null);
     }
   };
 
@@ -925,20 +959,11 @@ export default function CaseDetailPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                          setSelectedDoc(d);
-                          setEditDocForm({
-                            id: d.id || d._id || '',
-                            title: d.title || '',
-                            description: d.description || '',
-                            content: d.content || '',
-                          });
-                          setEditDocModalOpen(true);
-                        }}
+                        onClick={() => handleOpenEditDoc(d)}
                         className="w-7 h-7 text-muted-foreground hover:text-purple-400"
                         title="Edit Document"
                       >
-                        <Edit3 className="w-3.5 h-3.5" />
+                        {fetchingDocContentId === (d.id || d._id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Edit3 className="w-3.5 h-3.5" />}
                       </Button>
 
                       <Button
