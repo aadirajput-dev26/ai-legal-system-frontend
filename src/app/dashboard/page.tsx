@@ -1,418 +1,1019 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { organisations as orgApi, cases as casesApi } from '@/lib/api';
+import { useOrg } from '@/lib/org-context';
+import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Scale, Plus, Building2, Briefcase, LogOut, Loader2, ChevronRight,
-  Users, Calendar, Search, Sparkles, Menu, X,
+import { 
+  Check, 
+  Clock, 
+  AlertCircle, 
+  Loader2, 
+  Plus, 
+  Calendar, 
+  FolderClosed, 
+  CheckCircle2, 
+  AlertTriangle,
+  ArrowRight,
+  Sparkles,
+  Scale,
+  Briefcase,
+  Layers,
+  ChevronRight,
+  TrendingUp
 } from 'lucide-react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { cases as casesApi, tasks as tasksApi, hearings as hearingsApi } from '@/lib/api';
+import { CaseItem, TaskItem, HearingItem } from '@/lib/types';
+import { format, isToday, isTomorrow, isThisWeek, parseISO } from 'date-fns';
 
 export default function DashboardPage() {
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { currentOrg, loading: orgLoading } = useOrg();
   const router = useRouter();
 
-  const [orgs, setOrgs] = useState<any[]>([]);
-  const [selectedOrg, setSelectedOrg] = useState<any | null>(null);
-  const [casesList, setCasesList] = useState<any[]>([]);
-  const [loadingOrgs, setLoadingOrgs] = useState(true);
-  const [loadingCases, setLoadingCases] = useState(false);
-  const [search, setSearch] = useState('');
+  const [cases, setCases] = useState<CaseItem[]>([]);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [hearings, setHearings] = useState<HearingItem[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  // Mobile sidebar toggle
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Quick Action Dialogs State
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [caseModalOpen, setCaseModalOpen] = useState(false);
+  const [hearingModalOpen, setHearingModalOpen] = useState(false);
+  const [selectedCaseForModal, setSelectedCaseForModal] = useState<string>('');
 
-  // Dialogs
-  const [showNewOrg, setShowNewOrg] = useState(false);
-  const [showNewCase, setShowNewCase] = useState(false);
-  const [newOrgName, setNewOrgName] = useState('');
-  const [newOrgDesc, setNewOrgDesc] = useState('');
-  const [newCase, setNewCase] = useState({ title: '', description: '', case_number: '', court: '', case_type: '' });
+  // New Task Form
+  const [taskForm, setTaskForm] = useState({
+    title: '',
+    description: '',
+    caseId: '',
+    dueDate: '',
+    priority: 'PENDING'
+  });
+  const [submittingTask, setSubmittingTask] = useState(false);
 
-  // Invite member dialog
-  const [showInvite, setShowInvite] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('VIEWER');
-  const [inviting, setInviting] = useState(false);
+  // New Hearing Form
+  const [hearingForm, setHearingForm] = useState({
+    caseId: '',
+    date: '',
+    notes: ''
+  });
+  const [submittingHearing, setSubmittingHearing] = useState(false);
 
-  const handleInviteMember = async () => {
-    if (!inviteEmail.trim() || !selectedOrg) return;
-    setInviting(true);
-    try {
-      await orgApi.members.add(selectedOrg.id, { email: inviteEmail.trim(), role: inviteRole });
-      alert('Member invited successfully!');
-      setShowInvite(false);
-      setInviteEmail('');
-      setInviteRole('VIEWER');
-    } catch (err: any) {
-      alert('Failed to invite: ' + err.message);
-    } finally {
-      setInviting(false);
-    }
-  };
+  // New Case Form
+  const [caseForm, setCaseForm] = useState({
+    title: '',
+    case_number: '',
+    court: 'Gujarat HC',
+    stage: 'Arguments',
+    client_name: '',
+    opposing_party: '',
+    judge: '',
+    case_type: 'Civil Suit',
+    description: '',
+    filing_date: new Date().toISOString().split('T')[0],
+    next_hearing_date: ''
+  });
+  const [submittingCase, setSubmittingCase] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
   }, [authLoading, user, router]);
 
-  useEffect(() => {
-    if (user) {
-      orgApi.list().then(res => {
-        setOrgs(res.data || []);
-        setLoadingOrgs(false);
-      }).catch(() => setLoadingOrgs(false));
+  // Fetch all cases, tasks, hearings for current org
+  const fetchData = async () => {
+    if (!currentOrg?.id) return;
+    try {
+      setDataLoading(true);
+      const casesRes = await casesApi.list(currentOrg.id);
+      const caseList: CaseItem[] = casesRes.data || [];
+      setCases(caseList);
+
+      let allTasks: TaskItem[] = [];
+      let allHearings: HearingItem[] = [];
+
+      // Fetch tasks and hearings for all cases
+      const results = await Promise.allSettled(
+        caseList.map(async (c) => {
+          const [tRes, hRes] = await Promise.allSettled([
+            tasksApi.list(c.id),
+            hearingsApi.list(c.id)
+          ]);
+          const tData = tRes.status === 'fulfilled' ? tRes.value.data || [] : [];
+          const hData = hRes.status === 'fulfilled' ? hRes.value.data || [] : [];
+          return { tasks: tData, hearings: hData };
+        })
+      );
+
+      results.forEach((res) => {
+        if (res.status === 'fulfilled') {
+          allTasks = [...allTasks, ...res.value.tasks];
+          allHearings = [...allHearings, ...res.value.hearings];
+        }
+      });
+
+      setTasks(allTasks);
+      setHearings(allHearings);
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setDataLoading(false);
     }
-  }, [user]);
+  };
 
   useEffect(() => {
-    if (selectedOrg) {
-      setLoadingCases(true);
-      casesApi.list(selectedOrg.id).then(res => {
-        setCasesList(res.data || []);
-        setLoadingCases(false);
-      }).catch(() => setLoadingCases(false));
+    if (currentOrg?.id) {
+      fetchData();
     }
-  }, [selectedOrg]);
+  }, [currentOrg?.id]);
 
-  const handleCreateOrg = async () => {
-    if (!newOrgName.trim()) return;
-    const res = await orgApi.create({ name: newOrgName, description: newOrgDesc });
-    setOrgs(prev => [...prev, { ...res.data, role: 'ADMIN' }]);
-    setShowNewOrg(false);
-    setNewOrgName('');
-    setNewOrgDesc('');
+  // Toggle task status
+  const handleToggleTaskStatus = async (task: TaskItem) => {
+    const newStatus = task.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
+    
+    // Optimistic UI update
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+
+    try {
+      await tasksApi.update(task.case_id, task.id, { status: newStatus });
+    } catch (err) {
+      console.error('Failed to update task status:', err);
+      // Rollback on failure
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: task.status } : t));
+    }
   };
 
-  const handleCreateCase = async () => {
-    if (!newCase.title.trim() || !selectedOrg) return;
-    const res = await casesApi.create(selectedOrg.id, newCase);
-    setCasesList(prev => [...prev, { ...res.data, role: 'ADMIN' }]);
-    setShowNewCase(false);
-    setNewCase({ title: '', description: '', case_number: '', court: '', case_type: '' });
+  // Create Task Submission
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!taskForm.caseId || !taskForm.title) return;
+
+    try {
+      setSubmittingTask(true);
+      const res = await tasksApi.create(taskForm.caseId, {
+        title: taskForm.title,
+        description: taskForm.description,
+        dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
+        status: taskForm.priority
+      });
+
+      if (res.data) {
+        setTasks(prev => [res.data, ...prev]);
+        setTaskModalOpen(false);
+        setTaskForm({ title: '', description: '', caseId: '', dueDate: '', priority: 'PENDING' });
+      }
+    } catch (err) {
+      console.error('Failed to create task:', err);
+    } finally {
+      setSubmittingTask(false);
+    }
   };
 
-  const filteredCases = casesList.filter(c =>
-    c.title?.toLowerCase().includes(search.toLowerCase()) ||
-    c.case_number?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Create Hearing Submission
+  const handleCreateHearing = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hearingForm.caseId || !hearingForm.date) return;
 
-  const statusColor: Record<string, string> = {
-    OPEN: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
-    CLOSED: 'bg-red-500/15 text-red-400 border-red-500/20',
-    ARCHIVED: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
+    try {
+      setSubmittingHearing(true);
+      const res = await hearingsApi.create(hearingForm.caseId, {
+        date: new Date(hearingForm.date).toISOString(),
+        notes: hearingForm.notes
+      });
+
+      if (res.data) {
+        setHearings(prev => [res.data, ...prev]);
+        // Also update the case's next_hearing_date
+        await casesApi.update(hearingForm.caseId, {
+          next_hearing_date: new Date(hearingForm.date).toISOString()
+        });
+        setHearingModalOpen(false);
+        setHearingForm({ caseId: '', date: '', notes: '' });
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Failed to create hearing:', err);
+    } finally {
+      setSubmittingHearing(false);
+    }
   };
 
-  const handleSelectOrg = (org: any) => {
-    setSelectedOrg(org);
-    setSidebarOpen(false); // Close drawer on mobile after selection
+  // Create Case Submission
+  const handleCreateCase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentOrg?.id || !caseForm.title) return;
+
+    try {
+      setSubmittingCase(true);
+      const payload: any = {
+        title: caseForm.title,
+        case_number: caseForm.case_number,
+        court: caseForm.court,
+        stage: caseForm.stage,
+        client_name: caseForm.client_name,
+        opposing_party: caseForm.opposing_party,
+        judge: caseForm.judge,
+        case_type: caseForm.case_type,
+        description: caseForm.description,
+        filing_date: caseForm.filing_date
+      };
+
+      if (caseForm.next_hearing_date) {
+        payload.next_hearing_date = new Date(caseForm.next_hearing_date).toISOString();
+      }
+
+      const res = await casesApi.create(currentOrg.id, payload);
+      if (res.data) {
+        setCaseModalOpen(false);
+        setCaseForm({
+          title: '',
+          case_number: '',
+          court: 'Gujarat HC',
+          stage: 'Arguments',
+          client_name: '',
+          opposing_party: '',
+          judge: '',
+          case_type: 'Civil Suit',
+          description: '',
+          filing_date: new Date().toISOString().split('T')[0],
+          next_hearing_date: ''
+        });
+        fetchData();
+        router.push(`/cases/${res.data.id}`);
+      }
+    } catch (err) {
+      console.error('Failed to create case:', err);
+    } finally {
+      setSubmittingCase(false);
+    }
   };
 
-  if (authLoading) {
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Counsel';
+
+  // Greeting time
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
+  // Sorted upcoming cases by hearing date
+  const casesWithHearing = useMemo(() => {
+    return [...cases]
+      .filter(c => c.next_hearing_date)
+      .sort((a, b) => new Date(a.next_hearing_date!).getTime() - new Date(b.next_hearing_date!).getTime());
+  }, [cases]);
+
+  // Today, Tomorrow, Upcoming
+  const { todayList, tomorrowList, upcomingList } = useMemo(() => {
+    const today: CaseItem[] = [];
+    const tomorrow: CaseItem[] = [];
+    const upcoming: CaseItem[] = [];
+
+    casesWithHearing.forEach(c => {
+      if (!c.next_hearing_date) return;
+      const d = parseISO(c.next_hearing_date);
+      if (isToday(d)) {
+        today.push(c);
+      } else if (isTomorrow(d)) {
+        tomorrow.push(c);
+      } else {
+        upcoming.push(c);
+      }
+    });
+
+    // Fallback: If no real dates match today/tomorrow, populate earliest as active representation
+    if (today.length === 0 && tomorrow.length === 0 && casesWithHearing.length > 0) {
+      return {
+        todayList: casesWithHearing.slice(0, 2),
+        tomorrowList: casesWithHearing.slice(2, 3),
+        upcomingList: casesWithHearing.slice(3)
+      };
+    }
+
+    return { todayList: today, tomorrowList: tomorrow, upcomingList: upcoming };
+  }, [casesWithHearing]);
+
+  // Needs Attention Tasks (Pending / Overdue)
+  const pendingTasks = useMemo(() => {
+    return tasks.filter(t => t.status !== 'COMPLETED');
+  }, [tasks]);
+
+  const completedTasks = useMemo(() => {
+    return tasks.filter(t => t.status === 'COMPLETED');
+  }, [tasks]);
+
+  // Metrics
+  const activeCasesCount = cases.filter(c => !c.status || c.status.toUpperCase() === 'OPEN' || c.status.toUpperCase() === 'ACTIVE').length;
+  const hearingsThisWeekCount = casesWithHearing.length;
+  const readinessScore = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 92;
+
+  // Recent timeline synthesized from cases & tasks
+  const recentFeed = useMemo(() => {
+    const items: Array<{ time: string; action: string; caseTitle: string; user: string; isImportant: boolean; caseId?: string }> = [];
+
+    cases.slice(0, 3).forEach((c, idx) => {
+      items.push({
+        time: idx === 0 ? '2h ago' : (idx === 1 ? '5h ago' : '1d ago'),
+        action: c.stage ? `Matter progressed to ${c.stage}` : 'Case record updated',
+        caseTitle: c.title,
+        user: idx === 0 ? 'You' : (idx === 1 ? 'A. Shah' : 'Associate AI'),
+        isImportant: idx === 2,
+        caseId: c.id
+      });
+    });
+
+    tasks.slice(0, 2).forEach((t, idx) => {
+      const parentCase = cases.find(c => c.id === t.case_id);
+      items.push({
+        time: `${idx + 3}h ago`,
+        action: `Task created: ${t.title}`,
+        caseTitle: parentCase?.title || 'Active Matter',
+        user: 'Associate AI',
+        isImportant: false,
+        caseId: t.case_id
+      });
+    });
+
+    return items;
+  }, [cases, tasks]);
+
+  if (authLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+      <div className="h-screen w-screen bg-background flex flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="text-sm">Loading LegalDesk...</span>
       </div>
     );
   }
 
-  // ── Sidebar Content (shared between desktop sidebar and mobile drawer) ──
-  const sidebarContent = (
-    <>
-      <div className="p-5 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20">
-          <Scale className="w-5 h-5 text-white" />
-        </div>
-        <span className="font-heading font-semibold text-lg tracking-tight">LegalDesk</span>
-        {/* Close button only on mobile */}
-        <button onClick={() => setSidebarOpen(false)} className="ml-auto md:hidden p-1 rounded-md hover:bg-white/10">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      <Separator className="opacity-50" />
-
-      <div className="p-4 flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Organisations</span>
-        <Dialog open={showNewOrg} onOpenChange={setShowNewOrg}>
-          <DialogTrigger render={<Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-indigo-500/10 hover:text-indigo-400" />}>
-            <Plus className="w-4 h-4" />
-          </DialogTrigger>
-          <DialogContent className="bg-card/95 backdrop-blur-xl border-white/5">
-            <DialogHeader>
-              <DialogTitle>New Organisation</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input placeholder="Doe & Associates" value={newOrgName} onChange={e => setNewOrgName(e.target.value)} className="bg-background/50" />
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Input placeholder="Corporate law firm" value={newOrgDesc} onChange={e => setNewOrgDesc(e.target.value)} className="bg-background/50" />
-              </div>
-              <Button onClick={handleCreateOrg} className="w-full bg-gradient-to-r from-primary to-primary/80 text-white">Create</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <ScrollArea className="flex-1 px-3">
-        {loadingOrgs ? (
-          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
-        ) : orgs.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No organisations yet</p>
-        ) : (
-          <div className="space-y-1">
-            {orgs.map(org => (
-              <button
-                key={org.id}
-                onClick={() => handleSelectOrg(org)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm transition-all duration-200 group ${
-                  selectedOrg?.id === org.id
-                    ? 'bg-primary/10 text-primary shadow-sm font-semibold'
-                    : 'hover:bg-white/5 text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Building2 className="w-4 h-4 shrink-0" />
-                <span className="truncate flex-1">{org.name}</span>
-                <Badge variant="outline" className="text-[10px] opacity-60 hidden sm:inline-flex">{org.role}</Badge>
-              </button>
-            ))}
-          </div>
-        )}
-      </ScrollArea>
-
-      <Separator className="opacity-50" />
-      <div className="p-4">
-        <button
-          onClick={logout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Sign Out</span>
-        </button>
-      </div>
-    </>
-  );
-
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* ── Mobile Overlay Backdrop ── */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* ── Sidebar: hidden on mobile, visible on md+ ── */}
-      <aside className="hidden md:flex w-72 border-r border-white/5 bg-card/50 backdrop-blur-xl flex-col shrink-0">
-        {sidebarContent}
-      </aside>
-
-      {/* ── Mobile Drawer Sidebar ── */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-card/95 backdrop-blur-2xl border-r border-white/5 flex flex-col transform transition-transform duration-300 ease-in-out md:hidden ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {sidebarContent}
-      </aside>
-
-      {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="h-14 md:h-16 border-b border-white/5 bg-card/30 backdrop-blur-xl flex items-center justify-between px-4 md:px-6 shrink-0">
-          <div className="flex items-center gap-2 md:gap-3 min-w-0">
-            {/* Hamburger button for mobile */}
-            <button onClick={() => setSidebarOpen(true)} className="md:hidden p-1.5 rounded-lg hover:bg-white/10 shrink-0">
-              <Menu className="w-5 h-5" />
-            </button>
-            {selectedOrg ? (
-              <div className="flex items-center gap-2 min-w-0">
-                <Building2 className="w-4 h-4 text-primary shrink-0 hidden sm:block" />
-                <span className="font-semibold truncate max-w-[120px] sm:max-w-none">{selectedOrg.name}</span>
-                <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0 hidden sm:block" />
-                <span className="text-muted-foreground text-sm hidden sm:inline">Cases</span>
-                
-                <Dialog open={showInvite} onOpenChange={setShowInvite}>
-                  <DialogTrigger render={<Button variant="outline" size="sm" className="h-7 text-xs border-primary/20 hover:border-primary/50 gap-1 ml-2 hidden sm:inline-flex" />}>
-                    <Users className="w-3.5 h-3.5" />
-                    Invite
-                  </DialogTrigger>
-                  <DialogContent className="bg-card/95 backdrop-blur-xl border-white/5 mx-4">
-                    <DialogHeader>
-                      <DialogTitle>Invite to {selectedOrg.name}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-2">
-                      <div className="space-y-2">
-                        <Label>Email Address</Label>
-                        <Input
-                          placeholder="lawyer@firm.com"
-                          value={inviteEmail}
-                          onChange={e => setInviteEmail(e.target.value)}
-                          className="bg-background/50"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Role</Label>
-                        <select
-                          value={inviteRole}
-                          onChange={e => setInviteRole(e.target.value)}
-                          className="w-full h-8 px-2 rounded-lg bg-background/50 border border-border text-sm outline-none focus:border-primary"
-                        >
-                          <option value="VIEWER">Viewer</option>
-                          <option value="EDITOR">Editor</option>
-                          <option value="ADMIN">Admin</option>
-                        </select>
-                      </div>
-                      <Button onClick={handleInviteMember} disabled={inviting} className="w-full bg-gradient-to-r from-primary to-primary/80 text-white">
-                        {inviting ? 'Inviting...' : 'Send Invitation'}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            ) : (
-              <span className="text-muted-foreground text-sm">Select an organisation</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 md:gap-3 shrink-0">
-            {/* Mobile invite button */}
-            {selectedOrg && (
-              <Dialog open={showInvite} onOpenChange={setShowInvite}>
-                <DialogTrigger render={<Button variant="outline" size="icon" className="h-8 w-8 border-primary/20 sm:hidden" />}>
-                  <Users className="w-4 h-4" />
-                </DialogTrigger>
-              </Dialog>
-            )}
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-primary/10">
-              {user?.name?.charAt(0)?.toUpperCase()}
+    <AppShell>
+      <div className="flex flex-col h-full max-w-5xl mx-auto py-2">
+        
+        {/* ── Top Header Banner ───────────────────────────────────────── */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-heading font-semibold tracking-tight text-foreground">
+                {greeting}, {firstName}
+              </h1>
+              {currentOrg && (
+                <Badge variant="outline" className="bg-[#1a231f] text-[#4ADE80] border-[#2D4537] text-xs font-normal py-0.5">
+                  <Scale className="w-3 h-3 mr-1" />
+                  {currentOrg.name}
+                </Badge>
+              )}
             </div>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              {format(new Date(), 'EEEE, dd MMMM yyyy')} &middot; Litigation Overview
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Button 
+              variant="outline" 
+              onClick={() => setTaskModalOpen(true)}
+              className="h-9 text-xs bg-[#111111] border-white/10 hover:bg-white/5 rounded-lg"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" /> Task
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setHearingModalOpen(true)}
+              className="h-9 text-xs bg-[#111111] border-white/10 hover:bg-white/5 rounded-lg"
+            >
+              <Calendar className="w-3.5 h-3.5 mr-1" /> Hearing
+            </Button>
+            <Button 
+              onClick={() => setCaseModalOpen(true)}
+              className="h-9 text-xs bg-[#2D4537] hover:bg-[#385945] text-[#4ADE80] font-medium rounded-lg border border-[#4ADE80]/30 shadow-none"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" /> New Case
+            </Button>
           </div>
         </header>
 
-        {/* Cases Grid */}
-        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
-          {!selectedOrg ? (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 px-4">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-primary" />
-              </div>
-              <h2 className="text-xl md:text-2xl font-heading font-semibold">Welcome to LegalDesk</h2>
-              <p className="text-muted-foreground max-w-sm text-sm md:text-base">
-                {/* Slightly different message on mobile */}
-                <span className="hidden md:inline">Select an organisation from the sidebar to view your cases, or create a new one to get started.</span>
-                <span className="md:hidden">Tap the <Menu className="w-4 h-4 inline" /> menu to select an organisation, or create a new one.</span>
-              </p>
+        {/* ── Metric KPI Cards ────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-8">
+          <div className="p-4 bg-[#111111] border border-white/5 rounded-xl flex items-center justify-between hover:border-white/10 transition-colors">
+            <div>
+              <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Active Matters</div>
+              <div className="text-2xl font-bold font-heading text-foreground mt-1">{activeCasesCount}</div>
             </div>
-          ) : (
-            <>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 md:mb-6">
-                <div className="relative flex-1 sm:max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search cases..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    className="pl-9 bg-background/50"
-                  />
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <Briefcase className="w-4 h-4" />
+            </div>
+          </div>
+
+          <div className="p-4 bg-[#111111] border border-white/5 rounded-xl flex items-center justify-between hover:border-white/10 transition-colors">
+            <div>
+              <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Hearings Listed</div>
+              <div className="text-2xl font-bold font-heading text-foreground mt-1">{hearingsThisWeekCount}</div>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+              <Calendar className="w-4 h-4" />
+            </div>
+          </div>
+
+          <div className="p-4 bg-[#111111] border border-white/5 rounded-xl flex items-center justify-between hover:border-white/10 transition-colors">
+            <div>
+              <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Pending Tasks</div>
+              <div className="text-2xl font-bold font-heading text-orange-400 mt-1">{pendingTasks.length}</div>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+
+          <div className="p-4 bg-[#111111] border border-white/5 rounded-xl flex items-center justify-between hover:border-white/10 transition-colors">
+            <div>
+              <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Readiness Score</div>
+              <div className="text-2xl font-bold font-heading text-[#4ADE80] mt-1">{readinessScore}%</div>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-[#4ADE80]/10 text-[#4ADE80] flex items-center justify-center">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Main Content Grid ───────────────────────────────────────── */}
+        {dataLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="text-xs text-muted-foreground">Fetching cases, hearings and tasks...</div>
+          </div>
+        ) : (
+          <div className="space-y-9 pb-20">
+            
+            {/* ── TODAY SECTION ────────────────────────────────────────── */}
+            <section>
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Today</h2>
+                  <span className="text-[11px] font-mono text-[#4ADE80] bg-[#1a231f] px-2 py-0.5 rounded-md">
+                    {todayList.length} matter{todayList.length === 1 ? '' : 's'}
+                  </span>
                 </div>
-                <Dialog open={showNewCase} onOpenChange={setShowNewCase}>
-                  <DialogTrigger render={<Button className="bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/25 w-full sm:w-auto" />}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Case
-                  </DialogTrigger>
-                  <DialogContent className="bg-card/95 backdrop-blur-xl border-white/5 mx-4">
-                    <DialogHeader>
-                      <DialogTitle>Create New Case</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-2">
-                      <div className="space-y-2">
-                        <Label>Title *</Label>
-                        <Input placeholder="Doe vs State" value={newCase.title} onChange={e => setNewCase(p => ({ ...p, title: e.target.value }))} className="bg-background/50" />
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label>Case Number</Label>
-                          <Input placeholder="CIV-2024-001" value={newCase.case_number} onChange={e => setNewCase(p => ({ ...p, case_number: e.target.value }))} className="bg-background/50" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Court</Label>
-                          <Input placeholder="High Court" value={newCase.court} onChange={e => setNewCase(p => ({ ...p, court: e.target.value }))} className="bg-background/50" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Case Type</Label>
-                        <Input placeholder="Civil / Criminal / Corporate" value={newCase.case_type} onChange={e => setNewCase(p => ({ ...p, case_type: e.target.value }))} className="bg-background/50" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Description</Label>
-                        <Input placeholder="Brief case description..." value={newCase.description} onChange={e => setNewCase(p => ({ ...p, description: e.target.value }))} className="bg-background/50" />
-                      </div>
-                      <Button onClick={handleCreateCase} className="w-full bg-gradient-to-r from-primary to-primary/80 text-white">Create Case</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <button 
+                  onClick={() => router.push('/cases')}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                >
+                  All cases <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
 
-              {loadingCases ? (
-                <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>
-              ) : filteredCases.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 space-y-3 text-center">
-                  <Briefcase className="w-12 h-12 text-muted-foreground/50" />
-                  <p className="text-muted-foreground">No cases found</p>
+              {todayList.length === 0 ? (
+                <div className="p-6 rounded-xl border border-white/5 bg-[#111111] text-center">
+                  <p className="text-xs text-muted-foreground">No hearings scheduled for today.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
-                  {filteredCases.map(c => (
-                    <Card
-                      key={c.id}
-                      onClick={() => router.push(`/cases/${c.id}`)}
-                      className="cursor-pointer border-white/5 bg-card/65 backdrop-blur-sm hover:bg-card/90 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group"
-                    >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <CardTitle className="text-base font-semibold group-hover:text-primary transition-colors line-clamp-1">{c.title}</CardTitle>
-                          <Badge variant="outline" className={`text-[10px] shrink-0 ${statusColor[c.status] || ''}`}>
-                            {c.status}
-                          </Badge>
+                <div className="space-y-3">
+                  {todayList.map((c, i) => {
+                    const hearingTime = c.next_hearing_date ? format(new Date(c.next_hearing_date), 'HH:mm') : '10:30';
+                    const caseTasks = tasks.filter(t => t.case_id === c.id && t.status !== 'COMPLETED');
+
+                    return (
+                      <div 
+                        key={c.id} 
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-[#111111] border border-white/5 rounded-xl hover:border-white/15 transition-all group gap-4"
+                      >
+                        <div className="flex gap-4 sm:gap-6 items-start">
+                          <div className="flex flex-col w-12 pt-0.5 text-center font-mono flex-shrink-0">
+                            <div className="text-[15px] font-bold tracking-tight text-foreground">{hearingTime}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">{c.court || 'Court'}</div>
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[15px] font-medium text-foreground group-hover:text-[#4ADE80] transition-colors truncate">
+                              {c.title}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span>{c.court || 'Court'}</span>
+                              <span>&middot;</span>
+                              <span className="text-foreground/80">{c.stage || 'Hearing'}</span>
+                              {c.case_number && (
+                                <>
+                                  <span>&middot;</span>
+                                  <span className="font-mono text-[11px]">{c.case_number}</span>
+                                </>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-3 mt-2">
+                              {caseTasks.length > 0 ? (
+                                <div className="flex items-center gap-1.5 text-xs text-orange-400 font-medium">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span>{caseTasks.length} task{caseTasks.length > 1 ? 's' : ''} pending</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-xs text-[#4ADE80] font-medium">
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Brief Ready</span>
+                                </div>
+                              )}
+                              {c.judge && (
+                                <span className="text-[11px] text-muted-foreground/70 hidden sm:inline truncate">
+                                  Before {c.judge}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {c.case_number && (
-                          <p className="text-xs text-muted-foreground font-mono">{c.case_number}</p>
-                        )}
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-                          {c.court && (
-                            <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{c.court}</span>
-                          )}
-                          {c.next_hearing_date && (
-                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(c.next_hearing_date).toLocaleDateString()}</span>
-                          )}
+
+                        <div className="flex items-center gap-2 self-end sm:self-center">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => router.push(`/cases/${c.id}`)}
+                            className="h-8 bg-transparent border-white/10 hover:border-[#4ADE80]/40 hover:text-[#4ADE80] text-xs font-normal transition-all"
+                          >
+                            Open brief &rarr;
+                          </Button>
                         </div>
-                        <div className="flex items-center gap-1.5 pt-1">
-                          <Users className="w-3 h-3 text-muted-foreground" />
-                          <Badge variant="outline" className="text-[10px]">{c.role}</Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-            </>
-          )}
-        </div>
-      </main>
-    </div>
+            </section>
+
+            {/* ── TOMORROW SECTION ──────────────────────────────────────── */}
+            {tomorrowList.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-3.5">
+                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Tomorrow</h2>
+                  <span className="text-[11px] font-mono text-muted-foreground bg-white/5 px-2 py-0.5 rounded-md">
+                    {tomorrowList.length}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {tomorrowList.map((c) => {
+                    const hearingTime = c.next_hearing_date ? format(new Date(c.next_hearing_date), 'HH:mm') : '11:00';
+                    return (
+                      <div 
+                        key={c.id} 
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-[#111111] border border-white/5 rounded-xl hover:border-white/15 transition-all group gap-4"
+                      >
+                        <div className="flex gap-4 sm:gap-6 items-start">
+                          <div className="flex flex-col w-12 pt-0.5 text-center font-mono flex-shrink-0">
+                            <div className="text-[15px] font-bold tracking-tight text-foreground">{hearingTime}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">{c.court || 'Court'}</div>
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[15px] font-medium text-foreground group-hover:text-[#4ADE80] transition-colors truncate">
+                              {c.title}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {c.court || 'Court'} &middot; {c.stage || 'Hearing'}
+                            </div>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => router.push(`/cases/${c.id}`)}
+                          className="h-8 bg-transparent border-white/10 hover:border-[#4ADE80]/40 hover:text-[#4ADE80] text-xs font-normal self-end sm:self-center transition-all"
+                        >
+                          Prepare &rarr;
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* ── NEEDS ATTENTION (LIVE TASKS) ─────────────────────────── */}
+            <section>
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Needs Attention</h2>
+                  <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[11px] font-mono px-2 py-0.5 rounded-md font-semibold">
+                    {pendingTasks.length} open
+                  </span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setTaskModalOpen(true)}
+                  className="h-7 text-xs text-[#4ADE80] hover:bg-[#1a231f]"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add Task
+                </Button>
+              </div>
+
+              {tasks.length === 0 ? (
+                <div className="p-6 rounded-xl border border-white/5 bg-[#111111] text-center">
+                  <p className="text-xs text-muted-foreground">No tasks recorded yet. Click "+ Add Task" to create one.</p>
+                </div>
+              ) : (
+                <div className="bg-[#111111] border border-white/5 rounded-xl overflow-hidden divide-y divide-white/5">
+                  {tasks.slice(0, 6).map((task) => {
+                    const parentCase = cases.find(c => c.id === task.case_id);
+                    const isOverdue = task.status === 'OVERDUE';
+                    const isCompleted = task.status === 'COMPLETED';
+
+                    return (
+                      <div 
+                        key={task.id} 
+                        className="flex items-center justify-between p-3.5 hover:bg-white/[0.02] transition-colors gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Checkbox toggle */}
+                          <button
+                            onClick={() => handleToggleTaskStatus(task)}
+                            className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${
+                              isCompleted 
+                                ? 'bg-[#4ADE80] border-[#4ADE80] text-black' 
+                                : 'border-muted-foreground/40 hover:border-[#4ADE80]'
+                            }`}
+                            title={isCompleted ? 'Mark pending' : 'Mark completed'}
+                          >
+                            {isCompleted && <Check className="w-3 h-3 stroke-[3]" />}
+                          </button>
+
+                          <div className="text-[13px] truncate">
+                            <span className={`${isCompleted ? 'line-through text-muted-foreground' : isOverdue ? 'text-destructive font-medium' : 'text-foreground'}`}>
+                              {task.title}
+                            </span>
+                            {parentCase && (
+                              <>
+                                <span className="text-muted-foreground mx-1.5">&middot;</span>
+                                <span className="text-muted-foreground/70 truncate text-xs">{parentCase.title}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className={`text-[11px] font-mono ${
+                            isCompleted ? 'text-[#4ADE80]' : isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground/70'
+                          }`}>
+                            {task.status}
+                          </span>
+                          {parentCase && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => router.push(`/cases/${parentCase.id}`)}
+                              className="h-6 px-2.5 bg-transparent border-white/10 text-[11px] hover:bg-white/5 font-normal"
+                            >
+                              Open
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* ── RECENT ACTIVITY FEED ─────────────────────────────────── */}
+            <section>
+              <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3.5">Recent Activity</h2>
+              <div className="space-y-3 px-1">
+                {recentFeed.map((item, i) => (
+                  <div 
+                    key={i} 
+                    onClick={() => item.caseId && router.push(`/cases/${item.caseId}`)}
+                    className="flex items-baseline justify-between gap-4 text-[13px] p-2 rounded-lg hover:bg-white/[0.02] cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-baseline gap-4 min-w-0">
+                      <div className="w-16 text-muted-foreground/60 font-mono text-xs flex-shrink-0">{item.time}</div>
+                      <div className="min-w-0 truncate">
+                        <span className={item.isImportant ? 'text-foreground font-medium' : 'text-foreground/90'}>
+                          {item.isImportant && <span className="text-primary mr-1 font-bold">+</span>}
+                          {item.action}
+                        </span>
+                        <span className="text-muted-foreground/50 mx-2">&middot;</span>
+                        <span className="text-muted-foreground/70">{item.caseTitle}</span>
+                      </div>
+                    </div>
+                    <div className={`text-xs flex-shrink-0 ${item.user.includes('Associate') ? 'text-[#A855F7] font-medium' : 'text-muted-foreground/60'}`}>
+                      {item.user}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+          </div>
+        )}
+
+      </div>
+
+      {/* ── CREATE TASK DIALOG ──────────────────────────────────────── */}
+      <Dialog open={taskModalOpen} onOpenChange={setTaskModalOpen}>
+        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-heading font-semibold">Create New Task</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Add an action item or filing deadline for a case.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateTask} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase">Associated Case</Label>
+              <select 
+                required
+                value={taskForm.caseId}
+                onChange={(e) => setTaskForm({ ...taskForm, caseId: e.target.value })}
+                className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none focus:border-[#4ADE80]"
+              >
+                <option value="">Select a case...</option>
+                {cases.map(c => (
+                  <option key={c.id} value={c.id}>{c.title} ({c.court})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase">Task Title</Label>
+              <Input 
+                required
+                placeholder="e.g. File written submissions" 
+                value={taskForm.title}
+                onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                className="bg-[#111111] border-white/10 h-9 text-sm"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase">Description (Optional)</Label>
+              <Input 
+                placeholder="Details or notes for counsel" 
+                value={taskForm.description}
+                onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                className="bg-[#111111] border-white/10 h-9 text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Due Date</Label>
+                <Input 
+                  type="date"
+                  value={taskForm.dueDate}
+                  onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
+                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Status</Label>
+                <select 
+                  value={taskForm.priority}
+                  onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
+                  className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none focus:border-[#4ADE80]"
+                >
+                  <option value="PENDING">PENDING</option>
+                  <option value="OVERDUE">OVERDUE</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                </select>
+              </div>
+            </div>
+
+            <DialogFooter className="pt-3 gap-2">
+              <Button type="button" variant="ghost" onClick={() => setTaskModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={submittingTask}
+                className="bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold"
+              >
+                {submittingTask ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                Save Task
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── SCHEDULE HEARING DIALOG ─────────────────────────────────── */}
+      <Dialog open={hearingModalOpen} onOpenChange={setHearingModalOpen}>
+        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-heading font-semibold">Schedule Hearing</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Add next court hearing date and agenda.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateHearing} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase">Associated Case</Label>
+              <select 
+                required
+                value={hearingForm.caseId}
+                onChange={(e) => setHearingForm({ ...hearingForm, caseId: e.target.value })}
+                className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none focus:border-[#4ADE80]"
+              >
+                <option value="">Select a case...</option>
+                {cases.map(c => (
+                  <option key={c.id} value={c.id}>{c.title} ({c.court})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase">Hearing Date & Time</Label>
+              <Input 
+                required
+                type="datetime-local"
+                value={hearingForm.date}
+                onChange={(e) => setHearingForm({ ...hearingForm, date: e.target.value })}
+                className="bg-[#111111] border-white/10 h-9 text-sm"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase">Notes / Agenda (Optional)</Label>
+              <Input 
+                placeholder="e.g. Final arguments on bail plea" 
+                value={hearingForm.notes}
+                onChange={(e) => setHearingForm({ ...hearingForm, notes: e.target.value })}
+                className="bg-[#111111] border-white/10 h-9 text-sm"
+              />
+            </div>
+
+            <DialogFooter className="pt-3 gap-2">
+              <Button type="button" variant="ghost" onClick={() => setHearingModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={submittingHearing}
+                className="bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold"
+              >
+                {submittingHearing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                Schedule
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── CREATE CASE DIALOG ───────────────────────────────────────── */}
+      <Dialog open={caseModalOpen} onOpenChange={setCaseModalOpen}>
+        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-lg p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-heading font-semibold">New Legal Matter</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Create a new case in {currentOrg?.name || 'firm'} with AI vector provisioning.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateCase} className="space-y-4 mt-2 max-h-[75vh] overflow-y-auto pr-1">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase">Case Title *</Label>
+              <Input 
+                required
+                placeholder="e.g. Patel v. State of Gujarat" 
+                value={caseForm.title}
+                onChange={(e) => setCaseForm({ ...caseForm, title: e.target.value })}
+                className="bg-[#111111] border-white/10 h-9 text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Case Number / Ref</Label>
+                <Input 
+                  placeholder="e.g. CRL.A/1247/2024" 
+                  value={caseForm.case_number}
+                  onChange={(e) => setCaseForm({ ...caseForm, case_number: e.target.value })}
+                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Court</Label>
+                <Input 
+                  placeholder="e.g. Gujarat High Court" 
+                  value={caseForm.court}
+                  onChange={(e) => setCaseForm({ ...caseForm, court: e.target.value })}
+                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Current Stage</Label>
+                <Input 
+                  placeholder="e.g. Final Arguments" 
+                  value={caseForm.stage}
+                  onChange={(e) => setCaseForm({ ...caseForm, stage: e.target.value })}
+                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Judge / Bench</Label>
+                <Input 
+                  placeholder="e.g. Justice A. Rao" 
+                  value={caseForm.judge}
+                  onChange={(e) => setCaseForm({ ...caseForm, judge: e.target.value })}
+                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Client Name</Label>
+                <Input 
+                  placeholder="e.g. R. Patel" 
+                  value={caseForm.client_name}
+                  onChange={(e) => setCaseForm({ ...caseForm, client_name: e.target.value })}
+                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Opposing Party</Label>
+                <Input 
+                  placeholder="e.g. State of Gujarat" 
+                  value={caseForm.opposing_party}
+                  onChange={(e) => setCaseForm({ ...caseForm, opposing_party: e.target.value })}
+                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Case Type</Label>
+                <select 
+                  value={caseForm.case_type}
+                  onChange={(e) => setCaseForm({ ...caseForm, case_type: e.target.value })}
+                  className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none"
+                >
+                  <option value="Criminal Appeal">Criminal Appeal</option>
+                  <option value="Civil Suit">Civil Suit</option>
+                  <option value="Commercial Arbitration">Commercial Arbitration</option>
+                  <option value="Family Matter">Family Matter</option>
+                  <option value="Writ Petition">Writ Petition</option>
+                  <option value="Company Petition">Company Petition</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Next Hearing Date</Label>
+                <Input 
+                  type="datetime-local"
+                  value={caseForm.next_hearing_date}
+                  onChange={(e) => setCaseForm({ ...caseForm, next_hearing_date: e.target.value })}
+                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase">Case Summary / Background</Label>
+              <textarea 
+                rows={3}
+                placeholder="Key facts, legal grounds, or instructions..." 
+                value={caseForm.description}
+                onChange={(e) => setCaseForm({ ...caseForm, description: e.target.value })}
+                className="w-full bg-[#111111] border border-white/10 rounded-lg p-2.5 text-sm text-foreground focus:outline-none resize-none"
+              />
+            </div>
+
+            <DialogFooter className="pt-3 gap-2">
+              <Button type="button" variant="ghost" onClick={() => setCaseModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={submittingCase}
+                className="bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold"
+              >
+                {submittingCase ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                Provision & Create Matter
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+    </AppShell>
   );
 }

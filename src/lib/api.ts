@@ -17,6 +17,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   const res = await fetch(`${API_BASE}${endpoint}`, {
+    cache: 'no-store',
     ...options,
     headers,
     credentials: 'include',
@@ -33,6 +34,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       localStorage.setItem('accessToken', data.data.accessToken);
       headers['Authorization'] = `Bearer ${data.data.accessToken}`;
       const retryRes = await fetch(`${API_BASE}${endpoint}`, {
+        cache: 'no-store',
         ...options,
         headers,
         credentials: 'include',
@@ -123,6 +125,8 @@ export const cases = {
 export const documents = {
   list: (caseId: string) =>
     request<any>(`/cases/${caseId}/documents`),
+  listOrgDocuments: (orgId: string) =>
+    request<any>(`/organisations/${orgId}/documents`),
   get: (caseId: string, resourceId: string) =>
     request<any>(`/cases/${caseId}/documents/${resourceId}`),
   create: (caseId: string, body: FormData | object) => {
@@ -256,10 +260,26 @@ export const chat = {
 
 // ── Hearings ──────────────────────────────────────────────────────
 export const hearings = {
+  list: async (caseId: string) => {
+    const res = await request<any>(`/cases/${caseId}/hearings`);
+    return { success: true, data: res.hearings || res.data || [] };
+  },
+  create: async (caseId: string, body: { date: string; notes?: string }) => {
+    const res = await request<any>(`/cases/${caseId}/hearings`, { method: 'POST', body: JSON.stringify(body) });
+    return { success: true, data: res.hearing || res.data };
+  },
+};
+
+// ── Tasks ─────────────────────────────────────────────────────────
+export const tasks = {
   list: (caseId: string) =>
-    request<any>(`/cases/${caseId}/hearings`),
-  create: (caseId: string, body: { date: string; notes?: string }) =>
-    request<any>(`/cases/${caseId}/hearings`, { method: 'POST', body: JSON.stringify(body) }),
+    request<any>(`/cases/${caseId}/tasks`),
+  create: (caseId: string, body: { title: string; description?: string; dueDate?: string; assignedTo?: string; status?: string }) =>
+    request<any>(`/cases/${caseId}/tasks`, { method: 'POST', body: JSON.stringify(body) }),
+  update: (caseId: string, taskId: string, body: any) =>
+    request<any>(`/cases/${caseId}/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  delete: (caseId: string, taskId: string) =>
+    request<any>(`/cases/${caseId}/tasks/${taskId}`, { method: 'DELETE' }),
 };
 
 // ── Tools ─────────────────────────────────────────────────────────
@@ -278,5 +298,35 @@ export const tools = {
   /** Copies a tool from another case into this case */
   import: (caseId: string, scriptId: string) =>
     request<any>(`/cases/${caseId}/tools/import`, { method: 'POST', body: JSON.stringify({ script_id: scriptId }) }),
+};
+
+// ── Calendar Docket ───────────────────────────────────────────────
+export const calendar = {
+  get: (orgId: string) =>
+    request<any>(`/organisations/${orgId}/calendar`),
+};
+
+// ── Notifications ─────────────────────────────────────────────────
+export const notifications = {
+  list: (params?: { orgId?: string; isRead?: boolean; type?: string; priority?: string; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.orgId) query.set('orgId', params.orgId);
+    if (params?.isRead !== undefined) query.set('isRead', String(params.isRead));
+    if (params?.type && params.type !== 'ALL') query.set('type', params.type);
+    if (params?.priority && params.priority !== 'ALL') query.set('priority', params.priority);
+    if (params?.limit) query.set('limit', String(params.limit));
+    const qs = query.toString();
+    return request<any>(`/notifications${qs ? `?${qs}` : ''}`);
+  },
+  markRead: (id: string) =>
+    request<any>(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markUnread: (id: string) =>
+    request<any>(`/notifications/${id}/unread`, { method: 'PATCH' }),
+  markAllRead: (orgId: string) =>
+    request<any>(`/notifications/mark-all-read`, { method: 'POST', body: JSON.stringify({ orgId }) }),
+  delete: (id: string) =>
+    request<any>(`/notifications/${id}`, { method: 'DELETE' }),
+  sync: (orgId: string) =>
+    request<any>(`/notifications/sync`, { method: 'POST', body: JSON.stringify({ orgId }) }),
 };
 
