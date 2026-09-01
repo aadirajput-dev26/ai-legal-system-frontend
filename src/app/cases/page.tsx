@@ -569,8 +569,7 @@ export default function CasesPage() {
                   <div 
                     key={c.id}
                     onClick={() => {
-                      setSelectedCaseId(c.id);
-                      setMobilePreviewOpen(true);
+                      router.push(`/cases/${c.id}`);
                     }}
                     className={`
                       p-3.5 rounded-xl cursor-pointer transition-all text-[13px] border
@@ -724,12 +723,12 @@ export default function CasesPage() {
                 </div>
               </div>
 
-              {/* AI Summary / Description Block */}
-              <div className="bg-[#14101e] border border-[#A855F7]/30 rounded-xl p-4 relative overflow-hidden">
+              {/* AI Summary / Description Block — compact */}
+              <div className="bg-[#14101e] border border-[#A855F7]/30 rounded-xl p-3 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#A855F7]/50"></div>
-                <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#A855F7]" />
+                    <Sparkles className="w-3 h-3 text-[#A855F7]" />
                     <span className="text-[10px] font-bold text-[#A855F7] tracking-widest uppercase">Summary & Facts</span>
                   </div>
                   <button 
@@ -739,10 +738,11 @@ export default function CasesPage() {
                     Edit
                   </button>
                 </div>
-                <p className="text-[13px] leading-relaxed text-foreground/90 font-serif">
+                <p className="text-[11px] leading-relaxed text-foreground/80 font-serif line-clamp-3">
                   {selectedCase.description || 'No background description provided yet. Click edit to add facts and legal issues.'}
                 </p>
               </div>
+
 
               {/* Metadata Key-Value Grid */}
               <div>

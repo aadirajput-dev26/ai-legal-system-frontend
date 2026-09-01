@@ -226,6 +226,26 @@
   }
 }
 
+/* ── Date/Time Input Picker Icon Fix (dark theme) ─────────────────── */
+/* Makes browser-rendered calendar/clock picker icon clearly visible on dark backgrounds */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  filter: brightness(0) invert(1);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+  padding-left: 4px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="month"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 /* ── Custom Sleek Scrollbar Styling ──────────────────────────────── */
 ::-webkit-scrollbar {
   width: 5px;
