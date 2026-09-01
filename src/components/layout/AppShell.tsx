@@ -24,6 +24,8 @@ import {
   RefreshCw,
   Plus,
   LayoutDashboard,
+  Cpu,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,7 +41,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { chat as chatApi } from '@/lib/api';
+import { chat as chatApi, tools as toolsApi, cases as casesApi } from '@/lib/api';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -55,6 +57,77 @@ interface ChatMessage {
   chips?: string[];
 }
 
+/** Lightweight markdown → JSX renderer (no external deps) */
+function renderMarkdown(text: string) {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  const parseInline = (line: string): React.ReactNode => {
+    // Bold **text** and *italic*
+    const parts = line.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={idx} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>;
+      } else if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
+        return <em key={idx} className="italic">{part.slice(1, -1)}</em>;
+      } else if (part.startsWith('`') && part.endsWith('`')) {
+        return <code key={idx} className="bg-white/10 text-[#A855F7] px-1 py-0.5 rounded text-[11px] font-mono">{part.slice(1, -1)}</code>;
+      }
+      return part;
+    });
+  };
+
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) {
+      elements.push(<div key={i} className="h-1.5" />);
+      i++;
+      continue;
+    }
+    // Heading
+    if (/^#{1,3}\s/.test(line)) {
+      const level = line.match(/^(#{1,3})/)![1].length;
+      const content = line.replace(/^#{1,3}\s/, '');
+      const cls = level === 1 ? 'text-sm font-bold text-foreground mt-1' : level === 2 ? 'text-xs font-bold text-foreground/90 mt-1' : 'text-xs font-semibold text-foreground/80 mt-0.5';
+      elements.push(<div key={i} className={cls}>{parseInline(content)}</div>);
+      i++;
+      continue;
+    }
+    // Bullet list
+    if (/^[-*+]\s/.test(line)) {
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && /^[-*+]\s/.test(lines[i])) {
+        items.push(<li key={i} className="flex gap-1.5 items-start"><span className="text-[#A855F7] mt-0.5 flex-shrink-0">•</span><span>{parseInline(lines[i].replace(/^[-*+]\s/, ''))}</span></li>);
+        i++;
+      }
+      elements.push(<ul key={`ul-${i}`} className="space-y-0.5 my-1">{items}</ul>);
+      continue;
+    }
+    // Numbered list
+    if (/^\d+\.\s/.test(line)) {
+      const items: React.ReactNode[] = [];
+      let num = 1;
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        items.push(<li key={i} className="flex gap-1.5 items-start"><span className="text-[#A855F7] font-mono text-[11px] mt-0.5 flex-shrink-0 w-4">{num}.</span><span>{parseInline(lines[i].replace(/^\d+\.\s/, ''))}</span></li>);
+        i++; num++;
+      }
+      elements.push(<ol key={`ol-${i}`} className="space-y-0.5 my-1">{items}</ol>);
+      continue;
+    }
+    // Horizontal rule
+    if (/^---+$/.test(line.trim())) {
+      elements.push(<hr key={i} className="border-white/10 my-2" />);
+      i++;
+      continue;
+    }
+    // Regular paragraph
+    elements.push(<p key={i} className="leading-relaxed">{parseInline(line)}</p>);
+    i++;
+  }
+  return <>{elements}</>;
+}
+
 export function AppShell({ children, caseId }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -66,6 +139,15 @@ export function AppShell({ children, caseId }: AppShellProps) {
   const [mobileAssociateOpen, setMobileAssociateOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatInput, setChatInput] = useState('');
+
+  // Tools panel state
+  const [toolsPanelOpen, setToolsPanelOpen] = useState(false);
+  const [orgTools, setOrgTools] = useState<any[]>([]);
+  const [orgCases, setOrgCases] = useState<any[]>([]);
+  const [loadingOrgTools, setLoadingOrgTools] = useState(false);
+  const [importingToolId, setImportingToolId] = useState<string | null>(null);
+  const [toolCaseSelections, setToolCaseSelections] = useState<Record<string, string>>({});
+  const [importSuccessIds, setImportSuccessIds] = useState<Set<string>>(new Set());
 
   // Auto-open Associate panel on case detail pages
   useEffect(() => {
@@ -90,6 +172,60 @@ export function AppShell({ children, caseId }: AppShellProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
+
+  // Fetch org tools and cases for Tools panel
+  const openToolsPanel = useCallback(async () => {
+    setToolsPanelOpen(true);
+    if (orgTools.length > 0) return; // already loaded
+    if (!currentOrg?.id) return;
+    setLoadingOrgTools(true);
+    try {
+      const [toolsRes, casesRes] = await Promise.allSettled([
+        // List all tools across org — we use listImportable with a dummy placeholder
+        // Actually we list cases, then collect their tools
+        casesApi.list(currentOrg.id),
+        casesApi.list(currentOrg.id),
+      ]);
+      if (casesRes.status === 'fulfilled') {
+        const casesList = casesRes.value.data || [];
+        setOrgCases(casesList);
+        // Gather all tools across all cases
+        const allToolsMap: Record<string, any> = {};
+        await Promise.allSettled(
+          casesList.slice(0, 10).map(async (c: any) => {
+            try {
+              const res = await toolsApi.list(c.id);
+              const caseToolsList = res.data || res.tools || res || [];
+              caseToolsList.forEach((t: any) => {
+                if (t.script_id && !allToolsMap[t.script_id]) {
+                  allToolsMap[t.script_id] = { ...t, sourceCaseId: c.id, sourceCaseTitle: c.title };
+                }
+              });
+            } catch {}
+          })
+        );
+        setOrgTools(Object.values(allToolsMap));
+      }
+    } catch (err) {
+      console.error('Failed to load org tools:', err);
+    } finally {
+      setLoadingOrgTools(false);
+    }
+  }, [currentOrg?.id, orgTools.length]);
+
+  const handleImportToolToCase = async (scriptId: string) => {
+    const targetCaseId = toolCaseSelections[scriptId];
+    if (!targetCaseId) return;
+    setImportingToolId(scriptId);
+    try {
+      await toolsApi.import(targetCaseId, scriptId);
+      setImportSuccessIds(prev => new Set(prev).add(`${scriptId}-${targetCaseId}`));
+    } catch (err) {
+      console.error('Failed to import tool:', err);
+    } finally {
+      setImportingToolId(null);
+    }
+  };
 
   // Fetch unread notification count
   useEffect(() => {
@@ -379,6 +515,28 @@ export function AppShell({ children, caseId }: AppShellProps) {
               </Link>
             );
           })}
+
+          {/* Tools — opens panel instead of navigating */}
+          <button
+            onClick={() => { setMobileMenuOpen(false); openToolsPanel(); }}
+            className="relative group w-full flex items-center justify-center"
+          >
+            <div className={`
+              p-3 rounded-xl transition-all duration-200 flex items-center gap-3 w-full
+              ${mobileMenuOpen ? 'justify-start' : 'justify-center'}
+              ${toolsPanelOpen
+                ? 'bg-purple-500/10 text-[#A855F7] font-medium shadow-[inset_0_0_0_1px_rgba(168,85,247,0.25)]'
+                : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}
+            `}>
+              <Cpu className="w-5 h-5 flex-shrink-0" />
+              {mobileMenuOpen && <span className="text-sm">Tools</span>}
+            </div>
+            {!mobileMenuOpen && (
+              <div className="absolute left-14 bg-popover text-popover-foreground text-xs px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg border border-border">
+                Tools
+              </div>
+            )}
+          </button>
         </nav>
 
         {/* Bottom Nav + Profile */}
@@ -552,7 +710,9 @@ export function AppShell({ children, caseId }: AppShellProps) {
                         ? 'bg-[#1a231f] text-[#4ADE80] border border-[#2D4537]'
                         : 'bg-[#16161a] text-foreground/90 border border-white/5'}
                     `}>
-                      {msg.text || (msg.streaming ? '' : '…')}
+                      {msg.role === 'assistant' && msg.text
+                        ? renderMarkdown(msg.text)
+                        : (msg.text || (msg.streaming ? '' : '…'))}
                       {msg.streaming && (
                         <span className="inline-block w-1.5 h-4 bg-[#A855F7] ml-0.5 animate-pulse align-middle rounded-sm" />
                       )}
@@ -635,6 +795,126 @@ export function AppShell({ children, caseId }: AppShellProps) {
             <span className="text-xs font-medium">Associate</span>
           </button>
         )
+      )}
+
+      {/* ── Tools Panel Slide-Over ──────────────────────────────────── */}
+      {toolsPanelOpen && (
+        <div className="fixed inset-y-0 left-16 z-40 w-[360px] bg-[#111111] border-r border-border flex flex-col shadow-2xl animate-in slide-in-from-left-2 duration-200">
+          {/* Header */}
+          <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-[#A855F7]" />
+              <span className="text-sm font-semibold text-foreground">Org Tools</span>
+              {orgTools.length > 0 && (
+                <span className="text-[10px] font-mono bg-purple-500/10 text-[#A855F7] px-1.5 py-0.5 rounded-md">{orgTools.length}</span>
+              )}
+            </div>
+            <button
+              onClick={() => setToolsPanelOpen(false)}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Description */}
+          <div className="px-4 py-3 border-b border-white/5">
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Import automation tools from your organization into specific cases. Select a case for each tool and click Import.
+            </p>
+          </div>
+
+          {/* Tools List */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {loadingOrgTools ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                <Loader2 className="w-6 h-6 animate-spin text-[#A855F7]" />
+                <span className="text-xs">Loading organization tools…</span>
+              </div>
+            ) : orgTools.length === 0 ? (
+              <div className="py-16 text-center">
+                <Cpu className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+                <p className="text-xs text-muted-foreground font-medium">No tools configured yet</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1">Create tools from a case's Tools tab to see them here.</p>
+              </div>
+            ) : (
+              orgTools.map((tool, idx) => {
+                const selectionKey = tool.script_id || idx;
+                const selectedCaseId = toolCaseSelections[selectionKey] || '';
+                const isImporting = importingToolId === selectionKey;
+                const importKey = `${selectionKey}-${selectedCaseId}`;
+                const isImported = importSuccessIds.has(importKey);
+
+                return (
+                  <div key={selectionKey} className="p-3 bg-[#16161a] border border-white/5 rounded-xl hover:border-purple-500/20 transition-colors">
+                    <div className="flex items-start gap-2.5 mb-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
+                        <Cpu className="w-3.5 h-3.5 text-purple-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold text-foreground truncate">{tool.title || 'Untitled Tool'}</div>
+                        <div className="text-[10px] text-muted-foreground truncate mt-0.5">{tool.description || 'No description'}</div>
+                        {tool.sourceCaseTitle && (
+                          <div className="text-[10px] text-purple-400/70 mt-0.5">From: {tool.sourceCaseTitle}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Case selector + Import button */}
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={selectedCaseId}
+                        onChange={(e) => setToolCaseSelections(prev => ({ ...prev, [selectionKey]: e.target.value }))}
+                        className="flex-1 bg-[#111111] border border-white/10 rounded-lg px-2 py-1.5 text-[11px] text-foreground focus:outline-none focus:border-purple-500/40 cursor-pointer"
+                      >
+                        <option value="">Select a case…</option>
+                        {orgCases.map((c: any) => (
+                          <option key={c.id} value={c.id} className="bg-[#16161a]">
+                            {c.title}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        disabled={!selectedCaseId || isImporting || isImported}
+                        onClick={() => handleImportToolToCase(selectionKey)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all flex-shrink-0 ${
+                          isImported
+                            ? 'bg-[#1a231f] text-[#4ADE80] border border-[#4ADE80]/30 cursor-default'
+                            : !selectedCaseId || isImporting
+                            ? 'bg-white/5 text-muted-foreground cursor-not-allowed'
+                            : 'bg-purple-600 hover:bg-purple-500 text-white cursor-pointer'
+                        }`}
+                      >
+                        {isImporting ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : isImported ? (
+                          <span>✓ Done</span>
+                        ) : (
+                          <><Download className="w-3 h-3" /> Import</>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-3 border-t border-white/5 flex-shrink-0">
+            <p className="text-[10px] text-muted-foreground/60 text-center">
+              Tools are automation scripts powered by ViaSocket integrations.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Tools Panel Backdrop */}
+      {toolsPanelOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/30"
+          onClick={() => setToolsPanelOpen(false)}
+        />
       )}
 
       {/* ── Mobile Associate Slide-Over ──────────────────────────────── */}

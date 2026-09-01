@@ -112,6 +112,7 @@ export default function CaseDetailPage() {
   const [editingInstructions, setEditingInstructions] = useState(false);
   const [tempInstructions, setTempInstructions] = useState('');
   const [savingInstructions, setSavingInstructions] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
 
   // Edit Document Form states
   const [editDocModalOpen, setEditDocModalOpen] = useState(false);
@@ -224,6 +225,28 @@ export default function CaseDetailPage() {
       fetchToolsData();
     } catch (err) {
       console.error('Failed to delete tool:', err);
+    }
+  };
+
+  const handleRunTool = async (tool: any) => {
+    if (!tool.webhook_url) {
+      alert('This tool does not have a webhook URL configured.');
+      return;
+    }
+    try {
+      const res = await fetch(tool.webhook_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caseId, triggeredBy: 'manual', timestamp: new Date().toISOString() }),
+      });
+      if (res.ok) {
+        alert(`✓ Tool "${tool.title || 'Tool'}" triggered successfully.`);
+      } else {
+        alert(`Failed to trigger tool: ${res.status} ${res.statusText}`);
+      }
+    } catch (err) {
+      console.error('Failed to run tool:', err);
+      alert('Network error while triggering the tool webhook.');
     }
   };
 
@@ -487,8 +510,8 @@ export default function CaseDetailPage() {
     { id: 'Overview', count: null },
     { id: 'Hearings', count: hearings.length },
     { id: 'Documents', count: documents.length },
-    { id: 'Tasks', count: tasks.length },
     { id: 'Tools', count: caseTools.length },
+    { id: 'Tasks', count: tasks.length },
   ];
 
   if (loading) {
@@ -634,27 +657,43 @@ export default function CaseDetailPage() {
             
             {/* Left Column */}
             <div className="space-y-6">
-              {/* Summary Block */}
-              <div className="bg-[#14101e] border border-[#A855F7]/30 rounded-xl p-5 relative overflow-hidden">
+              {/* Summary Block — collapsed by default */}
+              <div className="bg-[#14101e] border border-[#A855F7]/30 rounded-xl overflow-hidden relative">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#A855F7]/50"></div>
-                <div className="flex items-center justify-between mb-3">
+                <div
+                  className="flex items-center justify-between px-4 py-2.5 cursor-pointer select-none"
+                  onClick={() => setShowSummary(v => !v)}
+                >
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#A855F7]" />
-                    <span className="text-[10px] font-bold text-[#A855F7] tracking-widest uppercase">Summary & Facts</span>
+                    <Sparkles className="w-3.5 h-3.5 text-[#A855F7]" />
+                    <span className="text-[10px] font-bold text-[#A855F7] tracking-widest uppercase">Summary &amp; Facts</span>
+                    {caseData.description && !showSummary && (
+                      <span className="text-[10px] text-muted-foreground/60 font-normal ml-1 truncate max-w-[200px] hidden sm:inline">
+                        {caseData.description.slice(0, 65)}{caseData.description.length > 65 ? '…' : ''}
+                      </span>
+                    )}
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleOpenEdit}
-                    className="h-6 text-[11px] bg-transparent border-white/10 hover:bg-white/5"
-                  >
-                    Edit
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handleOpenEdit(); }}
+                      className="h-5 text-[10px] bg-transparent border-white/10 hover:bg-white/5 px-2 py-0"
+                    >
+                      Edit
+                    </Button>
+                    <span className={`text-muted-foreground text-[10px] transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`}>▼</span>
+                  </div>
                 </div>
-                <p className="text-[14px] leading-relaxed text-foreground/90 font-serif">
-                  {caseData.description || 'No description provided. Click edit to provide legal issues, key grounds, and client background.'}
-                </p>
+                {showSummary && (
+                  <div className="px-4 pb-3 pt-0 border-t border-[#A855F7]/10">
+                    <p className="text-[12px] leading-relaxed text-foreground/85 font-serif mt-2">
+                      {caseData.description || 'No description provided. Click edit to provide legal issues, key grounds, and client background.'}
+                    </p>
+                  </div>
+                )}
               </div>
+
 
               {/* AI Instructions Block */}
               <div className="bg-[#14101e] border border-[#A855F7]/30 rounded-xl p-5 relative overflow-hidden mt-6">
@@ -1044,36 +1083,25 @@ export default function CaseDetailPage() {
           </div>
         )}
 
-        {/* ── Tab: Tools ────────────────────────────────────────────── */}
+            {/* ── Tab: Tools ────────────────────────────────────────────── */}
         {activeTab === 'Tools' && (
           <div className="space-y-4 max-w-3xl animate-in fade-in duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-foreground">API Tools & Integrations</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Automate filings, notifications, or scrape judicial records using custom integrations.</p>
+                <h3 className="text-sm font-semibold text-foreground">Automation Tools</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Tools imported into this case from your organization's tool library.</p>
               </div>
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => {
-                    fetchImportableTools();
-                    setImportModalOpen(true);
-                  }} 
-                  className="h-8 text-xs border-white/10 hover:bg-white/5 bg-[#111111]"
-                >
-                  Import Tool
-                </Button>
-                <Button 
-                  size="sm" 
-                  onClick={() => handleLaunchViasocket(undefined)} 
-                  disabled={launchingViasocket}
-                  className="h-8 bg-[#4ADE80] text-black font-semibold text-xs hover:bg-[#34d399]"
-                >
-                  {launchingViasocket ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Plus className="w-3.5 h-3.5 mr-1" />}
-                  Create Tool
-                </Button>
-              </div>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => {
+                  fetchImportableTools();
+                  setImportModalOpen(true);
+                }} 
+                className="h-8 text-xs border-purple-500/30 bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 hover:border-purple-500/50"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Import Tool
+              </Button>
             </div>
 
             {loadingTools ? (
@@ -1084,52 +1112,67 @@ export default function CaseDetailPage() {
             ) : caseTools.length === 0 ? (
               <div className="p-8 rounded-xl border border-white/5 bg-[#111111] text-center">
                 <Cpu className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">No automated tools configured for this case.</p>
+                <p className="text-xs text-muted-foreground mb-3">No tools imported into this case yet.</p>
                 <Button 
                   size="sm" 
-                  onClick={() => handleLaunchViasocket(undefined)}
-                  className="mt-3.5 bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs h-8 px-4 rounded-lg"
+                  onClick={() => { fetchImportableTools(); setImportModalOpen(true); }}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs h-8 px-4 rounded-lg"
                 >
-                  Add integration
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Import Tool
                 </Button>
               </div>
             ) : (
               <div className="space-y-3">
                 {caseTools.map((tool, idx) => (
-                  <div key={tool.id || idx} className="p-4 bg-[#111111] border border-white/5 rounded-xl flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
-                        <Cpu className="w-4 h-4 text-purple-400" />
+                  <div key={tool.id || idx} className="p-4 bg-[#111111] border border-white/5 rounded-xl hover:border-purple-500/20 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
+                          <Cpu className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-foreground truncate">{tool.title || 'Untitled Integration'}</div>
+                          <div className="text-xs text-muted-foreground truncate mt-0.5">{tool.description || 'No description provided.'}</div>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-foreground truncate">{tool.title || 'Untitled Integration'}</div>
-                        <div className="text-xs text-muted-foreground truncate mt-0.5">{tool.description || 'No description provided.'}</div>
-                        {tool.webhook_url && (
-                          <div className="text-[10px] text-muted-foreground/70 font-mono mt-1 select-all truncate bg-white/5 px-2 py-0.5 rounded border border-white/5 inline-block">
-                            {tool.webhook_url}
-                          </div>
-                        )}
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-2.5 flex-shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleLaunchViasocket(tool.script_id)}
-                        className="text-xs text-[#4ADE80] hover:text-[#4ADE80]/80 hover:bg-[#4ADE80]/10 h-7 px-2.5 rounded-lg border border-[#4ADE80]/20"
-                      >
-                        Edit Embed
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteTool(tool.script_id)}
-                        className="w-7 h-7 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {tool.webhook_url && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRunTool(tool)}
+                            className="text-xs text-[#4ADE80] hover:text-[#4ADE80]/80 hover:bg-[#4ADE80]/10 h-7 px-2.5 rounded-lg border border-[#4ADE80]/20 font-semibold"
+                          >
+                            ▶ Run
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleLaunchViasocket(tool.script_id)}
+                          className="text-xs text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 h-7 px-2.5 rounded-lg border border-purple-500/20"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteTool(tool.script_id)}
+                          className="w-7 h-7 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
+                    {tool.webhook_url && (
+                      <div className="mt-2.5 ml-12">
+                        <div className="text-[10px] text-muted-foreground/60 font-mono truncate bg-white/5 px-2 py-1 rounded border border-white/5 select-all flex items-center gap-1.5">
+                          <ExternalLink className="w-2.5 h-2.5 flex-shrink-0" />
+                          {tool.webhook_url}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
