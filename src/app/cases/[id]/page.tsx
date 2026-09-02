@@ -1091,17 +1091,27 @@ export default function CaseDetailPage() {
                 <h3 className="text-sm font-semibold text-foreground">Automation Tools</h3>
                 <p className="text-[11px] text-muted-foreground mt-0.5">Tools imported into this case from your organization's tool library.</p>
               </div>
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={() => {
-                  fetchImportableTools();
-                  setImportModalOpen(true);
-                }} 
-                className="h-8 text-xs border-purple-500/30 bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 hover:border-purple-500/50"
-              >
-                <Plus className="w-3.5 h-3.5 mr-1" /> Import Tool
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => router.push('/tools')}
+                  className="h-8 text-xs border-white/10 bg-transparent text-muted-foreground hover:text-foreground hover:bg-white/5"
+                >
+                  Manage All Tools
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    fetchImportableTools();
+                    setImportModalOpen(true);
+                  }} 
+                  className="h-8 text-xs border-purple-500/30 bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 hover:border-purple-500/50"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Import Tool
+                </Button>
+              </div>
             </div>
 
             {loadingTools ? (
@@ -1112,15 +1122,26 @@ export default function CaseDetailPage() {
             ) : caseTools.length === 0 ? (
               <div className="p-8 rounded-xl border border-white/5 bg-[#111111] text-center">
                 <Cpu className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground mb-3">No tools imported into this case yet.</p>
-                <Button 
-                  size="sm" 
-                  onClick={() => { fetchImportableTools(); setImportModalOpen(true); }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs h-8 px-4 rounded-lg"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1" /> Import Tool
-                </Button>
+                <p className="text-xs text-muted-foreground mb-4">No tools imported into this case yet.</p>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <Button 
+                    size="sm" 
+                    onClick={() => { fetchImportableTools(); setImportModalOpen(true); }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs h-8 px-4 rounded-lg"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Import Tool
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => router.push('/tools')}
+                    className="text-xs h-8 px-4 border-white/10 text-muted-foreground hover:text-foreground"
+                  >
+                    Create New Tool
+                  </Button>
+                </div>
               </div>
+
             ) : (
               <div className="space-y-3">
                 {caseTools.map((tool, idx) => (
