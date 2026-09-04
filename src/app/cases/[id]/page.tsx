@@ -190,6 +190,13 @@ export default function CaseDetailPage() {
         loadScript(token, () => {
           if (window.openViasocket) {
             window.openViasocket(scriptId, {
+              theme: {
+                "--col-home-page": "#111114",
+                "--col-primary-button": "rgb(45, 69, 55)",
+                "--col-primary-button-text": "rgb(74, 222, 128)",
+                "--font-family-content": "'Inter', sans-serif",
+                "--font-family-headings": "'Outfit', sans-serif"
+              },
               metadata: {
                 caseId,
                 organisationId: currentOrg?.id

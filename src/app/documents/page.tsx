@@ -84,11 +84,15 @@ export default function DocumentsPage() {
   const [editForm, setEditForm] = useState({
     id: '',
     caseId: '',
+    type: '',
     title: '',
     description: '',
-    content: ''
+    content: '',
+    url: ''
   });
+  const [editReplacementFile, setEditReplacementFile] = useState<File | null>(null);
   const [submittingEdit, setSubmittingEdit] = useState(false);
+  const [editSuccess, setEditSuccess] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
@@ -204,13 +208,44 @@ export default function DocumentsPage() {
 
     try {
       setSubmittingEdit(true);
-      await docsApi.update(editForm.caseId, editForm.id, {
-        title: editForm.title,
-        description: editForm.description,
-        content: editForm.content
-      });
-      setEditModalOpen(false);
-      await fetchOrgDocuments();
+
+      let body: FormData | object;
+
+      if (editForm.type === 'PDF' && editReplacementFile) {
+        // PDF replacement — send as multipart/form-data
+        const fd = new FormData();
+        fd.append('title', editForm.title);
+        fd.append('description', editForm.description);
+        fd.append('type', 'PDF');
+        fd.append('file', editReplacementFile);
+        body = fd;
+      } else if (editForm.type === 'LINK') {
+        body = { title: editForm.title, description: editForm.description, type: 'LINK', url: editForm.url };
+      } else if (editForm.type === 'TEXT') {
+        body = { title: editForm.title, description: editForm.description, type: 'TEXT', content: editForm.content };
+      } else {
+        // Metadata-only update
+        body = { title: editForm.title, description: editForm.description };
+      }
+
+      const result = await docsApi.update(editForm.caseId, editForm.id, body as any);
+
+      // Optimistic UI: immediately swap the old doc with the returned resource
+      if (result?.resource) {
+        setDocuments(prev => prev.map(d =>
+          (d.id || d._id) === editForm.id
+            ? { ...d, ...(result.resource), type: editForm.type as any }
+            : d
+        ));
+      }
+
+      setEditSuccess(true);
+      setTimeout(() => {
+        setEditModalOpen(false);
+        setEditSuccess(false);
+        setEditReplacementFile(null);
+        fetchOrgDocuments();
+      }, 800);
     } catch (err) {
       console.error('Failed to update document:', err);
     } finally {
@@ -571,10 +606,13 @@ export default function DocumentsPage() {
                           setEditForm({
                             id: doc.id || doc._id || '',
                             caseId: doc.case_id || '',
+                            type: doc.type || '',
                             title: doc.title || '',
                             description: doc.description || '',
                             content: doc.content || '',
+                            url: doc.url || '',
                           });
+                          setEditReplacementFile(null);
                           setEditModalOpen(true);
                         }}
                         className="w-7 h-7 text-muted-foreground hover:text-purple-400"
@@ -808,13 +846,13 @@ export default function DocumentsPage() {
         </Dialog>
       )}
 
-      {/* ── EDIT DOCUMENT MODAL ────────────────────────────────────────── */}
-      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+      {/* ── EDIT DOCUMENT MODAL ─────────────────────────────────────── */}
+      <Dialog open={editModalOpen} onOpenChange={(open) => { setEditModalOpen(open); if (!open) { setEditReplacementFile(null); setEditSuccess(false); } }}>
         <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-lg p-6">
           <DialogHeader>
-            <DialogTitle className="text-xl font-heading font-semibold">Edit Document details</DialogTitle>
+            <DialogTitle className="text-xl font-heading font-semibold">Update Document</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Modify index keywords, description, or transcript content.
+              Update metadata, replace text content, swap the link URL, or upload a new PDF file.
             </DialogDescription>
           </DialogHeader>
 
@@ -838,42 +876,73 @@ export default function DocumentsPage() {
               />
             </div>
 
-            {selectedDoc?.type === 'TEXT' ? (
+            {/* TEXT: Replace full content */}
+            {editForm.type === 'TEXT' && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Content / Transcript *</Label>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Content / Transcript</Label>
+                <div className="text-[10px] text-amber-400/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-2.5 py-1.5">
+                  ⚠️ Editing this will re-index the document in the AI knowledge base.
+                </div>
                 <textarea
-                  required
                   rows={6}
                   value={editForm.content}
                   onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
                   className="w-full bg-[#111111] border border-white/10 rounded-lg p-2.5 text-sm text-foreground focus:outline-none resize-none font-sans leading-relaxed"
                 />
               </div>
-            ) : selectedDoc?.type === 'PDF' ? (
+            )}
+
+            {/* LINK: Replace URL */}
+            {editForm.type === 'LINK' && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground/60 uppercase">Document PDF URL (Read Only)</Label>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Replace Link URL</Label>
+                <div className="text-[10px] text-amber-400/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-2.5 py-1.5">
+                  ⚠️ Changing the URL will re-crawl and re-index the page in the knowledge base.
+                </div>
                 <Input
-                  disabled
-                  value={selectedDoc.url || selectedDoc.content || ''}
-                  className="bg-[#111111]/50 border-white/5 h-9 text-xs text-muted-foreground/80 cursor-not-allowed select-all"
+                  type="url"
+                  value={editForm.url}
+                  onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
+                  placeholder="https://indiankanoon.org/doc/..."
+                  className="bg-[#111111] border-white/10 h-9 text-sm"
                 />
               </div>
-            ) : selectedDoc?.type === 'LINK' ? (
+            )}
+
+            {/* PDF: Upload replacement file */}
+            {editForm.type === 'PDF' && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground/60 uppercase">Indexed Link URL (Read Only)</Label>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase">Replace PDF File</Label>
+                <div className="text-[10px] text-amber-400/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-2.5 py-1.5">
+                  ⚠️ Uploading a new file will replace the old document and re-index it. Leave blank to update metadata only.
+                </div>
                 <Input
-                  disabled
-                  value={selectedDoc.url || selectedDoc.content || ''}
-                  className="bg-[#111111]/50 border-white/5 h-9 text-xs text-muted-foreground/80 cursor-not-allowed select-all"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => setEditReplacementFile(e.target.files?.[0] || null)}
+                  className="w-full bg-[#111111] border-white/10 h-9 text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-white/10 file:text-foreground hover:file:bg-white/15 cursor-pointer pt-1"
                 />
+                {editReplacementFile && (
+                  <div className="text-[11px] text-[#4ADE80] flex items-center gap-1.5">
+                    <span>✓</span> {editReplacementFile.name} selected
+                  </div>
+                )}
               </div>
-            ) : null}
+            )}
 
             <DialogFooter className="pt-2 gap-2">
               <Button type="button" variant="ghost" onClick={() => setEditModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={submittingEdit} className="bg-[#4ADE80] text-black font-semibold">
+              <Button
+                type="submit"
+                disabled={submittingEdit}
+                className={`font-semibold transition-all ${
+                  editSuccess
+                    ? 'bg-[#1a231f] text-[#4ADE80] border border-[#4ADE80]/30'
+                    : 'bg-[#4ADE80] text-black'
+                }`}
+              >
                 {submittingEdit ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                Save changes
+                {editSuccess ? '✓ Updated!' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </form>
