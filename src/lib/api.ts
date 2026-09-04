@@ -135,8 +135,12 @@ export const documents = {
     }
     return request<any>(`/cases/${caseId}/documents`, { method: 'POST', body: JSON.stringify(body) });
   },
-  update: (caseId: string, resourceId: string, body: { title: string; description?: string; type?: string; content?: string }) =>
-    request<any>(`/cases/${caseId}/documents/${resourceId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  update: (caseId: string, resourceId: string, body: FormData | { title: string; description?: string; type?: string; content?: string; url?: string }) => {
+    if (body instanceof FormData) {
+      return request<any>(`/cases/${caseId}/documents/${resourceId}`, { method: 'PATCH', body });
+    }
+    return request<any>(`/cases/${caseId}/documents/${resourceId}`, { method: 'PATCH', body: JSON.stringify(body) });
+  },
   delete: (caseId: string, resourceId: string) =>
     request<any>(`/cases/${caseId}/documents/${resourceId}`, { method: 'DELETE' }),
 };
