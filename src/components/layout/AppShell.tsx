@@ -151,6 +151,7 @@ export function AppShell({ children, caseId }: AppShellProps) {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatInitialized, setChatInitialized] = useState(false);
   const [sending, setSending] = useState(false);
+  const [legalUpdates, setLegalUpdates] = useState<any[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -256,6 +257,16 @@ export function AppShell({ children, caseId }: AppShellProps) {
 
     setChatInput('');
     setSending(true);
+    setLegalUpdates([]); // Reset updates each time
+
+    // Fetch legal updates in parallel independently
+    chatApi.getLegalUpdates().then((res) => {
+      if (res && res.updates && res.updates.length > 0) {
+        setLegalUpdates(res.updates);
+      }
+    }).catch((err) => {
+      console.error('Failed to fetch legal updates', err);
+    });
 
     // Add user message immediately
     const userMsgId = Date.now().toString();
@@ -623,9 +634,34 @@ export function AppShell({ children, caseId }: AppShellProps) {
                     `}>
                       {msg.role === 'assistant' && msg.text
                         ? renderMarkdown(msg.text)
-                        : (msg.text || (msg.streaming ? '' : '…'))}
+                        : (msg.text || (msg.streaming && legalUpdates.length === 0 ? '' : '…'))}
+                      
+                      {msg.streaming && !msg.text && legalUpdates.length > 0 && (
+                        <div className="mt-3 mb-2 space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-[#A855F7]">
+                            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                            <span>Daily Legal Updates</span>
+                          </div>
+                          <div className="space-y-2">
+                            {legalUpdates.map((update, idx) => (
+                              <div key={idx} className="bg-[#111111] border border-white/10 rounded-lg p-3 relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-[#A855F7]/50" />
+                                <div className="flex items-center justify-between mb-1">
+                                  <Badge variant="outline" className="text-[9px] uppercase tracking-wider text-muted-foreground bg-transparent border-white/10 py-0 h-4">
+                                    {update.type}
+                                  </Badge>
+                                  {update.date && <span className="text-[10px] text-muted-foreground">{update.date}</span>}
+                                </div>
+                                <div className="text-xs font-semibold text-foreground/90 mb-1">{update.title}</div>
+                                <div className="text-[11px] text-muted-foreground leading-relaxed">{update.summary}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {msg.streaming && (
-                        <span className="inline-block w-1.5 h-4 bg-[#A855F7] ml-0.5 animate-pulse align-middle rounded-sm" />
+                        <span className="inline-block w-1.5 h-4 bg-[#A855F7] ml-0.5 animate-pulse align-middle rounded-sm mt-1" />
                       )}
                     </div>
 
@@ -774,7 +810,37 @@ export function AppShell({ children, caseId }: AppShellProps) {
                     text-sm p-3 rounded-xl max-w-[90%] font-sans
                     ${msg.role === 'user' ? 'bg-[#1a231f] text-[#4ADE80]' : 'bg-[#16161a] text-foreground'}
                   `}>
-                    {msg.text}
+                    {msg.role === 'assistant' && msg.text
+                        ? renderMarkdown(msg.text)
+                        : (msg.text || (msg.streaming && legalUpdates.length === 0 ? '' : '…'))}
+                    
+                    {msg.streaming && !msg.text && legalUpdates.length > 0 && (
+                        <div className="mt-3 mb-2 space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-[#A855F7]">
+                            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                            <span>Daily Legal Updates</span>
+                          </div>
+                          <div className="space-y-2">
+                            {legalUpdates.map((update, idx) => (
+                              <div key={idx} className="bg-[#111111] border border-white/10 rounded-lg p-3 relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-[#A855F7]/50" />
+                                <div className="flex items-center justify-between mb-1">
+                                  <Badge variant="outline" className="text-[9px] uppercase tracking-wider text-muted-foreground bg-transparent border-white/10 py-0 h-4">
+                                    {update.type}
+                                  </Badge>
+                                  {update.date && <span className="text-[10px] text-muted-foreground">{update.date}</span>}
+                                </div>
+                                <div className="text-xs font-semibold text-foreground/90 mb-1">{update.title}</div>
+                                <div className="text-[11px] text-muted-foreground leading-relaxed">{update.summary}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {msg.streaming && (
+                        <span className="inline-block w-1.5 h-4 bg-[#A855F7] ml-0.5 animate-pulse align-middle rounded-sm mt-1" />
+                      )}
                   </div>
                 </div>
               ))

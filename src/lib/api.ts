@@ -153,6 +153,7 @@ export const chat = {
     request<any>(`/cases/${caseId}/chats`, { method: 'POST', body: JSON.stringify({ title: title || 'New Chat' }) }),
   getHistory: (caseId: string, chatId: string) =>
     request<any>(`/cases/${caseId}/chats/${chatId}/history`),
+  getLegalUpdates: () => request<any>('/legal-updates'),
   sendMessage: (caseId: string, chatId: string, message: string) =>
     request<any>(`/cases/${caseId}/chats/${chatId}/message`, { method: 'POST', body: JSON.stringify({ message }) }),
 
