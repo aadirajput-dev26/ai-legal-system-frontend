@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { OrgProvider } from "@/lib/org-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const sans = Plus_Jakarta_Sans({
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
   description: "Intelligent legal case management platform powered by AI",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
@@ -35,7 +36,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <OrgProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </OrgProvider>
         </AuthProvider>
       </body>
     </html>
