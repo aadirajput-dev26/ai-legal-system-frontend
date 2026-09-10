@@ -310,6 +310,203 @@ export const calendar = {
     request<any>(`/organisations/${orgId}/calendar`),
 };
 
+// ── Drafts ────────────────────────────────────────────────────────
+export type DraftType =
+  | 'LEGAL_NOTICE'
+  | 'APPLICATION'
+  | 'AFFIDAVIT'
+  | 'REPLY'
+  | 'EMAIL'
+  | 'WHATSAPP'
+  | 'COURT_DRAFT'
+  | 'CORRESPONDENCE'
+  | 'OTHER';
+
+export type DraftStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED';
+
+export interface Draft {
+  id: string;
+  case_id: string;
+  title: string;
+  description: string | null;
+  draft_type: DraftType;
+  status: DraftStatus;
+  instructions: string | null;
+  current_content: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const drafts = {
+  list: (caseId: string) =>
+    request<any>(`/cases/${caseId}/drafts`),
+
+  get: (caseId: string, draftId: string) =>
+    request<any>(`/cases/${caseId}/drafts/${draftId}`),
+
+  update: (caseId: string, draftId: string, body: {
+    title?: string;
+    description?: string;
+    status?: DraftStatus;
+    instructions?: string;
+    currentContent?: string;
+    saveVersion?: boolean;
+  }) => request<any>(`/cases/${caseId}/drafts/${draftId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  }),
+
+  delete: (caseId: string, draftId: string) =>
+    request<any>(`/cases/${caseId}/drafts/${draftId}`, { method: 'DELETE' }),
+
+  getVersions: (caseId: string, draftId: string) =>
+    request<any>(`/cases/${caseId}/drafts/${draftId}/versions`),
+
+  /**
+   * Creates the draft record + streams AI generation back via SSE.
+   * Returns { draftId, streamReader } where the consumer reads SSE chunks.
+   */
+  generateStream: async (
+    caseId: string,
+    body: { title: string; description?: string; draftType?: DraftType; instructions?: string },
+    onDelta: (chunk: string) => void,
+    onDone?: () => void,
+  ): Promise<{ draftId: string }> => {
+    let token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
+    const makeRequest = (accessToken: string | null) =>
+      fetch(`${API_BASE}/cases/${caseId}/drafts/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+    let res = await makeRequest(token);
+
+    if (res.status === 401) {
+      const refreshRes = await fetch(`${API_BASE}/auth/refresh`, { method: 'POST', credentials: 'include' });
+      if (refreshRes.ok) {
+        const data = await refreshRes.json();
+        token = data.data.accessToken;
+        localStorage.setItem('accessToken', token as string);
+        res = await makeRequest(token);
+      } else {
+        if (typeof window !== 'undefined') { localStorage.removeItem('accessToken'); window.location.href = '/login'; }
+        throw new Error('Session expired');
+      }
+    }
+
+    if (!res.ok || !res.body) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error || `API Error: ${res.status}`);
+    }
+
+    const draftId = res.headers.get('X-Draft-Id') || '';
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    const processLine = (line: string) => {
+      let trimmed = line.trim();
+      if (!trimmed) return;
+      if (trimmed.startsWith('data:')) trimmed = trimmed.substring(5).trim();
+      if (!trimmed) return;
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed.event === 'delta' && parsed.content !== undefined) onDelta(parsed.content);
+        else if (parsed.event === 'done') onDone?.();
+      } catch { /* non-JSON SSE lines */ }
+    };
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) processLine(line);
+    }
+    if (buffer.trim()) processLine(buffer);
+
+    return { draftId };
+  },
+
+  /**
+   * Streams an AI refinement of a draft.
+   */
+  refineStream: async (
+    caseId: string,
+    draftId: string,
+    body: { prompt: string; selectedText?: string; currentContent: string },
+    onDelta: (chunk: string) => void,
+    onDone?: () => void,
+  ): Promise<void> => {
+    let token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
+    const makeRequest = (accessToken: string | null) =>
+      fetch(`${API_BASE}/cases/${caseId}/drafts/${draftId}/refine`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+    let res = await makeRequest(token);
+
+    if (res.status === 401) {
+      const refreshRes = await fetch(`${API_BASE}/auth/refresh`, { method: 'POST', credentials: 'include' });
+      if (refreshRes.ok) {
+        const data = await refreshRes.json();
+        token = data.data.accessToken;
+        localStorage.setItem('accessToken', token as string);
+        res = await makeRequest(token);
+      } else {
+        throw new Error('Session expired');
+      }
+    }
+
+    if (!res.ok || !res.body) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error || `API Error: ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    const processLine = (line: string) => {
+      let trimmed = line.trim();
+      if (!trimmed) return;
+      if (trimmed.startsWith('data:')) trimmed = trimmed.substring(5).trim();
+      if (!trimmed) return;
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed.event === 'delta' && parsed.content !== undefined) onDelta(parsed.content);
+        else if (parsed.event === 'done') onDone?.();
+      } catch { /* non-JSON SSE lines */ }
+    };
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) processLine(line);
+    }
+    if (buffer.trim()) processLine(buffer);
+  },
+};
+
 // ── Notifications ─────────────────────────────────────────────────
 export const notifications = {
   list: (params?: { orgId?: string; isRead?: boolean; type?: string; priority?: string; limit?: number }) => {

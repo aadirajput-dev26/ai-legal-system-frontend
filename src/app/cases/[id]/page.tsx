@@ -38,6 +38,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { cases as casesApi, tasks as tasksApi, documents as docsApi, hearings as hearingsApi, tools as toolsApi } from '@/lib/api';
+import { CaseDraftsTab } from '@/components/drafts/CaseDraftsTab';
 import { CaseItem, TaskItem, HearingItem, DocumentItem } from '@/lib/types';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 
@@ -517,6 +518,7 @@ export default function CaseDetailPage() {
     { id: 'Overview', count: null },
     { id: 'Hearings', count: hearings.length },
     { id: 'Documents', count: documents.length },
+    { id: 'Drafts', count: null },
     { id: 'Tools', count: caseTools.length },
     { id: 'Tasks', count: tasks.length },
   ];
@@ -1088,6 +1090,11 @@ export default function CaseDetailPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── Tab: Drafts ───────────────────────────────────────────── */}
+        {activeTab === 'Drafts' && (
+          <CaseDraftsTab caseId={caseId} />
         )}
 
             {/* ── Tab: Tools ────────────────────────────────────────────── */}
