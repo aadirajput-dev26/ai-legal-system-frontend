@@ -317,13 +317,21 @@ function DraftsContent() {
             });
           }
           fetchData();
+        },
+        id => {
+          if (id) {
+            serverDraftId = id;
+            setActiveDraft(prev => (prev ? { ...prev, id } : prev));
+          }
         }
       );
 
-      serverDraftId = result.draftId;
-      setActiveDraft(prev =>
-        prev ? { ...prev, id: serverDraftId, current_content: accumulatedText } : prev
-      );
+      if (result.draftId) {
+        serverDraftId = result.draftId;
+        setActiveDraft(prev =>
+          prev ? { ...prev, id: result.draftId, current_content: accumulatedText } : prev
+        );
+      }
     } catch (err: any) {
       console.error('[Drafts] Streaming generation failed:', err);
       setIsGenerating(false);
@@ -335,7 +343,12 @@ function DraftsContent() {
   // Assistant Chat: Refine or update document
   const handleSendChatMessage = async (presetText?: string) => {
     const text = (presetText || chatInput).trim();
-    if (!text || !activeDraft || chatSending) return;
+    if (!text || !activeDraft || !activeDraft.id || chatSending) {
+      if (!activeDraft?.id) {
+        console.warn('Draft ID not set yet, please wait for draft creation to finish.');
+      }
+      return;
+    }
 
     setChatInput('');
     setChatSending(true);

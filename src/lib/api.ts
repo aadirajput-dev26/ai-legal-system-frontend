@@ -384,13 +384,14 @@ export const drafts = {
 
   /**
    * Creates the draft record + streams AI generation back via SSE.
-   * Returns { draftId, streamReader } where the consumer reads SSE chunks.
+   * Returns { draftId } where the consumer reads SSE chunks.
    */
   generateStream: async (
     caseId: string,
     body: { title: string; description?: string; draftType?: DraftType; instructions?: string },
     onDelta: (chunk: string) => void,
     onDone?: () => void,
+    onDraftId?: (draftId: string) => void,
   ): Promise<{ draftId: string }> => {
     let token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
@@ -425,7 +426,10 @@ export const drafts = {
       throw new Error(err?.error || `API Error: ${res.status}`);
     }
 
-    const draftId = res.headers.get('X-Draft-Id') || '';
+    let draftId = res.headers.get('X-Draft-Id') || '';
+    if (draftId && onDraftId) {
+      onDraftId(draftId);
+    }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -438,8 +442,14 @@ export const drafts = {
       if (!trimmed) return;
       try {
         const parsed = JSON.parse(trimmed);
-        if (parsed.event === 'delta' && parsed.content !== undefined) onDelta(parsed.content);
-        else if (parsed.event === 'done') onDone?.();
+        if (parsed.event === 'draft_created' && parsed.draftId) {
+          draftId = parsed.draftId;
+          onDraftId?.(parsed.draftId);
+        } else if (parsed.event === 'delta' && parsed.content !== undefined) {
+          onDelta(parsed.content);
+        } else if (parsed.event === 'done') {
+          onDone?.();
+        }
       } catch { /* non-JSON SSE lines */ }
     };
 
@@ -466,6 +476,10 @@ export const drafts = {
     onDelta: (chunk: string) => void,
     onDone?: () => void,
   ): Promise<void> => {
+    if (!draftId || !draftId.trim()) {
+      throw new Error('Draft ID is required to refine a draft.');
+    }
+
     let token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
     const makeRequest = (accessToken: string | null) =>
