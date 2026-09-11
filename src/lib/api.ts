@@ -155,6 +155,8 @@ export const chat = {
     request<any>(`/cases/${caseId}/chats/${chatId}/history`),
   sendMessage: (caseId: string, chatId: string, message: string) =>
     request<any>(`/cases/${caseId}/chats/${chatId}/message`, { method: 'POST', body: JSON.stringify({ message }) }),
+  getLegalUpdates: () =>
+    request<{ success: boolean; updates: any[] }>('/legal-updates'),
 
   sendMessageStream: async (
     caseId: string,
@@ -162,6 +164,8 @@ export const chat = {
     message: string,
     onDelta: (chunk: string) => void,
     onDone?: (usage: any) => void,
+    onToolCall?: (data: any) => void,
+    onToolResult?: (data: any) => void,
   ): Promise<void> => {
     let token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
     
@@ -205,6 +209,49 @@ export const chat = {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let isInsideToolExecution = false;
+
+    const processLine = (line: string) => {
+      let trimmed = line.trim();
+      if (!trimmed) return;
+      
+      // SSE lines often start with "data: "
+      if (trimmed.startsWith('data:')) {
+        trimmed = trimmed.substring(5).trim();
+      }
+      
+      if (!trimmed) return;
+
+      try {
+        const parsed = JSON.parse(trimmed);
+
+        // Catch tool_call / tool_calls: marks the start of tool/sub-agent (A2A) execution
+        if (parsed.event === 'tool_call' || parsed.event === 'tool_calls') {
+          isInsideToolExecution = true;
+          onToolCall?.(parsed);
+          return;
+        }
+
+        // Catch tool_result / tool_results: marks completion of tool/sub-agent execution
+        if (parsed.event === 'tool_result' || parsed.event === 'tool_results') {
+          isInsideToolExecution = false;
+          onToolResult?.(parsed);
+          return;
+        }
+
+        // Only emit delta events when NOT inside intermediate tool execution (A2A)
+        if (parsed.event === 'delta' && parsed.content !== undefined) {
+          if (!isInsideToolExecution) {
+            onDelta(parsed.content);
+          }
+        } else if (parsed.event === 'done') {
+          isInsideToolExecution = false;
+          onDone?.(parsed.usage);
+        }
+      } catch (err) {
+        console.error("SSE Parse Error on line:", trimmed, err);
+      }
+    };
 
     while (true) {
       const { done, value } = await reader.read();
@@ -217,47 +264,13 @@ export const chat = {
       buffer = lines.pop() ?? ''; // keep incomplete last line
 
       for (const line of lines) {
-        let trimmed = line.trim();
-        if (!trimmed) continue;
-        
-        // SSE lines often start with "data: "
-        if (trimmed.startsWith('data:')) {
-          trimmed = trimmed.substring(5).trim();
-        }
-        
-        if (!trimmed) continue;
-
-        try {
-          const parsed = JSON.parse(trimmed);
-          if (parsed.event === 'delta' && parsed.content !== undefined) {
-            onDelta(parsed.content);
-          } else if (parsed.event === 'done') {
-            onDone?.(parsed.usage);
-          }
-        } catch (err) {
-          console.error("SSE Parse Error on line:", trimmed, err);
-        }
+        processLine(line);
       }
     }
 
     // Process any remaining buffer content if it doesn't end with a newline
     if (buffer.trim()) {
-      let trimmed = buffer.trim();
-      if (trimmed.startsWith('data:')) {
-        trimmed = trimmed.substring(5).trim();
-      }
-      if (trimmed) {
-        try {
-          const parsed = JSON.parse(trimmed);
-          if (parsed.event === 'delta' && parsed.content !== undefined) {
-            onDelta(parsed.content);
-          } else if (parsed.event === 'done') {
-            onDone?.(parsed.usage);
-          }
-        } catch (err) {
-          console.error("SSE Parse Error on final buffer:", trimmed, err);
-        }
-      }
+      processLine(buffer);
     }
   },
 };
@@ -336,9 +349,15 @@ export interface Draft {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  case_title?: string;
+  case_number?: string | null;
+  court?: string | null;
 }
 
 export const drafts = {
+  listOrgDrafts: (orgId: string) =>
+    request<any>(`/organisations/${orgId}/drafts`),
+
   list: (caseId: string) =>
     request<any>(`/cases/${caseId}/drafts`),
 
@@ -530,4 +549,11 @@ export const notifications = {
   sync: (orgId: string) =>
     request<any>(`/notifications/sync`, { method: 'POST', body: JSON.stringify({ orgId }) }),
 };
+
+// ── Legal Updates ─────────────────────────────────────────────────
+export const legalUpdates = {
+  list: () =>
+    request<{ success: boolean; updates: any[] }>('/legal-updates'),
+};
+
 

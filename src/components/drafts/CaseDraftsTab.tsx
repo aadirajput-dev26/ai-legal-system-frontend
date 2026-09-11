@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Sparkles, Trash2, ChevronRight, Clock } from 'lucide-react';
+import { Loader2, Plus, Trash2, ChevronRight, Clock, FileEdit, ExternalLink } from 'lucide-react';
 import { drafts as draftsApi } from '@/lib/api';
-import { CreateDraftModal } from './CreateDraftModal';
-import { DraftEditorModal } from './DraftEditorModal';
-import type { Draft, DraftType } from '@/lib/api';
+import type { Draft } from '@/lib/api';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 
 const DRAFT_TYPE_LABELS: Record<string, string> = {
@@ -23,8 +22,15 @@ const DRAFT_TYPE_LABELS: Record<string, string> = {
 };
 
 const DRAFT_TYPE_ICONS: Record<string, string> = {
-  LEGAL_NOTICE: '⚖️', APPLICATION: '📋', AFFIDAVIT: '📜', REPLY: '↩️',
-  EMAIL: '📧', WHATSAPP: '💬', COURT_DRAFT: '🏛️', CORRESPONDENCE: '✉️', OTHER: '📄',
+  LEGAL_NOTICE: '⚖️',
+  APPLICATION: '📋',
+  AFFIDAVIT: '📜',
+  REPLY: '↩️',
+  EMAIL: '📧',
+  WHATSAPP: '💬',
+  COURT_DRAFT: '🏛️',
+  CORRESPONDENCE: '✉️',
+  OTHER: '📄',
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -38,13 +44,9 @@ interface CaseDraftsTabProps {
 }
 
 export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
+  const router = useRouter();
   const [draftsList, setDraftsList] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [activeDraft, setActiveDraft] = useState<Draft | null>(null);
-  const [streamingContent, setStreamingContent] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchDrafts = async () => {
@@ -53,7 +55,7 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
       const res = await draftsApi.list(caseId);
       setDraftsList(res.data || []);
     } catch (err) {
-      console.error('[Drafts] Failed to fetch:', err);
+      console.error('[CaseDraftsTab] Failed to fetch drafts:', err);
     } finally {
       setLoading(false);
     }
@@ -63,211 +65,161 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
     fetchDrafts();
   }, [caseId]);
 
-  const handleCreateDraft = async (formData: {
-    title: string;
-    description: string;
-    draftType: DraftType;
-    instructions: string;
-  }) => {
-    setCreateModalOpen(false);
-    setStreamingContent('');
-    setIsStreaming(true);
-
-    // Create a temporary draft for the editor while streaming
-    const tempDraft: Draft = {
-      id: '',
-      case_id: caseId,
-      title: formData.title,
-      description: formData.description || null,
-      draft_type: formData.draftType,
-      status: 'DRAFT',
-      instructions: formData.instructions || null,
-      current_content: '',
-      created_by: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    setActiveDraft(tempDraft);
-    setEditorOpen(true);
-
-    let accumulated = '';
-    let createdDraftId = '';
-
-    try {
-      const result = await draftsApi.generateStream(
-        caseId,
-        {
-          title: formData.title,
-          description: formData.description,
-          draftType: formData.draftType,
-          instructions: formData.instructions,
-        },
-        (chunk) => {
-          accumulated += chunk;
-          setStreamingContent(accumulated);
-        },
-        async () => {
-          setIsStreaming(false);
-          // Save final content
-          if (createdDraftId) {
-            await draftsApi.update(caseId, createdDraftId, { currentContent: accumulated });
-          }
-          // Refresh list and update active draft
-          await fetchDrafts();
-        }
-      );
-
-      createdDraftId = result.draftId;
-      // Update activeDraft with real id
-      setActiveDraft(prev => prev ? { ...prev, id: createdDraftId, current_content: accumulated } : prev);
-    } catch (err: any) {
-      console.error('[Drafts] Generation failed:', err);
-      setIsStreaming(false);
-    }
-  };
-
-  const handleOpenDraft = async (draft: Draft) => {
-    try {
-      // Fetch latest content
-      const res = await draftsApi.get(caseId, draft.id);
-      setActiveDraft(res.data || draft);
-    } catch {
-      setActiveDraft(draft);
-    }
-    setStreamingContent('');
-    setIsStreaming(false);
-    setEditorOpen(true);
-  };
-
   const handleDeleteDraft = async (draftId: string) => {
+    if (!confirm('Are you sure you want to delete this draft?')) return;
     setDeletingId(draftId);
     try {
       await draftsApi.delete(caseId, draftId);
       setDraftsList(prev => prev.filter(d => d.id !== draftId));
+    } catch (err) {
+      console.error('[CaseDraftsTab] Failed to delete draft:', err);
     } finally {
       setDeletingId(null);
     }
   };
 
-  const handleEditorClose = (open: boolean) => {
-    setEditorOpen(open);
-    if (!open) {
-      fetchDrafts();
-    }
+  const handleOpenDraft = (draft: Draft) => {
+    router.push(`/drafts?caseId=${caseId}&draftId=${draft.id}`);
+  };
+
+  const handleCreateNew = () => {
+    router.push(`/drafts?caseId=${caseId}&new=true`);
   };
 
   return (
-    <div className="space-y-4 max-w-4xl animate-in fade-in duration-200">
-      {/* Header */}
+    <div className="space-y-4 max-w-5xl animate-in fade-in duration-200">
+      {/* Tab Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">AI Drafts</h3>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            AI-generated, case-context-aware legal documents for this matter.
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-semibold text-foreground">Drafts & Legal Notices</h3>
+            <Badge variant="outline" className="bg-[#1a231f] text-[#4ADE80] border-[#2D4537] text-[10px] font-normal py-0.5">
+              {draftsList.length} {draftsList.length === 1 ? 'Draft' : 'Drafts'}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Pleadings, notices, affidavits, and legal documents authored and maintained for this case.
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setCreateModalOpen(true)}
-          className="h-8 text-xs bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold gap-1.5"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          Add Draft
-        </Button>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={handleCreateNew}
+            className="h-8 text-xs bg-[#2D4537] hover:bg-[#385945] text-[#4ADE80] font-medium border border-[#4ADE80]/30 shadow-none gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New Draft
+          </Button>
+        </div>
       </div>
 
-      {/* Content */}
+      {/* Loading State */}
       {loading ? (
-        <div className="p-12 rounded-xl border border-white/5 bg-[#111111] flex flex-col items-center justify-center gap-2">
+        <div className="p-16 rounded-xl border border-white/5 bg-[#111116] flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-[#4ADE80]" />
-          <span className="text-xs text-muted-foreground">Loading drafts...</span>
+          <span className="text-xs text-muted-foreground">Loading drafts for this matter...</span>
         </div>
       ) : draftsList.length === 0 ? (
         /* Empty State */
-        <div className="p-12 rounded-xl border border-dashed border-white/8 bg-[#0d0d10] flex flex-col items-center justify-center gap-3 text-center">
-          <div className="w-10 h-10 rounded-xl bg-[#4ADE80]/10 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-[#4ADE80]" />
+        <div className="p-16 rounded-xl border border-dashed border-white/10 bg-[#111116] flex flex-col items-center justify-center gap-3 text-center">
+          <div className="w-12 h-12 rounded-xl bg-[#1a231f] text-[#4ADE80] border border-[#2D4537] flex items-center justify-center">
+            <FileEdit className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">No drafts yet</p>
-            <p className="text-[11px] text-muted-foreground mt-1 max-w-[300px] leading-relaxed">
-              Click <strong className="text-foreground/80">+ Add Draft</strong> above — AI will auto-compile case context and generate your document.
+            <p className="text-sm font-semibold text-foreground">No drafts created yet</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm leading-relaxed">
+              Draft civil compensation notices, bail applications, affidavits, or pleadings in the Draft Studio.
             </p>
           </div>
+          <Button
+            size="sm"
+            onClick={handleCreateNew}
+            className="mt-2 h-8 text-xs bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Create First Draft
+          </Button>
         </div>
       ) : (
-        /* Draft List */
-        <div className="grid grid-cols-1 gap-2">
+        /* Drafts List */
+        <div className="bg-[#111116] border border-white/5 rounded-xl overflow-hidden shadow-xl divide-y divide-white/5">
           {draftsList.map(draft => (
             <div
               key={draft.id}
-              className="group flex items-center gap-4 p-3.5 rounded-xl border border-white/5 bg-[#111116] hover:border-white/10 hover:bg-[#131318] transition-all cursor-pointer"
               onClick={() => handleOpenDraft(draft)}
+              className="group flex items-center gap-4 p-4 hover:bg-white/[0.02] transition-all cursor-pointer"
             >
-              {/* Icon */}
-              <div className="w-9 h-9 rounded-lg bg-white/[0.04] flex items-center justify-center text-lg flex-shrink-0">
+              {/* Draft Icon */}
+              <div className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/5 flex items-center justify-center text-lg flex-shrink-0">
                 {DRAFT_TYPE_ICONS[draft.draft_type] ?? '📄'}
               </div>
 
-              {/* Info */}
+              {/* Draft Details */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <p className="text-sm font-medium text-foreground truncate">{draft.title}</p>
+                  <p className="text-sm font-medium text-foreground truncate group-hover:text-[#4ADE80] transition-colors">
+                    {draft.title}
+                  </p>
+                  <Badge variant="outline" className={`text-[10px] font-mono h-4.5 ${STATUS_COLORS[draft.status] ?? ''}`}>
+                    {draft.status.replace('_', ' ')}
+                  </Badge>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground/60">
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <span className="font-medium text-foreground/80">
                     {DRAFT_TYPE_LABELS[draft.draft_type] ?? 'Document'}
                   </span>
                   {draft.description && (
                     <>
-                      <span className="text-muted-foreground/30">·</span>
-                      <span className="text-[10px] text-muted-foreground/50 truncate max-w-[200px]">{draft.description}</span>
+                      <span>·</span>
+                      <span className="truncate max-w-[280px]">{draft.description}</span>
                     </>
                   )}
                 </div>
               </div>
 
-              {/* Right side */}
+              {/* Timestamp & Actions */}
               <div className="flex items-center gap-3 flex-shrink-0">
-                <Badge variant="outline" className={`text-[9px] font-mono h-5 ${STATUS_COLORS[draft.status] ?? ''}`}>
-                  {draft.status.replace('_', ' ')}
-                </Badge>
-                <div className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
+                <div className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
                   <Clock className="w-3 h-3" />
                   {formatDistanceToNow(parseISO(draft.updated_at), { addSuffix: true })}
                 </div>
-                <button
-                  onClick={e => { e.stopPropagation(); handleDeleteDraft(draft.id); }}
-                  disabled={deletingId === draft.id}
-                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-1 rounded"
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenDraft(draft);
+                  }}
+                  className="h-7 px-2 text-xs text-[#4ADE80] hover:bg-[#4ADE80]/10 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
                 >
-                  {deletingId === draft.id
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : <Trash2 className="w-3.5 h-3.5" />
-                  }
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open
+                </Button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteDraft(draft.id);
+                  }}
+                  disabled={deletingId === draft.id}
+                  className="text-muted-foreground hover:text-destructive p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Delete Draft"
+                >
+                  {deletingId === draft.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
                 </button>
-                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
               </div>
             </div>
           ))}
         </div>
       )}
-
-      {/* Modals */}
-      <CreateDraftModal
-        open={createModalOpen}
-        onOpenChange={setCreateModalOpen}
-        onSubmit={handleCreateDraft}
-      />
-
-      <DraftEditorModal
-        open={editorOpen}
-        onOpenChange={handleEditorClose}
-        caseId={caseId}
-        draft={activeDraft}
-        streamingContent={streamingContent}
-        isStreaming={isStreaming}
-      />
     </div>
   );
 }
