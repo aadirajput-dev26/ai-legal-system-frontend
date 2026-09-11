@@ -21,6 +21,7 @@ import {
   Plus,
   LayoutDashboard,
   Cpu,
+  FileEdit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { chat as chatApi } from '@/lib/api';
+import { RotatingLegalUpdate } from '@/components/chat/RotatingLegalUpdate';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -243,12 +245,19 @@ export function AppShell({ children, caseId }: AppShellProps) {
     }
   }, [caseId, chatInitialized]);
 
-  // When associate opens and caseId is present, initialize
+  // When associate opens and caseId is present, initialize and prefetch legal updates
   useEffect(() => {
     if ((associateOpen || mobileAssociateOpen) && caseId && !chatInitialized) {
       initializeChatThread();
     }
-  }, [associateOpen, mobileAssociateOpen, caseId, chatInitialized, initializeChatThread]);
+    if ((associateOpen || mobileAssociateOpen) && legalUpdates.length === 0) {
+      chatApi.getLegalUpdates().then((res) => {
+        if (res?.updates?.length > 0) {
+          setLegalUpdates(res.updates);
+        }
+      }).catch(() => {});
+    }
+  }, [associateOpen, mobileAssociateOpen, caseId, chatInitialized, initializeChatThread, legalUpdates.length]);
 
   // Send a message using streaming API
   const handleSendMessage = async (textToSend?: string) => {
@@ -257,16 +266,17 @@ export function AppShell({ children, caseId }: AppShellProps) {
 
     setChatInput('');
     setSending(true);
-    setLegalUpdates([]); // Reset updates each time
 
-    // Fetch legal updates in parallel independently
-    chatApi.getLegalUpdates().then((res) => {
-      if (res && res.updates && res.updates.length > 0) {
-        setLegalUpdates(res.updates);
-      }
-    }).catch((err) => {
-      console.error('Failed to fetch legal updates', err);
-    });
+    // Fetch / refresh legal updates in background if empty
+    if (legalUpdates.length === 0) {
+      chatApi.getLegalUpdates().then((res) => {
+        if (res?.updates?.length > 0) {
+          setLegalUpdates(res.updates);
+        }
+      }).catch((err) => {
+        console.error('Failed to fetch legal updates', err);
+      });
+    }
 
     // Add user message immediately
     const userMsgId = Date.now().toString();
@@ -355,6 +365,7 @@ export function AppShell({ children, caseId }: AppShellProps) {
     { icon: FolderClosed, href: '/cases', label: 'Cases' },
     { icon: Calendar, href: '/calendar', label: 'Calendar' },
     { icon: FileText, href: '/documents', label: 'Documents' },
+    { icon: FileEdit, href: '/drafts', label: 'Drafts' },
     { icon: Cpu, href: '/tools', label: 'Tools' },
   ];
 
@@ -632,36 +643,28 @@ export function AppShell({ children, caseId }: AppShellProps) {
                         ? 'bg-[#1a231f] text-[#4ADE80] border border-[#2D4537]'
                         : 'bg-[#16161a] text-foreground/90 border border-white/5'}
                     `}>
-                      {msg.role === 'assistant' && msg.text
-                        ? renderMarkdown(msg.text)
-                        : (msg.text || (msg.streaming ? '' : '…'))}
-                      
-                      {msg.streaming && legalUpdates.length > 0 && (
-                        <div className="mt-3 mb-2 space-y-3 border-t border-white/10 pt-3">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-[#A855F7]">
-                            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                            <span>Daily Legal Updates</span>
-                          </div>
-                          <div className="space-y-2">
-                            {legalUpdates.map((update, idx) => (
-                              <div key={idx} className="bg-[#111111] border border-white/10 rounded-lg p-3 relative overflow-hidden group">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-[#A855F7]/50" />
-                                <div className="flex items-center justify-between mb-1">
-                                  <Badge variant="outline" className="text-[9px] uppercase tracking-wider text-muted-foreground bg-transparent border-white/10 py-0 h-4">
-                                    {update.type}
-                                  </Badge>
-                                  {update.date && <span className="text-[10px] text-muted-foreground">{update.date}</span>}
-                                </div>
-                                <div className="text-xs font-semibold text-foreground/90 mb-1">{update.title}</div>
-                                <div className="text-[11px] text-muted-foreground leading-relaxed">{update.summary}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      {msg.role === 'user' ? (
+                        msg.text
+                      ) : (
+                        <>
+                          {msg.text ? renderMarkdown(msg.text) : null}
+                          
+                          {/* Live processing status & legal updates carousel while waiting */}
+                          {msg.streaming && !msg.text && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground py-0.5 mb-1">
+                              <Loader2 className="w-3.5 h-3.5 text-[#A855F7] animate-spin flex-shrink-0" />
+                              <span className="animate-pulse">Consulting case docket & intelligence…</span>
+                            </div>
+                          )}
 
-                      {msg.streaming && (
-                        <span className="inline-block w-1.5 h-4 bg-[#A855F7] ml-0.5 animate-pulse align-middle rounded-sm mt-1" />
+                          {msg.streaming && legalUpdates.length > 0 && (
+                            <RotatingLegalUpdate updates={legalUpdates} />
+                          )}
+
+                          {msg.streaming && (
+                            <span className="inline-block w-1.5 h-4 bg-[#A855F7] ml-0.5 animate-pulse align-middle rounded-sm mt-1" />
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -810,37 +813,28 @@ export function AppShell({ children, caseId }: AppShellProps) {
                     text-sm p-3 rounded-xl max-w-[90%] font-sans
                     ${msg.role === 'user' ? 'bg-[#1a231f] text-[#4ADE80]' : 'bg-[#16161a] text-foreground'}
                   `}>
-                    {msg.role === 'assistant' && msg.text
-                        ? renderMarkdown(msg.text)
-                        : (msg.text || (msg.streaming ? '' : '…'))}
-                    
-                    {msg.streaming && legalUpdates.length > 0 && (
-                        <div className="mt-3 mb-2 space-y-3 border-t border-white/10 pt-3">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-[#A855F7]">
-                            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                            <span>Daily Legal Updates</span>
+                    {msg.role === 'user' ? (
+                      msg.text
+                    ) : (
+                      <>
+                        {msg.text ? renderMarkdown(msg.text) : null}
+                        
+                        {msg.streaming && !msg.text && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground py-0.5 mb-1">
+                            <Loader2 className="w-3.5 h-3.5 text-[#A855F7] animate-spin flex-shrink-0" />
+                            <span className="animate-pulse">Consulting case docket & intelligence…</span>
                           </div>
-                          <div className="space-y-2">
-                            {legalUpdates.map((update, idx) => (
-                              <div key={idx} className="bg-[#111111] border border-white/10 rounded-lg p-3 relative overflow-hidden group">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-[#A855F7]/50" />
-                                <div className="flex items-center justify-between mb-1">
-                                  <Badge variant="outline" className="text-[9px] uppercase tracking-wider text-muted-foreground bg-transparent border-white/10 py-0 h-4">
-                                    {update.type}
-                                  </Badge>
-                                  {update.date && <span className="text-[10px] text-muted-foreground">{update.date}</span>}
-                                </div>
-                                <div className="text-xs font-semibold text-foreground/90 mb-1">{update.title}</div>
-                                <div className="text-[11px] text-muted-foreground leading-relaxed">{update.summary}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {msg.streaming && (
-                        <span className="inline-block w-1.5 h-4 bg-[#A855F7] ml-0.5 animate-pulse align-middle rounded-sm mt-1" />
-                      )}
+                        )}
+
+                        {msg.streaming && legalUpdates.length > 0 && (
+                          <RotatingLegalUpdate updates={legalUpdates} />
+                        )}
+
+                        {msg.streaming && (
+                          <span className="inline-block w-1.5 h-4 bg-[#A855F7] ml-0.5 animate-pulse align-middle rounded-sm mt-1" />
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               ))
