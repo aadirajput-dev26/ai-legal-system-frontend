@@ -453,9 +453,93 @@ function DraftsContent() {
     URL.revokeObjectURL(url);
   };
 
-  // Print / PDF
+  // Print / PDF Export
   const handlePrint = () => {
-    window.print();
+    if (!editorContent.trim()) {
+      alert('Document is empty. Nothing to print.');
+      return;
+    }
+
+    // Remove any previous print iframe
+    const oldFrame = document.getElementById('legal-print-frame');
+    if (oldFrame) oldFrame.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'legal-print-frame';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+
+    const escapeHtml = (str: string) =>
+      str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    const formattedHtml = editorContent
+      .split('\n\n')
+      .map(block => {
+        const trimmed = block.trim();
+        if (!trimmed) return '';
+        const isHeader = /^(legal notice|notice|demand letter|in the court|before the|suit no|claim for)/i.test(trimmed);
+        if (isHeader) {
+          return `<h2 style="text-align: center; font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 0.5px;">${escapeHtml(trimmed).replace(/\n/g, '<br/>')}</h2>`;
+        }
+        return `<p style="margin-bottom: 14pt; text-align: justify; line-height: 1.7;">${escapeHtml(trimmed).replace(/\n/g, '<br/>')}</p>`;
+      })
+      .filter(Boolean)
+      .join('');
+
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${escapeHtml(activeDraft?.title || 'Legal Document')}</title>
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 25mm 20mm 25mm 20mm;
+            }
+            body {
+              font-family: 'Times New Roman', Times, Georgia, serif;
+              font-size: 12pt;
+              line-height: 1.7;
+              color: #111111;
+              background: #ffffff;
+              margin: 0;
+              padding: 0;
+            }
+            p, h2 {
+              page-break-inside: avoid;
+            }
+          </style>
+        </head>
+        <body>
+          ${formattedHtml}
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (err) {
+        console.error('Print trigger failed:', err);
+      }
+    }, 300);
   };
 
   useEffect(() => {
@@ -661,7 +745,7 @@ function DraftsContent() {
                   }}
                   spellCheck
                 />
-                <div id="printable-legal-document" className="hidden">
+                <div id="printable-legal-document" className="hidden print:block whitespace-pre-wrap font-serif text-black bg-white p-8">
                   {editorContent}
                 </div>
               </div>

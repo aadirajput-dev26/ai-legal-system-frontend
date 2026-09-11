@@ -297,3 +297,36 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
+
+/* ── Clean Legal Document Print Media Styles ─────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  header, aside, nav, button, [role="navigation"], [data-sidebar="sidebar"], .no-print {
+    display: none !important;
+  }
+
+  #printable-legal-document {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-family: 'Times New Roman', Times, Georgia, serif !important;
+    font-size: 12pt !important;
+    line-height: 1.7 !important;
+    padding: 0 !important;
+    white-space: pre-wrap !important;
+    z-index: 999999 !important;
+  }
+}
