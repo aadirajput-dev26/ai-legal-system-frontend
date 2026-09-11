@@ -5,6 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Trash2, ChevronRight, Clock, FileEdit, ExternalLink } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { drafts as draftsApi } from '@/lib/api';
 import type { Draft } from '@/lib/api';
 import { formatDistanceToNow, parseISO } from 'date-fns';
@@ -47,7 +55,8 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
   const router = useRouter();
   const [draftsList, setDraftsList] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [draftToDelete, setDraftToDelete] = useState<Draft | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchDrafts = async () => {
     try {
@@ -65,16 +74,17 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
     fetchDrafts();
   }, [caseId]);
 
-  const handleDeleteDraft = async (draftId: string) => {
-    if (!confirm('Are you sure you want to delete this draft?')) return;
-    setDeletingId(draftId);
+  const confirmDeleteDraft = async () => {
+    if (!draftToDelete) return;
+    setDeleting(true);
     try {
-      await draftsApi.delete(caseId, draftId);
-      setDraftsList(prev => prev.filter(d => d.id !== draftId));
+      await draftsApi.delete(caseId, draftToDelete.id);
+      setDraftsList(prev => prev.filter(d => d.id !== draftToDelete.id));
+      setDraftToDelete(null);
     } catch (err) {
       console.error('[CaseDraftsTab] Failed to delete draft:', err);
     } finally {
-      setDeletingId(null);
+      setDeleting(false);
     }
   };
 
@@ -201,17 +211,12 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDeleteDraft(draft.id);
+                    setDraftToDelete(draft);
                   }}
-                  disabled={deletingId === draft.id}
-                  className="text-muted-foreground hover:text-destructive p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="text-muted-foreground hover:text-red-400 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   title="Delete Draft"
                 >
-                  {deletingId === draft.id ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-3.5 h-3.5" />
-                  )}
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
 
                 <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
@@ -220,6 +225,57 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
           ))}
         </div>
       )}
+
+      {/* ── Delete Confirmation Modal ────────────────────────────────────── */}
+      <Dialog open={!!draftToDelete} onOpenChange={open => !open && !deleting && setDraftToDelete(null)}>
+        <DialogContent className="sm:max-w-md bg-[#16161a] border-white/10 text-foreground p-6 rounded-2xl shadow-2xl">
+          <DialogHeader className="gap-3">
+            <div className="w-11 h-11 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-base font-semibold text-foreground">
+                Delete Legal Draft
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                Are you sure you want to delete <span className="font-semibold text-foreground">"{draftToDelete?.title}"</span>? This action cannot be undone and all draft history will be permanently deleted.
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+
+          <DialogFooter className="mt-6 flex flex-row items-center justify-end gap-2.5 bg-transparent border-t border-white/5 pt-4 -mx-6 -mb-6 px-6">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDraftToDelete(null)}
+              disabled={deleting}
+              className="h-9 px-4 text-xs border-white/10 hover:bg-white/5 text-foreground rounded-lg cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={deleting}
+              onClick={confirmDeleteDraft}
+              className="h-9 px-4 text-xs bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg gap-1.5 shadow-sm cursor-pointer"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Draft</span>
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

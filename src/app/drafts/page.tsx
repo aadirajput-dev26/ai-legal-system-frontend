@@ -137,6 +137,10 @@ function DraftsContent() {
     instructions: '',
   });
 
+  // Delete Confirmation Modal State
+  const [draftToDelete, setDraftToDelete] = useState<Draft | null>(null);
+  const [deletingDraft, setDeletingDraft] = useState(false);
+
   // Assistant Chatbot State (the ONE and ONLY chatbot in the studio)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -407,17 +411,26 @@ function DraftsContent() {
     handleEditorChange(textToApply);
   };
 
-  // Delete Draft
-  const handleDeleteDraft = async (draft: Draft) => {
-    if (!confirm(`Are you sure you want to delete "${draft.title}"?`)) return;
+  // Delete Draft Trigger
+  const handleDeleteDraft = (draft: Draft) => {
+    setDraftToDelete(draft);
+  };
+
+  // Confirmed Delete Draft Action
+  const confirmDeleteDraft = async () => {
+    if (!draftToDelete) return;
     try {
-      await draftsApi.delete(draft.case_id, draft.id);
-      setDraftsList(prev => prev.filter(d => d.id !== draft.id));
-      if (activeDraft?.id === draft.id) {
+      setDeletingDraft(true);
+      await draftsApi.delete(draftToDelete.case_id, draftToDelete.id);
+      setDraftsList(prev => prev.filter(d => d.id !== draftToDelete.id));
+      if (activeDraft?.id === draftToDelete.id) {
         setActiveDraft(null);
       }
+      setDraftToDelete(null);
     } catch (err) {
       console.error('Failed to delete draft:', err);
+    } finally {
+      setDeletingDraft(false);
     }
   };
 
@@ -1323,6 +1336,57 @@ function DraftsContent() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirmation Modal ────────────────────────────────────── */}
+      <Dialog open={!!draftToDelete} onOpenChange={open => !open && !deletingDraft && setDraftToDelete(null)}>
+        <DialogContent className="sm:max-w-md bg-[#16161a] border-white/10 text-foreground p-6 rounded-2xl shadow-2xl">
+          <DialogHeader className="gap-3">
+            <div className="w-11 h-11 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-base font-semibold text-foreground">
+                Delete Legal Draft
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                Are you sure you want to delete <span className="font-semibold text-foreground">"{draftToDelete?.title}"</span>? This action cannot be undone and all draft history will be permanently deleted.
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+
+          <DialogFooter className="mt-6 flex flex-row items-center justify-end gap-2.5 bg-transparent border-t border-white/5 pt-4 -mx-6 -mb-6 px-6">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDraftToDelete(null)}
+              disabled={deletingDraft}
+              className="h-9 px-4 text-xs border-white/10 hover:bg-white/5 text-foreground rounded-lg cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={deletingDraft}
+              onClick={confirmDeleteDraft}
+              className="h-9 px-4 text-xs bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg gap-1.5 shadow-sm cursor-pointer"
+            >
+              {deletingDraft ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Draft</span>
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppShell>
