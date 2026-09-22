@@ -21,6 +21,7 @@ export interface BalanceSummary {
 
 export interface BillingState {
     organisation: { id: string; name: string; role: string };
+    organisations: Array<{ id: string; name: string; role: string }>;
     creditLabel: string;
     enforcementEnabled: boolean;
     minBalanceCredits: number;
@@ -54,19 +55,59 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     return body.data as T;
 }
 
+/**
+ * Every write names its organisation. The server refuses these calls without
+ * it, because a user who administers two firms must never have a subscription
+ * or a top-up silently applied to the wrong one.
+ */
 export const billingApi = {
-    get: () => req<BillingState>('/billing/me'),
-    statement: (limit = 50) => req<{ entries: LedgerEntry[] }>(`/billing/statement?limit=${limit}`),
-    subscribe: (planCode: string) =>
+    get: (organisationId?: string) =>
+        req<BillingState>(`/billing/me${organisationId ? `?organisationId=${encodeURIComponent(organisationId)}` : ''}`),
+
+    statement: (organisationId: string, limit = 50) =>
+        req<{ entries: LedgerEntry[] }>(
+            `/billing/statement?limit=${limit}&organisationId=${encodeURIComponent(organisationId)}`),
+
+    subscribe: (organisationId: string, planCode: string) =>
         req<{ subscriptionId: string; razorpayKeyId: string; planName: string; amountInr: number; includedCredits: number }>(
-            '/billing/subscribe', { method: 'POST', body: JSON.stringify({ planCode }) }),
-    topUp: (packCode: string) =>
+            '/billing/subscribe', { method: 'POST', body: JSON.stringify({ organisationId, planCode }) }),
+
+    topUp: (organisationId: string, packCode: string) =>
         req<{ orderId: string; razorpayKeyId: string; amountInr: number; credits: number; packName: string }>(
-            '/billing/topup', { method: 'POST', body: JSON.stringify({ packCode }) }),
-    confirmTopUp: (p: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
-        req<{ balance: BalanceSummary }>('/billing/topup/confirm', { method: 'POST', body: JSON.stringify(p) }),
-    cancel: () => req<{ cancelAtPeriodEnd: boolean }>('/billing/cancel', { method: 'POST' }),
+            '/billing/topup', { method: 'POST', body: JSON.stringify({ organisationId, packCode }) }),
+
+    confirmTopUp: (organisationId: string, p: RazorpayCheckoutResponse) =>
+        req<{ balance: BalanceSummary }>('/billing/topup/confirm',
+            { method: 'POST', body: JSON.stringify({ organisationId, ...p }) }),
+
+    cancel: (organisationId: string) =>
+        req<{ cancelAtPeriodEnd: boolean }>('/billing/cancel',
+            { method: 'POST', body: JSON.stringify({ organisationId }) }),
 };
+
+/** Exactly what Razorpay Checkout returns to the success handler. */
+export interface RazorpayCheckoutResponse {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+}
+
+export interface RazorpayCheckoutOptions {
+    key: string;
+    name: string;
+    description?: string;
+    theme?: { color?: string };
+    order_id?: string;
+    subscription_id?: string;
+    amount?: number;
+    currency?: string;
+    handler?: (response: RazorpayCheckoutResponse) => void;
+    modal?: { ondismiss?: () => void };
+}
+
+export interface RazorpayConstructor {
+    new (options: RazorpayCheckoutOptions): { open: () => void };
+}
 
 export interface LedgerEntry {
     type: string; credits: number; balanceAfter: number;
@@ -75,13 +116,14 @@ export interface LedgerEntry {
 }
 
 /** Razorpay Checkout is loaded on demand — it is not needed on any other page. */
-export function loadRazorpay(): Promise<any> {
+export function loadRazorpay(): Promise<RazorpayConstructor> {
     return new Promise((resolve, reject) => {
         if (typeof window === 'undefined') return reject(new Error('Not in a browser'));
-        if ((window as any).Razorpay) return resolve((window as any).Razorpay);
+        const existing = (window as { Razorpay?: RazorpayConstructor }).Razorpay;
+        if (existing) return resolve(existing);
         const s = document.createElement('script');
         s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        s.onload = () => resolve((window as any).Razorpay);
+        s.onload = () => resolve((window as unknown as { Razorpay: RazorpayConstructor }).Razorpay);
         s.onerror = () => reject(new Error('Could not load the payment window. Check your connection and try again.'));
         document.body.appendChild(s);
     });

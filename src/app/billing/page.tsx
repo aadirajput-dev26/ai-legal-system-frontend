@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
     billingApi, loadRazorpay, fmtCredits, fmtINR, FEATURE_LABEL,
-    type BillingState, type LedgerEntry,
+    type BillingState, type LedgerEntry, type RazorpayCheckoutResponse,
 } from '@/lib/billing';
 
 /**
@@ -20,16 +20,22 @@ export default function BillingPage() {
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState<string | null>(null);
 
-    const load = useCallback(async () => {
+    // The organisation is explicit everywhere. `orgId` is null only on first
+    // load, when the server resolves it for a single-organisation user.
+    const [orgId, setOrgId] = useState<string | null>(null);
+
+    const load = useCallback(async (id?: string) => {
         try {
-            const [s, st] = await Promise.all([billingApi.get(), billingApi.statement(25)]);
+            const s = await billingApi.get(id ?? orgId ?? undefined);
+            setOrgId(s.organisation.id);
+            const st = await billingApi.statement(s.organisation.id, 25);
             setState(s);
             setEntries(st.entries);
             setError(null);
         } catch (e: any) {
             setError(e.message);
         }
-    }, []);
+    }, [orgId]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -38,7 +44,7 @@ export default function BillingPage() {
         if (!state) return;
         setBusy('subscribe'); setError(null);
         try {
-            const s = await billingApi.subscribe(planCode);
+            const s = await billingApi.subscribe(state.organisation.id, planCode);
             const Razorpay = await loadRazorpay();
             new Razorpay({
                 key: s.razorpayKeyId,
@@ -51,7 +57,9 @@ export default function BillingPage() {
                 handler: () => {
                     setBusy(null);
                     setError(null);
-                    setTimeout(load, 2500);
+                    // Checkout success changes nothing server-side; re-read once the
+                    // subscription.charged webhook has had a moment to land.
+                    setTimeout(() => { void load(); }, 2500);
                 },
                 modal: { ondismiss: () => setBusy(null) },
             }).open();
@@ -65,7 +73,7 @@ export default function BillingPage() {
         if (!state) return;
         setBusy(packCode); setError(null);
         try {
-            const o = await billingApi.topUp(packCode);
+            const o = await billingApi.topUp(state.organisation.id, packCode);
             const Razorpay = await loadRazorpay();
             new Razorpay({
                 key: o.razorpayKeyId,
@@ -75,11 +83,11 @@ export default function BillingPage() {
                 name: 'LegalDesk',
                 description: `${o.packName} — ${fmtCredits(o.credits)} ${state.creditLabel.toLowerCase()}`,
                 theme: { color: '#0F0F0F' },
-                handler: async (r: any) => {
+                handler: async (r: RazorpayCheckoutResponse) => {
                     try {
                         // Server re-verifies the signature and re-fetches the
                         // payment from Razorpay before granting anything.
-                        await billingApi.confirmTopUp(r);
+                        await billingApi.confirmTopUp(state.organisation.id, r);
                         await load();
                     } catch (e: any) {
                         setError(`Payment went through but we could not confirm it yet: ${e.message}. Your ${state.creditLabel.toLowerCase()} will appear shortly.`);
@@ -90,6 +98,19 @@ export default function BillingPage() {
         } catch (e: any) {
             setError(e.message); setBusy(null);
         }
+    };
+
+    // ── Cancel ───────────────────────────────────────────────────────
+    const cancel = async () => {
+        if (!state) return;
+        if (!window.confirm('Cancel this plan at the end of the current billing period? AI stays available until then.')) return;
+        setBusy('cancel'); setError(null);
+        try {
+            await billingApi.cancel(state.organisation.id);
+            await load();
+        } catch (e: any) {
+            setError(e.message);
+        } finally { setBusy(null); }
     };
 
     if (!state) {
@@ -121,11 +142,11 @@ export default function BillingPage() {
 
             <div className="flex items-center gap-2.5 mt-2 text-[12px] text-black/60 dark:text-white/60">
                 <span>{b.hasSubscription ? `Plan ${b.subscriptionStatus}` : 'No active plan'}</span>
-                {b.periodStart && (
+                {b.periodStart && b.periodEnd && (
                     <>
                         <i className="w-[3px] h-[3px] rounded-full bg-black/25 dark:bg-white/25" />
                         <span className="tabular-nums">
-                            {new Date(b.periodStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – {new Date(b.periodEnd!).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                            {new Date(b.periodStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – {new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                         </span>
                     </>
                 )}
@@ -198,7 +219,7 @@ export default function BillingPage() {
                                 </div>
                                 <button
                                     onClick={() => subscribe(p.code)}
-                                    disabled={!isAdmin || busy === 'subscribe'}
+                                    disabled={!isAdmin || busy !== null}
                                     className="h-8 px-3.5 rounded-sm text-[13px] font-bold bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.985] transition"
                                 >
                                     {busy === 'subscribe' ? 'Opening…' : 'Choose'}
@@ -225,7 +246,7 @@ export default function BillingPage() {
                                 <div className="text-[13px] tabular-nums text-black/60 dark:text-white/60">{fmtINR(p.priceInr)}</div>
                                 <button
                                     onClick={() => topUp(p.code)}
-                                    disabled={!isAdmin || busy === p.code}
+                                    disabled={!isAdmin || busy !== null}
                                     className="h-7 px-3 rounded-sm text-[12px] font-bold border border-black/20 dark:border-white/25 hover:bg-black/[0.035] dark:hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed transition"
                                 >
                                     {busy === p.code ? 'Opening…' : 'Buy'}
@@ -233,6 +254,26 @@ export default function BillingPage() {
                             </div>
                         ))}
                     </div>
+
+                    {isAdmin && (
+                        <div className="mt-6 pt-5 border-t border-black/[0.08] dark:border-white/[0.07] max-w-[640px] flex items-center gap-4">
+                            <div className="flex-1">
+                                <div className="text-[13px] font-bold">Cancel plan</div>
+                                <div className="text-[12px] text-black/60 dark:text-white/60 mt-0.5">
+                                    Stops the renewal. AI stays available until {b.periodEnd
+                                        ? new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })
+                                        : 'the end of the period'}.
+                                </div>
+                            </div>
+                            <button
+                                onClick={cancel}
+                                disabled={busy !== null}
+                                className="h-7 px-3 rounded-sm text-[12px] font-bold border border-[#C0392B]/40 text-[#C0392B] hover:bg-[#C0392B]/[0.07] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                            >
+                                {busy === 'cancel' ? 'Cancelling…' : 'Cancel'}
+                            </button>
+                        </div>
+                    )}
                 </section>
             )}
 
