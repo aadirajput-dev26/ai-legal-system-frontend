@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Sparkles } from 'lucide-react';
 import type { DraftType } from '@/lib/api';
+import { useBilling } from '@/lib/billing-context';
+import { useRouter } from 'next/navigation';
 
 const DRAFT_TYPE_OPTIONS: { value: DraftType; label: string; icon: string }[] = [
   { value: 'LEGAL_NOTICE',   label: 'Legal Notice',     icon: '⚖️' },
@@ -38,6 +40,8 @@ export function CreateDraftModal({ open, onOpenChange, onSubmit }: CreateDraftMo
     instructions: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const { isExhausted } = useBilling();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,17 +129,27 @@ export function CreateDraftModal({ open, onOpenChange, onSubmit }: CreateDraftMo
             <Button type="button" variant="ghost" className="text-xs h-8" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={submitting || !form.title.trim()}
-              className="bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold h-8 text-xs gap-1.5"
-            >
-              {submitting ? (
-                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...</>
-              ) : (
-                <><Sparkles className="w-3.5 h-3.5" /> Generate</>
-              )}
-            </Button>
+            {isExhausted ? (
+              <Button
+                type="button"
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold h-8 text-xs px-3"
+                onClick={() => router.push('/billing')}
+              >
+                AI Paused. Top Up
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={submitting || !form.title.trim()}
+                className="bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold h-8 text-xs gap-1.5"
+              >
+                {submitting ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...</>
+                ) : (
+                  <><Sparkles className="w-3.5 h-3.5" /> Generate</>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

@@ -3,46 +3,53 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
     billingApi, loadRazorpay, fmtCredits, fmtINR, FEATURE_LABEL,
-    type BillingState, type LedgerEntry, type RazorpayCheckoutResponse,
+    type LedgerEntry, type RazorpayCheckoutResponse,
 } from '@/lib/billing';
+import { useBilling } from '@/lib/billing-context';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  CreditCard, 
+  Sparkles, 
+  Wallet, 
+  Activity, 
+  History, 
+  CheckCircle2, 
+  AlertCircle,
+  Loader2,
+  TrendingUp,
+  Zap
+} from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
 import { AppShell } from '@/components/layout/AppShell';
-import { useOrg } from '@/lib/org-context';
-
-/**
- * Usage & Billing.
- *
- * Built in the monochrome system: black, white and neutrals only, Arial only,
- * state carried by weight and rules rather than colour. The one exception is
- * --danger, used only when the balance is actually exhausted.
- */
 
 export default function BillingPage() {
-    const { currentOrg } = useOrg();
-    const [state, setState] = useState<BillingState | null>(null);
+    const { state, loading: contextLoading, refreshBilling, error: contextError } = useBilling();
     const [entries, setEntries] = useState<LedgerEntry[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState<string | null>(null);
+    const [statementLoading, setStatementLoading] = useState(false);
 
-    // The organisation is explicit everywhere. `orgId` is null only on first
-    // load, when the server resolves it for a single-organisation user.
-    const [orgId, setOrgId] = useState<string | null>(null);
-
-    const load = useCallback(async (id?: string) => {
-        const targetId = id ?? orgId ?? currentOrg?.id;
-        if (!targetId) return;
+    const loadStatement = useCallback(async () => {
+        if (!state?.organisation?.id) return;
+        setStatementLoading(true);
         try {
-            const s = await billingApi.get(targetId);
-            setOrgId(s.organisation.id);
-            const st = await billingApi.statement(s.organisation.id, 25);
-            setState(s);
+            const st = await billingApi.statement(state.organisation.id, 25);
             setEntries(st.entries);
             setError(null);
         } catch (e: any) {
             setError(e.message);
+        } finally {
+            setStatementLoading(false);
         }
-    }, [orgId, currentOrg?.id]);
+    }, [state?.organisation?.id]);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => { 
+        if (state?.organisation?.id) {
+            loadStatement(); 
+        }
+    }, [state?.organisation?.id, loadStatement]);
 
     // ── Subscribe ────────────────────────────────────────────────────
     const subscribe = async (planCode: string) => {
@@ -50,21 +57,18 @@ export default function BillingPage() {
         setBusy('subscribe'); setError(null);
         try {
             const s = await billingApi.subscribe(state.organisation.id, planCode);
+            
             const Razorpay = await loadRazorpay();
             new Razorpay({
                 key: s.razorpayKeyId,
                 subscription_id: s.subscriptionId,
                 name: 'LegalDesk',
                 description: `${s.planName} — ${fmtCredits(s.includedCredits)} ${state.creditLabel.toLowerCase()} each month`,
-                theme: { color: '#0F0F0F' },
-                // Checkout success changes nothing here. The server activates the
-                // plan when Razorpay's subscription.charged webhook arrives.
+                theme: { color: '#8b5cf6' },
                 handler: () => {
                     setBusy(null);
                     setError(null);
-                    // Checkout success changes nothing server-side; re-read once the
-                    // subscription.charged webhook has had a moment to land.
-                    setTimeout(() => { void load(); }, 2500);
+                    setTimeout(() => { refreshBilling(); }, 2500);
                 },
                 modal: { ondismiss: () => setBusy(null) },
             }).open();
@@ -79,6 +83,7 @@ export default function BillingPage() {
         setBusy(packCode); setError(null);
         try {
             const o = await billingApi.topUp(state.organisation.id, packCode);
+
             const Razorpay = await loadRazorpay();
             new Razorpay({
                 key: o.razorpayKeyId,
@@ -87,15 +92,13 @@ export default function BillingPage() {
                 currency: 'INR',
                 name: 'LegalDesk',
                 description: `${o.packName} — ${fmtCredits(o.credits)} ${state.creditLabel.toLowerCase()}`,
-                theme: { color: '#0F0F0F' },
+                theme: { color: '#8b5cf6' },
                 handler: async (r: RazorpayCheckoutResponse) => {
                     try {
-                        // Server re-verifies the signature and re-fetches the
-                        // payment from Razorpay before granting anything.
                         await billingApi.confirmTopUp(state.organisation.id, r);
-                        await load();
+                        await refreshBilling();
                     } catch (e: any) {
-                        setError(`Payment went through but we could not confirm it yet: ${e.message}. Your ${state.creditLabel.toLowerCase()} will appear shortly.`);
+                        setError(`Payment went through but we could not confirm it yet: ${e.message}.`);
                     } finally { setBusy(null); }
                 },
                 modal: { ondismiss: () => setBusy(null) },
@@ -112,19 +115,18 @@ export default function BillingPage() {
         setBusy('cancel'); setError(null);
         try {
             await billingApi.cancel(state.organisation.id);
-            await load();
+            await refreshBilling();
         } catch (e: any) {
             setError(e.message);
         } finally { setBusy(null); }
     };
 
-    if (!state) {
+    if (contextLoading || !state) {
         return (
             <AppShell>
-                <div className="p-8 max-w-5xl">
-                    <div className="h-3 w-24 bg-black/5 dark:bg-white/5 animate-pulse mb-4 rounded-sm" />
-                    <div className="h-7 w-48 bg-black/5 dark:bg-white/5 animate-pulse mb-8 rounded-sm" />
-                    {error && <p className="text-[13px] text-[#C0392B]">{error}</p>}
+                <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">Loading billing details...</p>
                 </div>
             </AppShell>
         );
@@ -138,221 +140,292 @@ export default function BillingPage() {
         : 0;
     const exhausted = b.balanceCredits < state.minBalanceCredits;
     const isAdmin = state.organisation.role === 'ADMIN';
+    const displayError = error || contextError;
 
     return (
         <AppShell>
-            <div className="p-8 pb-24 max-w-5xl font-sans">
-
-            <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-black/45 dark:text-white/40">
-                {state.organisation.name}
-            </div>
-            <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.022em] mt-1.5">Usage &amp; billing</h1>
-
-            <div className="flex items-center gap-2.5 mt-2 text-[12px] text-black/60 dark:text-white/60">
-                <span>{b.hasSubscription ? `Plan ${b.subscriptionStatus}` : 'No active plan'}</span>
-                {b.periodStart && b.periodEnd && (
-                    <>
-                        <i className="w-[3px] h-[3px] rounded-full bg-black/25 dark:bg-white/25" />
-                        <span className="tabular-nums">
-                            {new Date(b.periodStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – {new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                        </span>
-                    </>
-                )}
-                {!state.enforcementEnabled && (
-                    <>
-                        <i className="w-[3px] h-[3px] rounded-full bg-black/25 dark:bg-white/25" />
-                        <span>Measuring only — nothing is blocked</span>
-                    </>
-                )}
-            </div>
-
-            {error && (
-                <div className="mt-6 border border-[#C0392B]/40 bg-[#C0392B]/[0.07] px-3.5 py-3 rounded-sm max-w-[640px]">
-                    <p className="text-[12.5px] leading-[19px] text-[#C0392B] m-0">{error}</p>
-                </div>
-            )}
-
-            {/* ── Balance ─────────────────────────────────────── */}
-            <div className="mt-8 pb-8 border-b border-black/[0.14] dark:border-white/[0.12]">
-                <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-black/45 dark:text-white/40 mb-3">
-                    {label} remaining
-                </div>
-                <div className="flex items-end gap-4">
-                    <span className={`text-[64px] leading-[56px] font-bold tracking-[-0.045em] tabular-nums ${exhausted ? 'text-[#C0392B]' : ''}`}>
-                        {fmtCredits(b.balanceCredits)}
-                    </span>
-                    <span className="pb-1.5 text-[13px] text-black/60 dark:text-white/60 tabular-nums">
-                        of {fmtCredits(totalForPeriod)} this period
-                    </span>
-                </div>
-
-                <div className="mt-5 max-w-[560px]">
-                    <div className="h-[3px] w-full bg-black/[0.08] dark:bg-white/[0.08]">
-                        <div
-                            className={`h-full transition-[width] duration-500 ${exhausted ? 'bg-[#C0392B]' : 'bg-black dark:bg-white'}`}
-                            style={{ width: `${usedPct}%` }}
-                        />
-                    </div>
-                    <div className="flex justify-between mt-2 text-[11px] text-black/45 dark:text-white/40 tabular-nums">
-                        <span>{fmtCredits(b.consumedCredits)} used · {usedPct}%</span>
-                        {b.toppedUpCredits > 0 && <span>{fmtCredits(b.toppedUpCredits)} topped up</span>}
-                    </div>
-                </div>
-
-                {exhausted && (
-                    <p className="mt-4 text-[13px] text-[#C0392B] max-w-[56ch]">
-                        AI features are paused until you add more {label.toLowerCase()}. Everything else in LegalDesk keeps working.
-                    </p>
-                )}
-            </div>
-
-            {/* ── Plan / top-ups ──────────────────────────────── */}
-            {!state.razorpayConfigured ? (
-                <p className="mt-8 text-[13px] text-black/60 dark:text-white/60 max-w-[56ch]">
-                    Payments are not switched on for this server yet.
-                </p>
-            ) : !b.hasSubscription ? (
-                <section className="mt-8">
-                    <h2 className="text-[16px] font-bold tracking-[-0.011em] mb-4">Choose a plan</h2>
-                    <div className="max-w-[640px]">
-                        {state.plans.map(p => (
-                            <div key={p.code} className="flex items-center gap-6 py-4 border-b border-black/[0.08] dark:border-white/[0.07]">
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-[14px] font-bold">{p.name}</div>
-                                    <div className="text-[12px] text-black/60 dark:text-white/60 mt-1 leading-[18px]">{p.description}</div>
-                                </div>
-                                <div className="text-right tabular-nums">
-                                    <div className="text-[16px] font-bold">{fmtINR(p.priceInr)}</div>
-                                    <div className="text-[11px] text-black/45 dark:text-white/40">per month</div>
-                                </div>
-                                <button
-                                    onClick={() => subscribe(p.code)}
-                                    disabled={!isAdmin || busy !== null}
-                                    className="h-8 px-3.5 rounded-sm text-[13px] font-bold bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.985] transition"
-                                >
-                                    {busy === 'subscribe' ? 'Opening…' : 'Choose'}
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                    {!isAdmin && (
-                        <p className="mt-3 text-[12px] text-black/45 dark:text-white/40">
-                            Only an organisation administrator can change the plan.
-                        </p>
-                    )}
-                </section>
-            ) : (
-                <section className="mt-8">
-                    <h2 className="text-[16px] font-bold tracking-[-0.011em] mb-1">Add more {label.toLowerCase()}</h2>
-                    <p className="text-[12px] text-black/60 dark:text-white/60 mb-4 max-w-[56ch]">
-                        Top-ups are one-off and never expire while your plan is active.
-                    </p>
-                    <div className="max-w-[640px]">
-                        {state.packs.map(p => (
-                            <div key={p.code} className="flex items-center gap-6 py-3.5 border-b border-black/[0.08] dark:border-white/[0.07]">
-                                <div className="flex-1 text-[13.5px] font-bold tabular-nums">{p.name}</div>
-                                <div className="text-[13px] tabular-nums text-black/60 dark:text-white/60">{fmtINR(p.priceInr)}</div>
-                                <button
-                                    onClick={() => topUp(p.code)}
-                                    disabled={!isAdmin || busy !== null}
-                                    className="h-7 px-3 rounded-sm text-[12px] font-bold border border-black/20 dark:border-white/25 hover:bg-black/[0.035] dark:hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                >
-                                    {busy === p.code ? 'Opening…' : 'Buy'}
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-
-                    {isAdmin && (
-                        <div className="mt-6 pt-5 border-t border-black/[0.08] dark:border-white/[0.07] max-w-[640px] flex items-center gap-4">
-                            <div className="flex-1">
-                                <div className="text-[13px] font-bold">Cancel plan</div>
-                                <div className="text-[12px] text-black/60 dark:text-white/60 mt-0.5">
-                                    Stops the renewal. AI stays available until {b.periodEnd
-                                        ? new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })
-                                        : 'the end of the period'}.
-                                </div>
-                            </div>
-                            <button
-                                onClick={cancel}
-                                disabled={busy !== null}
-                                className="h-7 px-3 rounded-sm text-[12px] font-bold border border-[#C0392B]/40 text-[#C0392B] hover:bg-[#C0392B]/[0.07] disabled:opacity-40 disabled:cursor-not-allowed transition"
-                            >
-                                {busy === 'cancel' ? 'Cancelling…' : 'Cancel'}
-                            </button>
-                        </div>
-                    )}
-                </section>
-            )}
-
-            {/* ── Where it went ───────────────────────────────── */}
-            {state.breakdown.byFeature.length > 0 && (
-                <section className="mt-12 grid gap-10 md:grid-cols-[1.4fr_1fr] max-w-[900px]">
+            <div className="flex flex-col h-full max-w-6xl mx-auto pb-16 space-y-8 animate-in fade-in duration-300">
+                {/* Header section */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div>
-                        <h2 className="text-[16px] font-bold tracking-[-0.011em] mb-4">Where it went</h2>
-                        {state.breakdown.byFeature.map(f => (
-                            <div key={f.feature} className="flex items-center gap-4 py-2.5 border-b border-black/[0.08] dark:border-white/[0.07] text-[13px]">
-                                <span className="flex-1">{FEATURE_LABEL[f.feature] || f.feature}</span>
-                                <span className="text-black/45 dark:text-white/40 tabular-nums text-[12px]">{f.operations} ops</span>
-                                <span className="font-bold tabular-nums w-20 text-right">{fmtCredits(f.credits)}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {state.breakdown.byUser.length > 0 && (
-                        <div>
-                            <h2 className="text-[16px] font-bold tracking-[-0.011em] mb-4">By person</h2>
-                            {state.breakdown.byUser.map(u => (
-                                <div key={u.userId} className="flex items-center gap-3 py-2.5 border-b border-black/[0.08] dark:border-white/[0.07] text-[13px]">
-                                    <span className="flex-1 truncate">{u.name}</span>
-                                    <span className="font-bold tabular-nums">{fmtCredits(u.credits)}</span>
-                                </div>
-                            ))}
+                        <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs tracking-wider uppercase font-semibold">
+                                {state.organisation.name}
+                            </Badge>
+                            {isAdmin && <Badge variant="secondary" className="text-[10px]">ADMIN</Badge>}
                         </div>
-                    )}
-                </section>
-            )}
+                        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Usage & Billing</h1>
+                        <p className="text-sm text-muted-foreground mt-2">Manage your AI credits, subscriptions, and payment history.</p>
+                    </div>
+                </div>
 
-            {/* ── Statement ───────────────────────────────────── */}
-            {entries.length > 0 && (
-                <section className="mt-12 max-w-[760px]">
-                    <h2 className="text-[16px] font-bold tracking-[-0.011em] mb-4">Statement</h2>
-                    <table className="w-full border-collapse">
-                        <thead>
-                            <tr className="text-[11px] font-bold tracking-[0.06em] uppercase text-black/45 dark:text-white/40 border-b border-black/[0.14] dark:border-white/[0.12]">
-                                <th className="text-left h-8 font-bold">Entry</th>
-                                <th className="text-left font-bold">When</th>
-                                <th className="text-right font-bold">{label}</th>
-                                <th className="text-right font-bold pr-1">Balance</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {entries.map((e, i) => (
-                                <tr key={i} className="border-b border-black/[0.08] dark:border-white/[0.07] text-[13px]">
-                                    <td className="h-10">
-                                        <span className="font-bold">{e.feature ? (FEATURE_LABEL[e.feature] || e.feature) : e.reason || e.type}</span>
-                                        {e.tokens != null && (
-                                            <span className="text-[11px] text-black/45 dark:text-white/40 ml-2 tabular-nums">
-                                                {e.tokens.toLocaleString('en-IN')} tokens{e.model ? ` · ${e.model}` : ''}
+                {displayError && (
+                    <div className="flex items-center gap-3 bg-destructive/15 border border-destructive/30 text-destructive-foreground p-4 rounded-xl">
+                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                        <p className="text-sm font-medium">{displayError}</p>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* ── Balance Card ─────────────────────────────────────── */}
+                    <Card className={`lg:col-span-2 overflow-hidden border-0 shadow-lg relative ${exhausted ? 'bg-destructive/5' : 'bg-card'}`}>
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 pointer-events-none" />
+                        
+                        <CardHeader className="pb-2 relative z-10">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <Wallet className="w-5 h-5 text-primary" />
+                                        Available {label}
+                                    </CardTitle>
+                                    <CardDescription className="mt-1">
+                                        {b.hasSubscription ? `Plan ${b.subscriptionStatus}` : 'No active plan'}
+                                        {b.periodStart && b.periodEnd && (
+                                            <span className="ml-2 pl-2 border-l border-border">
+                                                {new Date(b.periodStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – {new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                                             </span>
                                         )}
-                                    </td>
-                                    <td className="text-black/60 dark:text-white/60 text-[12px] tabular-nums">
-                                        {new Date(e.at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                    </td>
-                                    <td className="text-right tabular-nums font-bold">
-                                        {e.credits > 0 ? '+' : ''}{e.credits.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                                    </td>
-                                    <td className="text-right tabular-nums text-black/60 dark:text-white/60 pr-1">
-                                        {fmtCredits(e.balanceAfter)}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </section>
-            )}
-        </div>
+                                    </CardDescription>
+                                </div>
+                                {!state.enforcementEnabled && (
+                                    <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                                        Measuring Only
+                                    </Badge>
+                                )}
+                            </div>
+                        </CardHeader>
+                        
+                        <CardContent className="relative z-10 pt-4">
+                            <div className="flex items-baseline gap-2 mb-6">
+                                <span className={`text-6xl font-bold tracking-tighter ${exhausted ? 'text-destructive' : 'text-foreground'}`}>
+                                    {fmtCredits(b.balanceCredits)}
+                                </span>
+                                <span className="text-muted-foreground font-medium">
+                                    of {fmtCredits(totalForPeriod)} this period
+                                </span>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="h-4 w-full bg-secondary/50 rounded-full overflow-hidden flex">
+                                    <div
+                                        className={`h-full transition-all duration-1000 ease-out ${exhausted ? 'bg-destructive' : 'bg-gradient-to-r from-primary to-purple-500'}`}
+                                        style={{ width: `${usedPct}%` }}
+                                    />
+                                </div>
+                                <div className="flex justify-between text-xs font-medium text-muted-foreground">
+                                    <span>{fmtCredits(b.consumedCredits)} used ({usedPct}%)</span>
+                                    {b.toppedUpCredits > 0 && <span className="text-primary/80">+{fmtCredits(b.toppedUpCredits)} topped up</span>}
+                                </div>
+                            </div>
+
+                            {exhausted && state.enforcementEnabled && (
+                                <div className="mt-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-3">
+                                    <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                                    <p className="text-sm text-destructive-foreground">
+                                        AI features are paused because your balance is exhausted. Please add more {label.toLowerCase()} to continue using AI tools.
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* ── Plans or TopUps Side Card ──────────────────────────────── */}
+                    <Card className="flex flex-col border border-border/50 shadow-md bg-card/50 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                {b.hasSubscription ? <Zap className="w-5 h-5 text-yellow-500" /> : <Sparkles className="w-5 h-5 text-primary" />}
+                                {b.hasSubscription ? 'Add Top-Up' : 'Choose a Plan'}
+                            </CardTitle>
+                            <CardDescription>
+                                {b.hasSubscription 
+                                    ? 'One-off credits that never expire while your plan is active.' 
+                                    : 'Subscribe to unlock LegalDesk AI features.'}
+                            </CardDescription>
+                        </CardHeader>
+                        
+                        <CardContent className="flex-1 space-y-4">
+                            {!state.razorpayConfigured && process.env.NODE_ENV === 'production' ? (
+                                <div className="text-sm text-muted-foreground p-4 bg-secondary/30 rounded-lg text-center">
+                                    Payments are not switched on for this server yet.
+                                </div>
+                            ) : !b.hasSubscription ? (
+                                <div className="space-y-3">
+                                    {state.plans.map(p => (
+                                        <div key={p.code} className="p-4 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-colors group">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="font-semibold text-sm group-hover:text-primary transition-colors">{p.name}</div>
+                                                <div className="text-right">
+                                                    <div className="font-bold text-foreground">{fmtINR(p.priceInr)}</div>
+                                                    <div className="text-[10px] text-muted-foreground">/ month</div>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{p.description}</p>
+                                            <Button
+                                                onClick={() => subscribe(p.code)}
+                                                disabled={!isAdmin || busy !== null}
+                                                className="w-full text-xs h-8"
+                                                variant={p.code === 'PRO' ? 'default' : 'secondary'}
+                                            >
+                                                {busy === 'subscribe' ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : null}
+                                                {busy === 'subscribe' ? 'Opening...' : 'Subscribe'}
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {state.packs.map(p => (
+                                        <div key={p.code} className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-colors">
+                                            <div>
+                                                <div className="font-semibold text-sm">{p.name}</div>
+                                                <div className="text-xs text-muted-foreground font-medium">{fmtINR(p.priceInr)}</div>
+                                            </div>
+                                            <Button
+                                                onClick={() => topUp(p.code)}
+                                                disabled={!isAdmin || busy !== null}
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
+                                            >
+                                                {busy === p.code ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : null}
+                                                {busy === p.code ? 'Processing...' : 'Buy'}
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+
+                        {b.hasSubscription && isAdmin && (
+                            <CardFooter className="pt-4 border-t border-border/50 bg-secondary/20">
+                                <div className="flex items-center justify-between w-full gap-4">
+                                    <div>
+                                        <div className="text-xs font-semibold">Cancel plan</div>
+                                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                                            Stops renewal. AI stays until {b.periodEnd ? new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }) : 'end of period'}.
+                                        </div>
+                                    </div>
+                                    <Button
+                                        onClick={cancel}
+                                        disabled={busy !== null}
+                                        variant="destructive"
+                                        size="sm"
+                                        className="h-7 text-[10px] px-2.5"
+                                    >
+                                        {busy === 'cancel' ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Cancel'}
+                                    </Button>
+                                </div>
+                            </CardFooter>
+                        )}
+                    </Card>
+                </div>
+
+                {/* ── Where it went ───────────────────────────────── */}
+                {state.breakdown.byFeature.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                        <Card className="border-0 shadow-md bg-card/40">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
+                                    <Activity className="w-4 h-4 text-primary" /> Usage by Feature
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {state.breakdown.byFeature.map(f => (
+                                        <div key={f.feature} className="flex items-center justify-between group">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-secondary/60 flex items-center justify-center">
+                                                    <TrendingUp className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-medium">{FEATURE_LABEL[f.feature] || f.feature}</div>
+                                                    <div className="text-[10px] text-muted-foreground">{f.operations} ops</div>
+                                                </div>
+                                            </div>
+                                            <div className="font-semibold text-sm">{fmtCredits(f.credits)}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {state.breakdown.byUser.length > 0 && (
+                            <Card className="border-0 shadow-md bg-card/40">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
+                                        <CreditCard className="w-4 h-4 text-primary" /> Usage by Person
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        {state.breakdown.byUser.map(u => (
+                                            <div key={u.userId} className="flex items-center justify-between group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
+                                                        {u.name.substring(0,2)}
+                                                    </div>
+                                                    <div className="text-sm font-medium truncate max-w-[150px]">{u.name}</div>
+                                                </div>
+                                                <div className="font-semibold text-sm">{fmtCredits(u.credits)}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                )}
+
+                {/* ── Statement ───────────────────────────────────── */}
+                {entries.length > 0 && (
+                    <Card className="border-0 shadow-md overflow-hidden bg-card/40">
+                        <CardHeader className="pb-4 border-b border-border/50">
+                            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
+                                <History className="w-4 h-4 text-primary" /> Transaction Statement
+                            </CardTitle>
+                        </CardHeader>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-muted-foreground uppercase bg-secondary/30">
+                                    <tr>
+                                        <th className="px-6 py-4 font-semibold">Entry / Feature</th>
+                                        <th className="px-6 py-4 font-semibold">Date & Time</th>
+                                        <th className="px-6 py-4 font-semibold text-right">{label}</th>
+                                        <th className="px-6 py-4 font-semibold text-right">Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/50">
+                                    {entries.map((e, i) => (
+                                        <tr key={i} className="hover:bg-secondary/20 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="font-medium text-foreground">
+                                                    {e.feature ? (FEATURE_LABEL[e.feature] || e.feature) : e.reason || e.type}
+                                                </div>
+                                                {e.tokens != null && (
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                        {e.tokens.toLocaleString('en-IN')} tokens {e.model ? `· ${e.model}` : ''}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-muted-foreground text-xs tabular-nums">
+                                                {new Date(e.at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                            </td>
+                                            <td className="px-6 py-4 text-right tabular-nums">
+                                                <Badge variant={e.credits > 0 ? 'default' : 'outline'} className={`font-mono text-[11px] ${e.credits > 0 ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20' : 'border-border/60 text-muted-foreground'}`}>
+                                                    {e.credits > 0 ? '+' : ''}{e.credits.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-6 py-4 text-right tabular-nums text-muted-foreground font-medium">
+                                                {fmtCredits(e.balanceAfter)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+                )}
+            </div>
         </AppShell>
     );
 }

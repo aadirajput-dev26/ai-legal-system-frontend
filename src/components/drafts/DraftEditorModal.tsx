@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { drafts as draftsApi } from '@/lib/api';
 import type { Draft, DraftStatus } from '@/lib/api';
+import { useBilling } from '@/lib/billing-context';
+import { useRouter } from 'next/navigation';
 
 interface DraftVersion {
   id: string;
@@ -60,6 +62,9 @@ export function DraftEditorModal({
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingStatus, setSavingStatus] = useState<DraftStatus | null>(null);
+  
+  const { isExhausted } = useBilling();
+  const router = useRouter();
 
   // AI Refinement Prompt
   const [refinePrompt, setRefinePrompt] = useState('');
@@ -401,9 +406,9 @@ export function DraftEditorModal({
                     <button
                       key={action.label}
                       type="button"
-                      disabled={refining || isStreaming}
+                      disabled={refining || isStreaming || isExhausted}
                       onClick={() => setRefinePrompt(action.label)}
-                      className="w-full text-left text-[11px] px-2.5 py-2 rounded-lg bg-white/[0.03] border border-white/5 hover:border-[#A855F7]/30 hover:bg-[#A855F7]/5 text-muted-foreground hover:text-foreground transition-all flex items-center gap-2 disabled:opacity-40"
+                      className="w-full text-left text-[11px] px-2.5 py-2 rounded-lg bg-white/[0.03] border border-white/5 hover:border-[#A855F7]/30 hover:bg-[#A855F7]/5 text-muted-foreground hover:text-foreground transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <span>{action.icon}</span>
                       {action.label}
@@ -416,24 +421,34 @@ export function DraftEditorModal({
                   <p className="text-[9px] text-muted-foreground/60 uppercase font-bold tracking-wide">Custom Instruction</p>
                   <textarea
                     rows={5}
-                    placeholder="e.g. Add Section 138 Negotiable Instruments Act clause and demand cheque dishonor compensation..."
+                    placeholder={isExhausted ? "AI features paused. Please add funds." : "e.g. Add Section 138 Negotiable Instruments Act clause and demand cheque dishonor compensation..."}
                     value={refinePrompt}
                     onChange={e => setRefinePrompt(e.target.value)}
-                    disabled={refining || isStreaming}
-                    className="flex-1 w-full bg-[#111116] border border-white/8 rounded-lg p-2.5 text-[11px] text-foreground focus:outline-none focus:border-[#A855F7]/30 resize-none placeholder:text-muted-foreground/30 leading-relaxed"
+                    disabled={refining || isStreaming || isExhausted}
+                    className="flex-1 w-full bg-[#111116] border border-white/8 rounded-lg p-2.5 text-[11px] text-foreground focus:outline-none focus:border-[#A855F7]/30 resize-none placeholder:text-muted-foreground/30 leading-relaxed disabled:opacity-40"
                   />
-                  <Button
-                    className="w-full bg-[#A855F7]/20 hover:bg-[#A855F7]/30 text-[#A855F7] border border-[#A855F7]/30 hover:border-[#A855F7]/50 text-xs font-semibold gap-1.5 h-8"
-                    variant="outline"
-                    disabled={refining || isStreaming || !refinePrompt.trim()}
-                    onClick={handleAiRefine}
-                  >
-                    {refining ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Refining...</>
-                    ) : (
-                      <><Sparkles className="w-3.5 h-3.5" /> Apply Refinement</>
-                    )}
-                  </Button>
+                  {isExhausted ? (
+                    <Button
+                      className="w-full bg-destructive/20 text-destructive border border-destructive/30 hover:border-destructive hover:bg-destructive/30 text-xs font-semibold gap-1.5 h-8"
+                      variant="outline"
+                      onClick={() => router.push('/billing')}
+                    >
+                      AI Paused. Top Up
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full bg-[#A855F7]/20 hover:bg-[#A855F7]/30 text-[#A855F7] border border-[#A855F7]/30 hover:border-[#A855F7]/50 text-xs font-semibold gap-1.5 h-8"
+                      variant="outline"
+                      disabled={refining || isStreaming || !refinePrompt.trim()}
+                      onClick={handleAiRefine}
+                    >
+                      {refining ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Refining...</>
+                      ) : (
+                        <><Sparkles className="w-3.5 h-3.5" /> Apply Refinement</>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             )}

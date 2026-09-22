@@ -30,6 +30,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth-context';
 import { useOrg } from '@/lib/org-context';
+import { useBilling } from '@/lib/billing-context';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,6 +132,7 @@ export function AppShell({ children, caseId }: AppShellProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { currentOrg, orgs, switchOrg } = useOrg();
+  const { isExhausted, state: billingState } = useBilling();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [associateOpen, setAssociateOpen] = useState(false);
@@ -735,14 +737,24 @@ export function AppShell({ children, caseId }: AppShellProps) {
                 className="relative"
               >
                 <Input
-                  placeholder="Ask about this case…"
-                  className="bg-[#1A1A1A] border-white/10 text-sm h-11 pl-3.5 pr-12 rounded-xl focus-visible:ring-1 focus-visible:ring-[#A855F7]/50 placeholder:text-muted-foreground/50"
+                  placeholder={isExhausted ? `AI features paused. Add ${billingState?.creditLabel || 'credits'} to continue.` : "Ask about this case…"}
+                  className={`bg-[#1A1A1A] border-white/10 text-sm h-11 pl-3.5 pr-12 rounded-xl focus-visible:ring-1 focus-visible:ring-[#A855F7]/50 ${isExhausted ? 'placeholder:text-destructive/80 text-destructive/80' : 'placeholder:text-muted-foreground/50'}`}
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  disabled={sending || chatLoading}
+                  disabled={sending || chatLoading || isExhausted}
                 />
                 <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  {sending ? (
+                  {isExhausted ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      className="h-8 rounded-lg text-[11px] px-2 font-semibold"
+                      onClick={() => router.push('/billing')}
+                    >
+                      Top Up
+                    </Button>
+                  ) : sending ? (
                     <Loader2 className="w-4 h-4 text-[#A855F7] animate-spin mr-2" />
                   ) : chatInput ? (
                     <Button
@@ -920,15 +932,25 @@ export function AppShell({ children, caseId }: AppShellProps) {
               className="relative flex items-center gap-2"
             >
               <Input
-                placeholder="Ask Associate..."
-                className="bg-[#1A1A1A] border-white/10 text-sm h-11 pr-12 rounded-xl"
+                placeholder={isExhausted ? "AI features paused" : "Ask Associate..."}
+                className={`bg-[#1A1A1A] border-white/10 text-sm h-11 pr-12 rounded-xl ${isExhausted ? 'placeholder:text-destructive/80 text-destructive/80' : ''}`}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                disabled={sending || chatLoading}
+                disabled={sending || chatLoading || isExhausted}
               />
-              <Button type="submit" size="icon" className="bg-[#A855F7] text-white h-11 w-11 rounded-xl">
-                <Send className="w-4 h-4" />
-              </Button>
+              {isExhausted ? (
+                <Button 
+                  type="button" 
+                  className="bg-destructive text-destructive-foreground h-11 px-3 rounded-xl text-xs font-semibold"
+                  onClick={() => router.push('/billing')}
+                >
+                  Top Up
+                </Button>
+              ) : (
+                <Button type="submit" size="icon" className="bg-[#A855F7] text-white h-11 w-11 rounded-xl">
+                  <Send className="w-4 h-4" />
+                </Button>
+              )}
             </form>
           </div>
         </div>
