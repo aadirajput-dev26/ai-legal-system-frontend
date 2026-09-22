@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { OrgProvider } from "@/lib/org-context";
+import { BillingProvider } from "@/lib/billing-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const sans = Plus_Jakarta_Sans({
@@ -37,7 +38,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
           <OrgProvider>
-            <TooltipProvider>{children}</TooltipProvider>
+            <BillingProvider>
+              <TooltipProvider>{children}</TooltipProvider>
+            </BillingProvider>
           </OrgProvider>
         </AuthProvider>
       </body>
