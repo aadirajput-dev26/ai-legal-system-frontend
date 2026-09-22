@@ -61,8 +61,8 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
  * or a top-up silently applied to the wrong one.
  */
 export const billingApi = {
-    get: (organisationId?: string) =>
-        req<BillingState>(`/billing/me${organisationId ? `?organisationId=${encodeURIComponent(organisationId)}` : ''}`),
+    get: (organisationId: string) =>
+        req<BillingState>(`/billing/me?organisationId=${encodeURIComponent(organisationId)}`),
 
     statement: (organisationId: string, limit = 50) =>
         req<{ entries: LedgerEntry[] }>(

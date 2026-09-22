@@ -28,8 +28,9 @@ export default function BillingPage() {
     const [orgId, setOrgId] = useState<string | null>(null);
 
     const load = useCallback(async (id?: string) => {
+        const targetId = id ?? orgId ?? currentOrg?.id;
+        if (!targetId) return;
         try {
-            const targetId = id ?? orgId ?? currentOrg?.id ?? undefined;
             const s = await billingApi.get(targetId);
             setOrgId(s.organisation.id);
             const st = await billingApi.statement(s.organisation.id, 25);
@@ -140,7 +141,7 @@ export default function BillingPage() {
 
     return (
         <AppShell>
-            <div className="p-8 pb-24 max-w-5xl" style={{ fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif' }}>
+            <div className="p-8 pb-24 max-w-5xl font-sans">
 
             <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-black/45 dark:text-white/40">
                 {state.organisation.name}
