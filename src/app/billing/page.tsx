@@ -5,6 +5,8 @@ import {
     billingApi, loadRazorpay, fmtCredits, fmtINR, FEATURE_LABEL,
     type BillingState, type LedgerEntry, type RazorpayCheckoutResponse,
 } from '@/lib/billing';
+import { AppShell } from '@/components/layout/AppShell';
+import { useOrg } from '@/lib/org-context';
 
 /**
  * Usage & Billing.
@@ -15,6 +17,7 @@ import {
  */
 
 export default function BillingPage() {
+    const { currentOrg } = useOrg();
     const [state, setState] = useState<BillingState | null>(null);
     const [entries, setEntries] = useState<LedgerEntry[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -26,7 +29,8 @@ export default function BillingPage() {
 
     const load = useCallback(async (id?: string) => {
         try {
-            const s = await billingApi.get(id ?? orgId ?? undefined);
+            const targetId = id ?? orgId ?? currentOrg?.id ?? undefined;
+            const s = await billingApi.get(targetId);
             setOrgId(s.organisation.id);
             const st = await billingApi.statement(s.organisation.id, 25);
             setState(s);
@@ -35,7 +39,7 @@ export default function BillingPage() {
         } catch (e: any) {
             setError(e.message);
         }
-    }, [orgId]);
+    }, [orgId, currentOrg?.id]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -115,11 +119,13 @@ export default function BillingPage() {
 
     if (!state) {
         return (
-            <div className="p-8 max-w-5xl">
-                <div className="h-3 w-24 bg-black/5 dark:bg-white/5 animate-pulse mb-4 rounded-sm" />
-                <div className="h-7 w-48 bg-black/5 dark:bg-white/5 animate-pulse mb-8 rounded-sm" />
-                {error && <p className="text-[13px] text-[#C0392B]">{error}</p>}
-            </div>
+            <AppShell>
+                <div className="p-8 max-w-5xl">
+                    <div className="h-3 w-24 bg-black/5 dark:bg-white/5 animate-pulse mb-4 rounded-sm" />
+                    <div className="h-7 w-48 bg-black/5 dark:bg-white/5 animate-pulse mb-8 rounded-sm" />
+                    {error && <p className="text-[13px] text-[#C0392B]">{error}</p>}
+                </div>
+            </AppShell>
         );
     }
 
@@ -133,7 +139,8 @@ export default function BillingPage() {
     const isAdmin = state.organisation.role === 'ADMIN';
 
     return (
-        <div className="p-8 pb-24 max-w-5xl" style={{ fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif' }}>
+        <AppShell>
+            <div className="p-8 pb-24 max-w-5xl" style={{ fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif' }}>
 
             <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-black/45 dark:text-white/40">
                 {state.organisation.name}
@@ -345,5 +352,6 @@ export default function BillingPage() {
                 </section>
             )}
         </div>
+        </AppShell>
     );
 }

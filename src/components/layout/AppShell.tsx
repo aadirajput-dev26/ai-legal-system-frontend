@@ -22,6 +22,7 @@ import {
   LayoutDashboard,
   Cpu,
   FileEdit,
+  CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -372,6 +373,7 @@ export function AppShell({ children, caseId }: AppShellProps) {
 
   const bottomNavItems = [
     { icon: Bell, href: '/notifications', label: 'Notifications', unread: unreadCount },
+    { icon: CreditCard, href: '/billing', label: 'Billing' },
     { icon: Settings, href: '/settings', label: 'Settings' },
   ];
 
