@@ -58,13 +58,6 @@ export default function BillingPage() {
         try {
             const s = await billingApi.subscribe(state.organisation.id, planCode);
             
-            // If dev mock succeeded, refresh and exit
-            if ((s as any).mocked) {
-                await refreshBilling();
-                setBusy(null);
-                return;
-            }
-
             const Razorpay = await loadRazorpay();
             new Razorpay({
                 key: s.razorpayKeyId,
@@ -90,13 +83,6 @@ export default function BillingPage() {
         setBusy(packCode); setError(null);
         try {
             const o = await billingApi.topUp(state.organisation.id, packCode);
-            
-            // If dev mock succeeded, refresh and exit
-            if ((o as any).mocked) {
-                await refreshBilling();
-                setBusy(null);
-                return;
-            }
 
             const Razorpay = await loadRazorpay();
             new Razorpay({
@@ -200,10 +186,8 @@ export default function BillingPage() {
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
                     {/* ── Balance Card ─────────────────────────────────────── */}
                     <Card className={`lg:col-span-2 overflow-hidden border-0 shadow-lg relative ${exhausted && state.enforcementEnabled ? 'bg-destructive/5' : 'bg-card'}`}>
-                        {/* Decorative gradient background */}
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 pointer-events-none" />
                         
                         <CardHeader className="pb-2 relative z-10">
@@ -270,202 +254,202 @@ export default function BillingPage() {
                         </CardContent>
                     </Card>
 
-                {/* ── Plans or TopUps Side Card ──────────────────────────────── */}
-                <Card className="flex flex-col border border-border/50 shadow-md bg-card/50 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                            {b.hasSubscription ? <Zap className="w-5 h-5 text-yellow-500" /> : <Sparkles className="w-5 h-5 text-primary" />}
-                            {b.hasSubscription ? 'Add Top-Up' : 'Choose a Plan'}
-                        </CardTitle>
-                        <CardDescription>
-                            {b.hasSubscription 
-                                ? 'One-off credits that never expire while your plan is active.' 
-                                : 'Subscribe to unlock LegalDesk AI features.'}
-                        </CardDescription>
-                    </CardHeader>
-                    
-                    <CardContent className="flex-1 space-y-4">
-                        {!state.razorpayConfigured && process.env.NODE_ENV === 'production' ? (
-                            <div className="text-sm text-muted-foreground p-4 bg-secondary/30 rounded-lg text-center">
-                                Payments are not switched on for this server yet.
-                            </div>
-                        ) : !b.hasSubscription ? (
-                            <div className="space-y-3">
-                                {state.plans.map(p => (
-                                    <div key={p.code} className="p-4 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-colors group">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="font-semibold text-sm group-hover:text-primary transition-colors">{p.name}</div>
-                                            <div className="text-right">
-                                                <div className="font-bold text-foreground">{fmtINR(p.priceInr)}</div>
-                                                <div className="text-[10px] text-muted-foreground">/ month</div>
-                                            </div>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{p.description}</p>
-                                        <Button
-                                            onClick={() => subscribe(p.code)}
-                                            disabled={!isAdmin || busy !== null}
-                                            className="w-full text-xs h-8"
-                                            variant={p.code === 'PRO' ? 'default' : 'secondary'}
-                                        >
-                                            {busy === 'subscribe' ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : null}
-                                            {busy === 'subscribe' ? 'Opening...' : 'Subscribe'}
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {state.packs.map(p => (
-                                    <div key={p.code} className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-colors">
-                                        <div>
-                                            <div className="font-semibold text-sm">{p.name}</div>
-                                            <div className="text-xs text-muted-foreground font-medium">{fmtINR(p.priceInr)}</div>
-                                        </div>
-                                        <Button
-                                            onClick={() => topUp(p.code)}
-                                            disabled={!isAdmin || busy !== null}
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-8 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
-                                        >
-                                            {busy === p.code ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : null}
-                                            {busy === p.code ? 'Processing...' : 'Buy'}
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-
-                    {b.hasSubscription && isAdmin && (
-                        <CardFooter className="pt-4 border-t border-border/50 bg-secondary/20">
-                            <div className="flex items-center justify-between w-full gap-4">
-                                <div>
-                                    <div className="text-xs font-semibold">Cancel plan</div>
-                                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                                        Stops renewal. AI stays until {b.periodEnd ? new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }) : 'end of period'}.
-                                    </div>
-                                </div>
-                                <Button
-                                    onClick={cancel}
-                                    disabled={busy !== null}
-                                    variant="destructive"
-                                    size="sm"
-                                    className="h-7 text-[10px] px-2.5"
-                                >
-                                    {busy === 'cancel' ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Cancel'}
-                                </Button>
-                            </div>
-                        </CardFooter>
-                    )}
-                </Card>
-            </div>
-
-            {/* ── Where it went ───────────────────────────────── */}
-            {state.breakdown.byFeature.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                    <Card className="border-0 shadow-md bg-card/40">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
-                                <Activity className="w-4 h-4 text-primary" /> Usage by Feature
+                    {/* ── Plans or TopUps Side Card ──────────────────────────────── */}
+                    <Card className="flex flex-col border border-border/50 shadow-md bg-card/50 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                {b.hasSubscription ? <Zap className="w-5 h-5 text-yellow-500" /> : <Sparkles className="w-5 h-5 text-primary" />}
+                                {b.hasSubscription ? 'Add Top-Up' : 'Choose a Plan'}
                             </CardTitle>
+                            <CardDescription>
+                                {b.hasSubscription 
+                                    ? 'One-off credits that never expire while your plan is active.' 
+                                    : 'Subscribe to unlock LegalDesk AI features.'}
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {state.breakdown.byFeature.map(f => (
-                                    <div key={f.feature} className="flex items-center justify-between group">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-secondary/60 flex items-center justify-center">
-                                                <TrendingUp className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        
+                        <CardContent className="flex-1 space-y-4">
+                            {!state.razorpayConfigured && process.env.NODE_ENV === 'production' ? (
+                                <div className="text-sm text-muted-foreground p-4 bg-secondary/30 rounded-lg text-center">
+                                    Payments are not switched on for this server yet.
+                                </div>
+                            ) : !b.hasSubscription ? (
+                                <div className="space-y-3">
+                                    {state.plans.map(p => (
+                                        <div key={p.code} className="p-4 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-colors group">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="font-semibold text-sm group-hover:text-primary transition-colors">{p.name}</div>
+                                                <div className="text-right">
+                                                    <div className="font-bold text-foreground">{fmtINR(p.priceInr)}</div>
+                                                    <div className="text-[10px] text-muted-foreground">/ month</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="text-sm font-medium">{FEATURE_LABEL[f.feature] || f.feature}</div>
-                                                <div className="text-[10px] text-muted-foreground">{f.operations} ops</div>
-                                            </div>
+                                            <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{p.description}</p>
+                                            <Button
+                                                onClick={() => subscribe(p.code)}
+                                                disabled={!isAdmin || busy !== null}
+                                                className="w-full text-xs h-8"
+                                                variant={p.code === 'PRO' ? 'default' : 'secondary'}
+                                            >
+                                                {busy === 'subscribe' ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : null}
+                                                {busy === 'subscribe' ? 'Opening...' : 'Subscribe'}
+                                            </Button>
                                         </div>
-                                        <div className="font-semibold text-sm">{fmtCredits(f.credits)}</div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {state.packs.map(p => (
+                                        <div key={p.code} className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-colors">
+                                            <div>
+                                                <div className="font-semibold text-sm">{p.name}</div>
+                                                <div className="text-xs text-muted-foreground font-medium">{fmtINR(p.priceInr)}</div>
+                                            </div>
+                                            <Button
+                                                onClick={() => topUp(p.code)}
+                                                disabled={!isAdmin || busy !== null}
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
+                                            >
+                                                {busy === p.code ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : null}
+                                                {busy === p.code ? 'Processing...' : 'Buy'}
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
-                    </Card>
 
-                    {state.breakdown.byUser.length > 0 && (
+                        {b.hasSubscription && isAdmin && (
+                            <CardFooter className="pt-4 border-t border-border/50 bg-secondary/20">
+                                <div className="flex items-center justify-between w-full gap-4">
+                                    <div>
+                                        <div className="text-xs font-semibold">Cancel plan</div>
+                                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                                            Stops renewal. AI stays until {b.periodEnd ? new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }) : 'end of period'}.
+                                        </div>
+                                    </div>
+                                    <Button
+                                        onClick={cancel}
+                                        disabled={busy !== null}
+                                        variant="destructive"
+                                        size="sm"
+                                        className="h-7 text-[10px] px-2.5"
+                                    >
+                                        {busy === 'cancel' ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Cancel'}
+                                    </Button>
+                                </div>
+                            </CardFooter>
+                        )}
+                    </Card>
+                </div>
+
+                {/* ── Where it went ───────────────────────────────── */}
+                {state.breakdown.byFeature.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                         <Card className="border-0 shadow-md bg-card/40">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
-                                    <CreditCard className="w-4 h-4 text-primary" /> Usage by Person
+                                    <Activity className="w-4 h-4 text-primary" /> Usage by Feature
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {state.breakdown.byUser.map(u => (
-                                        <div key={u.userId} className="flex items-center justify-between group">
+                                    {state.breakdown.byFeature.map(f => (
+                                        <div key={f.feature} className="flex items-center justify-between group">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
-                                                    {u.name.substring(0,2)}
+                                                <div className="w-8 h-8 rounded-full bg-secondary/60 flex items-center justify-center">
+                                                    <TrendingUp className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                                 </div>
-                                                <div className="text-sm font-medium truncate max-w-[150px]">{u.name}</div>
+                                                <div>
+                                                    <div className="text-sm font-medium">{FEATURE_LABEL[f.feature] || f.feature}</div>
+                                                    <div className="text-[10px] text-muted-foreground">{f.operations} ops</div>
+                                                </div>
                                             </div>
-                                            <div className="font-semibold text-sm">{fmtCredits(u.credits)}</div>
+                                            <div className="font-semibold text-sm">{fmtCredits(f.credits)}</div>
                                         </div>
                                     ))}
                                 </div>
                             </CardContent>
                         </Card>
-                    )}
-                </div>
-            )}
 
-            {/* ── Statement ───────────────────────────────────── */}
-            {entries.length > 0 && (
-                <Card className="border-0 shadow-md overflow-hidden bg-card/40">
-                    <CardHeader className="pb-4 border-b border-border/50">
-                        <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
-                            <History className="w-4 h-4 text-primary" /> Transaction Statement
-                        </CardTitle>
-                    </CardHeader>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="text-xs text-muted-foreground uppercase bg-secondary/30">
-                                <tr>
-                                    <th className="px-6 py-4 font-semibold">Entry / Feature</th>
-                                    <th className="px-6 py-4 font-semibold">Date & Time</th>
-                                    <th className="px-6 py-4 font-semibold text-right">{label}</th>
-                                    <th className="px-6 py-4 font-semibold text-right">Balance</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/50">
-                                {entries.map((e, i) => (
-                                    <tr key={i} className="hover:bg-secondary/20 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="font-medium text-foreground">
-                                                {e.feature ? (FEATURE_LABEL[e.feature] || e.feature) : e.reason || e.type}
-                                            </div>
-                                            {e.tokens != null && (
-                                                <div className="text-[10px] text-muted-foreground mt-0.5">
-                                                    {e.tokens.toLocaleString('en-IN')} tokens {e.model ? `· ${e.model}` : ''}
+                        {state.breakdown.byUser.length > 0 && (
+                            <Card className="border-0 shadow-md bg-card/40">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
+                                        <CreditCard className="w-4 h-4 text-primary" /> Usage by Person
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        {state.breakdown.byUser.map(u => (
+                                            <div key={u.userId} className="flex items-center justify-between group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
+                                                        {u.name.substring(0,2)}
+                                                    </div>
+                                                    <div className="text-sm font-medium truncate max-w-[150px]">{u.name}</div>
                                                 </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-muted-foreground text-xs tabular-nums">
-                                            {new Date(e.at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                        </td>
-                                        <td className="px-6 py-4 text-right tabular-nums">
-                                            <Badge variant={e.credits > 0 ? 'default' : 'outline'} className={`font-mono text-[11px] ${e.credits > 0 ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20' : 'border-border/60 text-muted-foreground'}`}>
-                                                {e.credits > 0 ? '+' : ''}{e.credits.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-6 py-4 text-right tabular-nums text-muted-foreground font-medium">
-                                            {fmtCredits(e.balanceAfter)}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                                <div className="font-semibold text-sm">{fmtCredits(u.credits)}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
-                </Card>
-            )}
+                )}
+
+                {/* ── Statement ───────────────────────────────────── */}
+                {entries.length > 0 && (
+                    <Card className="border-0 shadow-md overflow-hidden bg-card/40">
+                        <CardHeader className="pb-4 border-b border-border/50">
+                            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
+                                <History className="w-4 h-4 text-primary" /> Transaction Statement
+                            </CardTitle>
+                        </CardHeader>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-muted-foreground uppercase bg-secondary/30">
+                                    <tr>
+                                        <th className="px-6 py-4 font-semibold">Entry / Feature</th>
+                                        <th className="px-6 py-4 font-semibold">Date & Time</th>
+                                        <th className="px-6 py-4 font-semibold text-right">{label}</th>
+                                        <th className="px-6 py-4 font-semibold text-right">Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/50">
+                                    {entries.map((e, i) => (
+                                        <tr key={i} className="hover:bg-secondary/20 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="font-medium text-foreground">
+                                                    {e.feature ? (FEATURE_LABEL[e.feature] || e.feature) : e.reason || e.type}
+                                                </div>
+                                                {e.tokens != null && (
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                        {e.tokens.toLocaleString('en-IN')} tokens {e.model ? `· ${e.model}` : ''}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-muted-foreground text-xs tabular-nums">
+                                                {new Date(e.at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                            </td>
+                                            <td className="px-6 py-4 text-right tabular-nums">
+                                                <Badge variant={e.credits > 0 ? 'default' : 'outline'} className={`font-mono text-[11px] ${e.credits > 0 ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20' : 'border-border/60 text-muted-foreground'}`}>
+                                                    {e.credits > 0 ? '+' : ''}{e.credits.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-6 py-4 text-right tabular-nums text-muted-foreground font-medium">
+                                                {fmtCredits(e.balanceAfter)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+                )}
             </div>
         </AppShell>
     );
