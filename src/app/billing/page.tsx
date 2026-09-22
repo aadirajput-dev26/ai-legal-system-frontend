@@ -161,89 +161,114 @@ export default function BillingPage() {
             <div className="flex flex-col h-full max-w-6xl mx-auto pb-16 space-y-8 animate-in fade-in duration-300">
                 {/* Header section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs tracking-wider uppercase font-semibold">
-                            {state.organisation.name}
-                        </Badge>
-                        {isAdmin && <Badge variant="secondary" className="text-[10px]">ADMIN</Badge>}
-                    </div>
-                    <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Usage & Billing</h1>
-                    <p className="text-sm text-muted-foreground mt-2">Manage your AI credits, subscriptions, and payment history.</p>
-                </div>
-            </div>
-
-            {displayError && (
-                <div className="flex items-center gap-3 bg-destructive/15 border border-destructive/30 text-destructive-foreground p-4 rounded-xl">
-                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                    <p className="text-sm font-medium">{displayError}</p>
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* ── Balance Card ─────────────────────────────────────── */}
-                <Card className={`lg:col-span-2 overflow-hidden border-0 shadow-lg relative ${exhausted ? 'bg-destructive/5' : 'bg-card'}`}>
-                    {/* Decorative gradient background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 pointer-events-none" />
-                    
-                    <CardHeader className="pb-2 relative z-10">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <Wallet className="w-5 h-5 text-primary" />
-                                    Available {label}
-                                </CardTitle>
-                                <CardDescription className="mt-1">
-                                    {b.hasSubscription ? `Plan ${b.subscriptionStatus}` : 'No active plan'}
-                                    {b.periodStart && b.periodEnd && (
-                                        <span className="ml-2 pl-2 border-l border-border">
-                                            {new Date(b.periodStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – {new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                                        </span>
-                                    )}
-                                </CardDescription>
-                            </div>
-                            {!state.enforcementEnabled && (
-                                <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
-                                    Measuring Only
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs tracking-wider uppercase font-semibold">
+                                {state.organisation.name}
+                            </Badge>
+                            {!state.enforcementEnabled ? (
+                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 gap-1 font-semibold text-xs px-2.5 py-0.5">
+                                    <Sparkles className="w-3 h-3 text-emerald-400" />
+                                    7-Day Free Trial
                                 </Badge>
-                            )}
+                            ) : isAdmin ? (
+                                <Badge variant="secondary" className="text-[10px]">ADMIN</Badge>
+                            ) : null}
                         </div>
-                    </CardHeader>
+                        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Usage & Billing</h1>
+                        <p className="text-sm text-muted-foreground mt-2">Manage your AI credits, subscriptions, and payment history.</p>
+                    </div>
+                </div>
+
+                {!state.enforcementEnabled && (
+                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
+                        <Sparkles className="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-400" />
+                        <div>
+                            <p className="text-sm font-semibold text-emerald-300">7-Day Free Trial Active</p>
+                            <p className="text-xs text-emerald-400/90 mt-0.5">
+                                All AI features (Associate AI Chat &amp; Legal Document Drafting) are fully unlocked for your law firm. Usage is metered and tracked below.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {displayError && (
+                    <div className="flex items-center gap-3 bg-destructive/15 border border-destructive/30 text-destructive-foreground p-4 rounded-xl">
+                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                        <p className="text-sm font-medium">{displayError}</p>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
-                    <CardContent className="relative z-10 pt-4">
-                        <div className="flex items-baseline gap-2 mb-6">
-                            <span className={`text-6xl font-bold tracking-tighter ${exhausted ? 'text-destructive' : 'text-foreground'}`}>
-                                {fmtCredits(b.balanceCredits)}
-                            </span>
-                            <span className="text-muted-foreground font-medium">
-                                of {fmtCredits(totalForPeriod)} this period
-                            </span>
-                        </div>
+                    {/* ── Balance Card ─────────────────────────────────────── */}
+                    <Card className={`lg:col-span-2 overflow-hidden border-0 shadow-lg relative ${exhausted && state.enforcementEnabled ? 'bg-destructive/5' : 'bg-card'}`}>
+                        {/* Decorative gradient background */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 pointer-events-none" />
+                        
+                        <CardHeader className="pb-2 relative z-10">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <Wallet className="w-5 h-5 text-primary" />
+                                        Available {label}
+                                    </CardTitle>
+                                    <CardDescription className="mt-1">
+                                        {!state.enforcementEnabled ? (
+                                            <span className="text-emerald-400 font-medium">7-Day Free Trial Access</span>
+                                        ) : b.hasSubscription ? (
+                                            `Plan ${b.subscriptionStatus}`
+                                        ) : (
+                                            'No active plan'
+                                        )}
+                                        {b.periodStart && b.periodEnd && (
+                                            <span className="ml-2 pl-2 border-l border-border">
+                                                {new Date(b.periodStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – {new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                            </span>
+                                        )}
+                                    </CardDescription>
+                                </div>
+                                {!state.enforcementEnabled && (
+                                    <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                        Free Trial Active
+                                    </Badge>
+                                )}
+                            </div>
+                        </CardHeader>
+                        
+                        <CardContent className="relative z-10 pt-4">
+                            <div className="flex items-baseline gap-2 mb-6">
+                                <span className={`text-6xl font-bold tracking-tighter ${exhausted && state.enforcementEnabled ? 'text-destructive' : 'text-foreground'}`}>
+                                    {!state.enforcementEnabled && b.balanceCredits === 0 ? 'Unlimited' : fmtCredits(b.balanceCredits)}
+                                </span>
+                                <span className="text-muted-foreground font-medium">
+                                    {!state.enforcementEnabled ? 'during Free Trial' : `of ${fmtCredits(totalForPeriod)} this period`}
+                                </span>
+                            </div>
 
-                        <div className="space-y-3">
-                            <div className="h-4 w-full bg-secondary/50 rounded-full overflow-hidden flex">
-                                <div
-                                    className={`h-full transition-all duration-1000 ease-out ${exhausted ? 'bg-destructive' : 'bg-gradient-to-r from-primary to-purple-500'}`}
-                                    style={{ width: `${usedPct}%` }}
-                                />
+                            <div className="space-y-3">
+                                <div className="h-4 w-full bg-secondary/50 rounded-full overflow-hidden flex">
+                                    <div
+                                        className={`h-full transition-all duration-1000 ease-out ${exhausted && state.enforcementEnabled ? 'bg-destructive' : 'bg-gradient-to-r from-primary to-purple-500'}`}
+                                        style={{ width: `${!state.enforcementEnabled ? 100 : usedPct}%` }}
+                                    />
+                                </div>
+                                <div className="flex justify-between text-xs font-medium text-muted-foreground">
+                                    <span>{fmtCredits(b.consumedCredits)} used</span>
+                                    {b.toppedUpCredits > 0 && <span className="text-primary/80">+{fmtCredits(b.toppedUpCredits)} topped up</span>}
+                                </div>
                             </div>
-                            <div className="flex justify-between text-xs font-medium text-muted-foreground">
-                                <span>{fmtCredits(b.consumedCredits)} used ({usedPct}%)</span>
-                                {b.toppedUpCredits > 0 && <span className="text-primary/80">+{fmtCredits(b.toppedUpCredits)} topped up</span>}
-                            </div>
-                        </div>
 
-                        {exhausted && state.enforcementEnabled && (
-                            <div className="mt-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                                <p className="text-sm text-destructive-foreground">
-                                    AI features are paused because your balance is exhausted. Please add more {label.toLowerCase()} to continue using AI tools.
-                                </p>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                            {exhausted && state.enforcementEnabled && (
+                                <div className="mt-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-3">
+                                    <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                                    <p className="text-sm text-destructive-foreground">
+                                        AI features are paused because your balance is exhausted. Please add more {label.toLowerCase()} to continue using AI tools.
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
                 {/* ── Plans or TopUps Side Card ──────────────────────────────── */}
                 <Card className="flex flex-col border border-border/50 shadow-md bg-card/50 backdrop-blur-sm">
