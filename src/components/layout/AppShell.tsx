@@ -561,6 +561,33 @@ export function AppShell({ children, caseId }: AppShellProps) {
 
       {/* ── Main Content Area ───────────────────────────────────────── */}
       <main className="flex-1 flex flex-col relative h-full overflow-hidden mt-14 md:mt-0">
+        
+        {/* Persistent Token Banner (except on billing page) */}
+        {pathname !== '/billing' && billingState && (
+          <div className="bg-primary/10 border-b border-primary/20 px-4 py-1.5 flex items-center justify-center sm:justify-between text-xs text-primary/90 shadow-sm z-10 flex-shrink-0">
+            <div className="hidden sm:flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="font-semibold tracking-wide uppercase">AI Engine Active</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5">
+                <span className="text-muted-foreground">Available {billingState.creditLabel}:</span>
+                <span className="font-bold text-foreground">
+                  {!billingState.enforcementEnabled 
+                    ? 'Unlimited (Free Trial)' 
+                    : billingState.balance.balanceCredits.toLocaleString('en-IN')}
+                </span>
+              </span>
+              {!billingState.enforcementEnabled && !billingState.balance.hasSubscription && (
+                <Link href="/billing" className="ml-2 font-medium underline underline-offset-2 hover:text-foreground">
+                  Subscribe Now
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
         <ScrollArea className="flex-1 h-full">
           <div className="p-4 sm:p-6 md:p-8 w-full max-w-6xl mx-auto min-h-full">
             {children}
