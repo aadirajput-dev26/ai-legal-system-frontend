@@ -50,7 +50,15 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
             ...(init?.headers || {}),
         },
     });
-    const body = await res.json().catch(() => ({}));
+    const text = await res.text();
+    let body: any = {};
+    if (text) {
+        try {
+            body = JSON.parse(text);
+        } catch (err) {
+            console.error('Billing API Parse Error', path);
+        }
+    }
     if (!res.ok) throw Object.assign(new Error(body?.error?.message || `Request failed (${res.status})`), { code: body?.error?.code, status: res.status });
     return body.data as T;
 }
