@@ -56,7 +56,14 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     throw new Error(errMsg);
   }
 
-  return res.json();
+  const text = await res.text();
+  if (!text) return {} as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch (err) {
+    console.error('API Parse Error for endpoint', endpoint, err);
+    throw new Error('Invalid JSON response');
+  }
 }
 
 // ── Auth ──────────────────────────────────────────────────────────
