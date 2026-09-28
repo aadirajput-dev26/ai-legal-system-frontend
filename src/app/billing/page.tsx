@@ -152,31 +152,16 @@ export default function BillingPage() {
                             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs tracking-wider uppercase font-semibold">
                                 {state.organisation.name}
                             </Badge>
-                            {!state.enforcementEnabled ? (
-                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 gap-1 font-semibold text-xs px-2.5 py-0.5">
-                                    <Sparkles className="w-3 h-3 text-emerald-400" />
-                                    7-Day Free Trial
-                                </Badge>
-                            ) : isAdmin ? (
+                            {isAdmin && (
                                 <Badge variant="secondary" className="text-[10px]">ADMIN</Badge>
-                            ) : null}
+                            )}
                         </div>
                         <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Usage & Billing</h1>
                         <p className="text-sm text-muted-foreground mt-2">Manage your AI credits, subscriptions, and payment history.</p>
                     </div>
                 </div>
 
-                {!state.enforcementEnabled && (
-                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3">
-                        <Sparkles className="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-400" />
-                        <div>
-                            <p className="text-sm font-semibold text-emerald-300">7-Day Free Trial Active</p>
-                            <p className="text-xs text-emerald-400/90 mt-0.5">
-                                All AI features (Associate AI Chat &amp; Legal Document Drafting) are fully unlocked for your law firm. Usage is metered and tracked below.
-                            </p>
-                        </div>
-                    </div>
-                )}
+
 
                 {displayError && (
                     <div className="flex items-center gap-3 bg-destructive/15 border border-destructive/30 text-destructive-foreground p-4 rounded-xl">
@@ -198,12 +183,10 @@ export default function BillingPage() {
                                         Available {label}
                                     </CardTitle>
                                     <CardDescription className="mt-1">
-                                        {!state.enforcementEnabled ? (
-                                            <span className="text-emerald-400 font-medium">7-Day Free Trial Access</span>
-                                        ) : b.hasSubscription ? (
+                                        {b.hasSubscription ? (
                                             `Plan ${b.subscriptionStatus}`
                                         ) : (
-                                            'No active plan'
+                                            'Free Tokens'
                                         )}
                                         {b.periodStart && b.periodEnd && (
                                             <span className="ml-2 pl-2 border-l border-border">
@@ -212,21 +195,17 @@ export default function BillingPage() {
                                         )}
                                     </CardDescription>
                                 </div>
-                                {!state.enforcementEnabled && (
-                                    <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                                        Free Trial Active
-                                    </Badge>
-                                )}
+
                             </div>
                         </CardHeader>
                         
                         <CardContent className="relative z-10 pt-4">
                             <div className="flex items-baseline gap-2 mb-6">
                                 <span className={`text-6xl font-bold tracking-tighter ${exhausted && state.enforcementEnabled ? 'text-destructive' : 'text-foreground'}`}>
-                                    {!state.enforcementEnabled && b.balanceCredits === 0 ? 'Unlimited' : fmtCredits(b.balanceCredits)}
+                                    {fmtCredits(b.balanceCredits)}
                                 </span>
                                 <span className="text-muted-foreground font-medium">
-                                    {!state.enforcementEnabled ? 'during Free Trial' : `of ${fmtCredits(totalForPeriod)} this period`}
+                                    of {fmtCredits(totalForPeriod)} this period
                                 </span>
                             </div>
 
@@ -234,7 +213,7 @@ export default function BillingPage() {
                                 <div className="h-4 w-full bg-secondary/50 rounded-full overflow-hidden flex">
                                     <div
                                         className={`h-full transition-all duration-1000 ease-out ${exhausted && state.enforcementEnabled ? 'bg-destructive' : 'bg-gradient-to-r from-primary to-purple-500'}`}
-                                        style={{ width: `${!state.enforcementEnabled ? 100 : usedPct}%` }}
+                                        style={{ width: `${usedPct}%` }}
                                     />
                                 </div>
                                 <div className="flex justify-between text-xs font-medium text-muted-foreground">

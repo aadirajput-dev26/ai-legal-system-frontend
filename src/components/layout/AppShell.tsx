@@ -574,12 +574,10 @@ export function AppShell({ children, caseId }: AppShellProps) {
               <span className="flex items-center gap-1.5">
                 <span className="text-muted-foreground">Available {billingState.creditLabel}:</span>
                 <span className="font-bold text-foreground">
-                  {!billingState.enforcementEnabled 
-                    ? 'Unlimited (Free Trial)' 
-                    : billingState.balance.balanceCredits.toLocaleString('en-IN')}
+                  {billingState.balance.balanceCredits.toLocaleString('en-IN')}
                 </span>
               </span>
-              {!billingState.enforcementEnabled && !billingState.balance.hasSubscription && (
+              {!billingState.balance.hasSubscription && (
                 <Link href="/billing" className="ml-2 font-medium underline underline-offset-2 hover:text-foreground">
                   Subscribe Now
                 </Link>
