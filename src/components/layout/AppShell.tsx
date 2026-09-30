@@ -140,14 +140,6 @@ export function AppShell({ children, caseId }: AppShellProps) {
   const [mobileAssociateOpen, setMobileAssociateOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatInput, setChatInput] = useState('');
-  const [billingState, setBillingState] = useState<BillingState | null>(null);
-
-  // Fetch billing state for top bar engine status
-  useEffect(() => {
-    if (currentOrg?.id) {
-      billingApi.get(currentOrg.id).then(setBillingState).catch(() => {});
-    }
-  }, [currentOrg?.id]);
 
   // Auto-open Associate panel on case detail pages
   useEffect(() => {

@@ -5,10 +5,7 @@ import {
     billingApi, loadRazorpay, fmtCredits, fmtINR, FEATURE_LABEL,
     type LedgerEntry, type RazorpayCheckoutResponse,
 } from '@/lib/billing';
-<<<<<<< HEAD
 import { useBilling } from '@/lib/billing-context';
-=======
->>>>>>> ab4f191 (fix: resolve QC issues for dashboard dates, calendar offset, AI engine topbar, and subscription created state)
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,21 +14,14 @@ import {
   Sparkles, 
   Wallet, 
   Activity, 
-<<<<<<< HEAD
-  History, 
-=======
   History as HistoryIcon, 
->>>>>>> ab4f191 (fix: resolve QC issues for dashboard dates, calendar offset, AI engine topbar, and subscription created state)
   CheckCircle2, 
   AlertCircle,
   Loader2,
   TrendingUp,
   Zap
 } from 'lucide-react';
-<<<<<<< HEAD
 import { useAuth } from '@/lib/auth-context';
-=======
->>>>>>> ab4f191 (fix: resolve QC issues for dashboard dates, calendar offset, AI engine topbar, and subscription created state)
 import { AppShell } from '@/components/layout/AppShell';
 
 export default function BillingPage() {
@@ -154,7 +144,6 @@ export default function BillingPage() {
 
     return (
         <AppShell>
-<<<<<<< HEAD
             <div className="flex flex-col h-full max-w-6xl mx-auto pb-16 space-y-8 animate-in fade-in duration-300">
                 {/* Header section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -197,28 +186,6 @@ export default function BillingPage() {
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-=======
-            <div className="p-8 pb-24 max-w-5xl font-sans">
-
-            <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-black/45 dark:text-white/40">
-                {state.organisation.name}
-            </div>
-            <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.022em] mt-1.5">Usage &amp; billing</h1>
-
-            <div className="flex items-center gap-2.5 mt-2 text-[12px] text-black/60 dark:text-white/60">
-                <span>{b.hasSubscription ? `Plan ${b.subscriptionStatus}` : 'No active plan'}</span>
-                {b.periodStart && b.periodEnd && (
-                    <>
-                        <i className="w-[3px] h-[3px] rounded-full bg-black/25 dark:bg-white/25" />
-                        <span className="tabular-nums">
-                            {new Date(b.periodStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – {new Date(b.periodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                        </span>
-                    </>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
->>>>>>> ab4f191 (fix: resolve QC issues for dashboard dates, calendar offset, AI engine topbar, and subscription created state)
                     {/* ── Balance Card ─────────────────────────────────────── */}
                     <Card className={`lg:col-span-2 overflow-hidden border-0 shadow-lg relative ${exhausted && state.enforcementEnabled ? 'bg-destructive/5' : 'bg-card'}`}>
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 pointer-events-none" />
@@ -231,21 +198,14 @@ export default function BillingPage() {
                                         Available {label}
                                     </CardTitle>
                                     <CardDescription className="mt-1">
-<<<<<<< HEAD
                                         {!state.enforcementEnabled ? (
                                             <span className="text-emerald-400 font-medium">7-Day Free Trial Access</span>
                                         ) : b.hasSubscription ? (
-                                            `Plan ${b.subscriptionStatus}`
-                                        ) : (
-                                            'No active plan'
-=======
-                                        {b.hasSubscription ? (
                                             `Plan ${b.subscriptionStatus}`
                                         ) : b.subscriptionStatus === 'created' ? (
                                             'Checkout Incomplete (No Active Plan)'
                                         ) : (
                                             'Free Credits'
->>>>>>> ab4f191 (fix: resolve QC issues for dashboard dates, calendar offset, AI engine topbar, and subscription created state)
                                         )}
                                         {b.periodStart && b.periodEnd && (
                                             <span className="ml-2 pl-2 border-l border-border">
@@ -254,32 +214,21 @@ export default function BillingPage() {
                                         )}
                                     </CardDescription>
                                 </div>
-<<<<<<< HEAD
                                 {!state.enforcementEnabled && (
                                     <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                                         Free Trial Active
                                     </Badge>
                                 )}
-=======
-
->>>>>>> ab4f191 (fix: resolve QC issues for dashboard dates, calendar offset, AI engine topbar, and subscription created state)
                             </div>
                         </CardHeader>
                         
                         <CardContent className="relative z-10 pt-4">
                             <div className="flex items-baseline gap-2 mb-6">
                                 <span className={`text-6xl font-bold tracking-tighter ${exhausted && state.enforcementEnabled ? 'text-destructive' : 'text-foreground'}`}>
-<<<<<<< HEAD
                                     {!state.enforcementEnabled && b.balanceCredits === 0 ? 'Unlimited' : fmtCredits(b.balanceCredits)}
                                 </span>
                                 <span className="text-muted-foreground font-medium">
                                     {!state.enforcementEnabled ? 'during Free Trial' : `of ${fmtCredits(totalForPeriod)} this period`}
-=======
-                                    {fmtCredits(b.balanceCredits)}
-                                </span>
-                                <span className="text-muted-foreground font-medium">
-                                    of {fmtCredits(totalForPeriod)} this period
->>>>>>> ab4f191 (fix: resolve QC issues for dashboard dates, calendar offset, AI engine topbar, and subscription created state)
                                 </span>
                             </div>
 
@@ -287,11 +236,7 @@ export default function BillingPage() {
                                 <div className="h-4 w-full bg-secondary/50 rounded-full overflow-hidden flex">
                                     <div
                                         className={`h-full transition-all duration-1000 ease-out ${exhausted && state.enforcementEnabled ? 'bg-destructive' : 'bg-gradient-to-r from-primary to-purple-500'}`}
-<<<<<<< HEAD
                                         style={{ width: `${!state.enforcementEnabled ? 100 : usedPct}%` }}
-=======
-                                        style={{ width: `${usedPct}%` }}
->>>>>>> ab4f191 (fix: resolve QC issues for dashboard dates, calendar offset, AI engine topbar, and subscription created state)
                                     />
                                 </div>
                                 <div className="flex justify-between text-xs font-medium text-muted-foreground">
@@ -364,11 +309,7 @@ export default function BillingPage() {
                                             </div>
                                             <Button
                                                 onClick={() => topUp(p.code)}
-<<<<<<< HEAD
-                                                disabled={!isAdmin || busy !== null}
-=======
                                                 disabled={!isAdmin || busy !== null || !state.razorpayConfigured}
->>>>>>> ab4f191 (fix: resolve QC issues for dashboard dates, calendar offset, AI engine topbar, and subscription created state)
                                                 size="sm"
                                                 variant="outline"
                                                 className="h-8 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
@@ -467,11 +408,7 @@ export default function BillingPage() {
                     <Card className="border-0 shadow-md overflow-hidden bg-card/40">
                         <CardHeader className="pb-4 border-b border-border/50">
                             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
-<<<<<<< HEAD
-                                <History className="w-4 h-4 text-primary" /> Transaction Statement
-=======
                                 <HistoryIcon className="w-4 h-4 text-primary" /> Transaction Statement
->>>>>>> ab4f191 (fix: resolve QC issues for dashboard dates, calendar offset, AI engine topbar, and subscription created state)
                             </CardTitle>
                         </CardHeader>
                         <div className="overflow-x-auto">
