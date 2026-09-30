@@ -296,15 +296,6 @@ export default function DashboardPage() {
       }
     });
 
-    // Fallback: If no real dates match today/tomorrow, populate earliest as active representation
-    if (today.length === 0 && tomorrow.length === 0 && casesWithHearing.length > 0) {
-      return {
-        todayList: casesWithHearing.slice(0, 2),
-        tomorrowList: casesWithHearing.slice(2, 3),
-        upcomingList: casesWithHearing.slice(3)
-      };
-    }
-
     return { todayList: today, tomorrowList: tomorrow, upcomingList: upcoming };
   }, [casesWithHearing]);
 
@@ -322,13 +313,18 @@ export default function DashboardPage() {
   const hearingsThisWeekCount = casesWithHearing.length;
   const readinessScore = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 92;
 
-  // Recent timeline synthesized from cases & tasks
+  // Recent timeline synthesized from cases & tasks with timestamp sorting
   const recentFeed = useMemo(() => {
-    const items: Array<{ time: string; action: string; caseTitle: string; user: string; isImportant: boolean; caseId?: string }> = [];
+    const items: Array<{ time: string; timestamp: number; action: string; caseTitle: string; user: string; isImportant: boolean; caseId?: string }> = [];
+
+    const now = Date.now();
+    const hour = 3600 * 1000;
 
     cases.slice(0, 3).forEach((c, idx) => {
+      const hoursAgo = idx === 0 ? 2 : (idx === 1 ? 5 : 24);
       items.push({
-        time: idx === 0 ? '2h ago' : (idx === 1 ? '5h ago' : '1d ago'),
+        time: hoursAgo >= 24 ? '1d ago' : `${hoursAgo}h ago`,
+        timestamp: now - hoursAgo * hour,
         action: c.stage ? `Matter progressed to ${c.stage}` : 'Case record updated',
         caseTitle: c.title,
         user: idx === 0 ? 'You' : (idx === 1 ? 'A. Shah' : 'Associate AI'),
@@ -339,8 +335,10 @@ export default function DashboardPage() {
 
     tasks.slice(0, 2).forEach((t, idx) => {
       const parentCase = cases.find(c => c.id === t.case_id);
+      const hoursAgo = idx + 3;
       items.push({
-        time: `${idx + 3}h ago`,
+        time: `${hoursAgo}h ago`,
+        timestamp: now - hoursAgo * hour,
         action: `Task created: ${t.title}`,
         caseTitle: parentCase?.title || 'Active Matter',
         user: 'Associate AI',
@@ -349,7 +347,8 @@ export default function DashboardPage() {
       });
     });
 
-    return items;
+    // Sort descending (newest first)
+    return items.sort((a, b) => b.timestamp - a.timestamp);
   }, [cases, tasks]);
 
   if (authLoading || !user) {
@@ -440,10 +439,11 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="p-4 bg-[#111111] border border-white/5 rounded-xl flex items-center justify-between hover:border-white/10 transition-colors">
+          <div className="p-4 bg-[#111111] border border-white/5 rounded-xl flex items-center justify-between hover:border-white/10 transition-colors" title={`${completedTasks.length} of ${tasks.length || 1} tasks completed`}>
             <div>
               <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Readiness Score</div>
               <div className="text-2xl font-bold font-heading text-[#4ADE80] mt-1">{readinessScore}%</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">{completedTasks.length}/{tasks.length || 1} tasks completed</div>
             </div>
             <div className="w-9 h-9 rounded-lg bg-[#4ADE80]/10 text-[#4ADE80] flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />

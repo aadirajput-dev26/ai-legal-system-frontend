@@ -41,7 +41,7 @@ import {
 import { cases as casesApi, tasks as tasksApi, hearings as hearingsApi } from '@/lib/api';
 import { useOrg } from '@/lib/org-context';
 import { CaseItem } from '@/lib/types';
-import { format, formatDistanceToNow, isSameWeek, parseISO } from 'date-fns';
+import { format, formatDistanceToNow, isSameWeek, parseISO, differenceInCalendarDays } from 'date-fns';
 
 export default function CasesPage() {
   const router = useRouter();
@@ -170,7 +170,12 @@ export default function CasesPage() {
   const formatDateTime = (dateStr: string | null | undefined) => {
     if (!dateStr) return '—';
     try {
-      return format(parseISO(dateStr), 'dd MMM · HH:mm');
+      const d = parseISO(dateStr);
+      // If date string has no specific time or is 00:00 UTC (renders as 05:30 IST), show date only
+      if (dateStr.length <= 10 || (d.getUTCHours() === 0 && d.getUTCMinutes() === 0)) {
+        return format(d, 'dd MMM yyyy');
+      }
+      return format(d, 'dd MMM · HH:mm');
     } catch {
       return '—';
     }
@@ -179,7 +184,13 @@ export default function CasesPage() {
   const formatRelativeDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return '';
     try {
-      return formatDistanceToNow(parseISO(dateStr), { addSuffix: true });
+      const target = parseISO(dateStr);
+      const days = differenceInCalendarDays(target, new Date());
+      if (days === 0) return 'today';
+      if (days === 1) return 'tomorrow';
+      if (days === -1) return 'yesterday';
+      if (days > 1) return `in ${days} days`;
+      return `${Math.abs(days)} days ago`;
     } catch {
       return '';
     }

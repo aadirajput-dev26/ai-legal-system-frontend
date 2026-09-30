@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { chat as chatApi } from '@/lib/api';
+import { billingApi, type BillingState } from '@/lib/billing';
 import { RotatingLegalUpdate } from '@/components/chat/RotatingLegalUpdate';
 
 interface AppShellProps {
@@ -139,6 +140,14 @@ export function AppShell({ children, caseId }: AppShellProps) {
   const [mobileAssociateOpen, setMobileAssociateOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatInput, setChatInput] = useState('');
+  const [billingState, setBillingState] = useState<BillingState | null>(null);
+
+  // Fetch billing state for top bar engine status
+  useEffect(() => {
+    if (currentOrg?.id) {
+      billingApi.get(currentOrg.id).then(setBillingState).catch(() => {});
+    }
+  }, [currentOrg?.id]);
 
   // Auto-open Associate panel on case detail pages
   useEffect(() => {
@@ -561,33 +570,38 @@ export function AppShell({ children, caseId }: AppShellProps) {
 
       {/* ── Main Content Area ───────────────────────────────────────── */}
       <main className="flex-1 flex flex-col relative h-full overflow-hidden mt-14 md:mt-0">
-        
         {/* Persistent Token Banner (except on billing page) */}
-        {pathname !== '/billing' && billingState && (
-          <div className="bg-primary/10 border-b border-primary/20 px-4 py-1.5 flex items-center justify-center sm:justify-between text-xs text-primary/90 shadow-sm z-10 flex-shrink-0">
-            <div className="hidden sm:flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span className="font-semibold tracking-wide uppercase">AI Engine Active</span>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5">
-                <span className="text-muted-foreground">Available {billingState.creditLabel}:</span>
-                <span className="font-bold text-foreground">
-                  {!billingState.enforcementEnabled 
-                    ? 'Unlimited (Free Trial)' 
-                    : billingState.balance.balanceCredits.toLocaleString('en-IN')}
+        {pathname !== '/billing' && billingState && (() => {
+          const isAiActive = !billingState.enforcementEnabled || billingState.balance.balanceCredits > 0;
+          return (
+            <div className={`border-b px-4 py-1.5 flex items-center justify-center sm:justify-between text-xs shadow-sm z-10 flex-shrink-0 ${
+              isAiActive 
+                ? 'bg-primary/10 border-primary/20 text-primary/90' 
+                : 'bg-destructive/10 border-destructive/20 text-destructive'
+            }`}>
+              <div className="hidden sm:flex items-center gap-2">
+                <Sparkles className={`w-3.5 h-3.5 ${isAiActive ? 'text-primary' : 'text-destructive'}`} />
+                <span className="font-semibold tracking-wide uppercase">
+                  {isAiActive ? 'AI Engine Active' : 'AI Engine Paused'}
                 </span>
-              </span>
-              {!billingState.enforcementEnabled && !billingState.balance.hasSubscription && (
-                <Link href="/billing" className="ml-2 font-medium underline underline-offset-2 hover:text-foreground">
-                  Subscribe Now
-                </Link>
-              )}
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Available Credits:</span>
+                  <span className="font-bold text-foreground">
+                    {billingState.balance.balanceCredits.toLocaleString('en-IN')}
+                  </span>
+                </span>
+                {(!billingState.balance.hasSubscription || !isAiActive) && (
+                  <Link href="/billing" className="ml-2 font-medium underline underline-offset-2 hover:text-foreground">
+                    {!billingState.balance.hasSubscription ? 'Subscribe Now' : 'Top Up Credits'}
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-
+          );
+        })()}
         <ScrollArea className="flex-1 h-full">
           <div className="p-4 sm:p-6 md:p-8 w-full max-w-6xl mx-auto min-h-full">
             {children}

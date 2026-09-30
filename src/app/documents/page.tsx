@@ -541,7 +541,7 @@ export default function DocumentsPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-foreground text-sm truncate">{doc.title}</div>
-                        {doc.description && (
+                        {doc.description && doc.description.trim() !== doc.title?.trim() && (
                           <div className="text-muted-foreground/80 truncate text-[11px] mt-0.5">
                             {doc.description}
                           </div>
