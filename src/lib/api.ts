@@ -114,6 +114,8 @@ export const cases = {
     request<any>(`/cases/${caseId}`),
   update: (caseId: string, body: any) =>
     request<any>(`/cases/${caseId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  processTranscript: (caseId: string, transcript: string) =>
+    request<any>(`/cases/${caseId}/process-transcript`, { method: 'POST', body: JSON.stringify({ transcript }) }),
   delete: (caseId: string) =>
     request<any>(`/cases/${caseId}`, { method: 'DELETE' }),
   members: {
@@ -126,6 +128,18 @@ export const cases = {
     remove: (caseId: string, userId: string) =>
       request<any>(`/cases/${caseId}/members/${userId}`, { method: 'DELETE' }),
   },
+};
+
+// ── Fees ───────────────────────────────────────────────────────────
+export const fees = {
+  getSummary: (caseId: string) =>
+    request<any>(`/cases/${caseId}/fees`),
+  updateSchedule: (caseId: string, body: any) =>
+    request<any>(`/cases/${caseId}/fees/schedule`, { method: 'POST', body: JSON.stringify(body) }),
+  createMilestone: (caseId: string, body: any) =>
+    request<any>(`/cases/${caseId}/fees/milestones`, { method: 'POST', body: JSON.stringify(body) }),
+  recordPayment: (caseId: string, body: any) =>
+    request<any>(`/cases/${caseId}/fees/payments`, { method: 'POST', body: JSON.stringify(body) }),
 };
 
 // ── Documents ─────────────────────────────────────────────────────
@@ -148,6 +162,8 @@ export const documents = {
     }
     return request<any>(`/cases/${caseId}/documents/${resourceId}`, { method: 'PATCH', body: JSON.stringify(body) });
   },
+  serve: (caseId: string, resourceId: string) =>
+    request<any>(`/cases/${caseId}/documents/${resourceId}/serve`, { method: 'POST' }),
   delete: (caseId: string, resourceId: string) =>
     request<any>(`/cases/${caseId}/documents/${resourceId}`, { method: 'DELETE' }),
 };
@@ -331,16 +347,7 @@ export const calendar = {
 };
 
 // ── Drafts ────────────────────────────────────────────────────────
-export type DraftType =
-  | 'LEGAL_NOTICE'
-  | 'APPLICATION'
-  | 'AFFIDAVIT'
-  | 'REPLY'
-  | 'EMAIL'
-  | 'WHATSAPP'
-  | 'COURT_DRAFT'
-  | 'CORRESPONDENCE'
-  | 'OTHER';
+export type DraftType = string;
 
 export type DraftStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED';
 
