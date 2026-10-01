@@ -23,6 +23,7 @@ export interface CaseItem {
   case_number?: string | null;
   court?: string | null;
   case_type?: string | null;
+  facts?: string | null;
   instructions?: string | null;
   collection_id?: string | null;
   filing_date?: string | null;

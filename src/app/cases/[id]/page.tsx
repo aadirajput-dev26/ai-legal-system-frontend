@@ -27,7 +27,8 @@ import {
   Link as LinkIcon, 
   ExternalLink,
   Layers,
-  Cpu
+  Cpu,
+  Send
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -41,6 +42,9 @@ import { cases as casesApi, tasks as tasksApi, documents as docsApi, hearings as
 import { CaseDraftsTab } from '@/components/drafts/CaseDraftsTab';
 import { CaseItem, TaskItem, HearingItem, DocumentItem } from '@/lib/types';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { ContactsTab } from '@/components/cases/ContactsTab';
+import { FeesTab } from '@/components/cases/FeesTab';
+import { FactsTab } from '@/components/cases/FactsTab';
 
 export default function CaseDetailPage() {
   const router = useRouter();
@@ -417,6 +421,18 @@ export default function CaseDetailPage() {
     }
   };
 
+  const handleServeDoc = async (resourceId: string) => {
+    if (!confirm('Are you sure you want to serve this document to the opposing counsel? They will receive an email.')) return;
+    try {
+      // Show loading toast or state if we had one
+      await docsApi.serve(caseId, resourceId);
+      alert('Document has been successfully served to the opposing counsel.');
+    } catch (err) {
+      console.error('Failed to serve document:', err);
+      alert('Failed to serve document. Ensure contact details are filled.');
+    }
+  };
+
   const handleOpenEditDoc = async (doc: DocumentItem) => {
     const docId = doc.id || doc._id || '';
     if (!docId) return;
@@ -516,6 +532,9 @@ export default function CaseDetailPage() {
 
   const tabs = [
     { id: 'Overview', count: null },
+    { id: 'Facts', count: null },
+    { id: 'Contacts', count: null },
+    { id: 'Fees', count: null },
     { id: 'Hearings', count: hearings.length },
     { id: 'Documents', count: documents.length },
     { id: 'Drafts', count: null },
@@ -807,10 +826,6 @@ export default function CaseDetailPage() {
                     <div className="font-medium text-foreground truncate">{caseData.court || '—'}</div>
                     <div className="text-muted-foreground">Judge</div>
                     <div className="text-foreground truncate">{caseData.judge || '—'}</div>
-                    <div className="text-muted-foreground">Client</div>
-                    <div className="text-foreground truncate">{caseData.client_name || '—'}</div>
-                    <div className="text-muted-foreground">Opposing</div>
-                    <div className="text-foreground truncate">{caseData.opposing_party || '—'}</div>
                     <div className="text-muted-foreground">Filed</div>
                     <div className="text-foreground">{formatDate(caseData.filing_date)}</div>
                   </div>
@@ -936,6 +951,21 @@ export default function CaseDetailPage() {
           </div>
         )}
 
+        {/* ── Tab: Facts ────────────────────────────────────────────── */}
+        {activeTab === 'Facts' && (
+          <FactsTab caseId={caseId} caseData={caseData} onUpdate={fetchCaseData} />
+        )}
+
+        {/* ── Tab: Contacts ─────────────────────────────────────────── */}
+        {activeTab === 'Contacts' && (
+          <ContactsTab caseId={caseId} caseData={caseData} onUpdate={fetchCaseData} />
+        )}
+
+        {/* ── Tab: Fees ─────────────────────────────────────────────── */}
+        {activeTab === 'Fees' && (
+          <FeesTab caseId={caseId} />
+        )}
+
         {/* ── Tab: Hearings ─────────────────────────────────────────── */}
         {activeTab === 'Hearings' && (
           <div className="space-y-4 max-w-3xl">
@@ -1012,6 +1042,16 @@ export default function CaseDetailPage() {
                         title="Edit Document"
                       >
                         {fetchingDocContentId === (d.id || d._id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Edit3 className="w-3.5 h-3.5" />}
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleServeDoc(d.id || d._id || '')}
+                        className="w-7 h-7 text-muted-foreground hover:text-green-400"
+                        title="Serve to Opposing Counsel"
+                      >
+                        <Send className="w-3.5 h-3.5" />
                       </Button>
 
                       <Button
