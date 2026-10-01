@@ -114,6 +114,8 @@ export const cases = {
     request<any>(`/cases/${caseId}`),
   update: (caseId: string, body: any) =>
     request<any>(`/cases/${caseId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  processTranscript: (caseId: string, transcript: string) =>
+    request<any>(`/cases/${caseId}/process-transcript`, { method: 'POST', body: JSON.stringify({ transcript }) }),
   delete: (caseId: string) =>
     request<any>(`/cases/${caseId}`, { method: 'DELETE' }),
   members: {

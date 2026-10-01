@@ -44,6 +44,7 @@ import { CaseItem, TaskItem, HearingItem, DocumentItem } from '@/lib/types';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { ContactsTab } from '@/components/cases/ContactsTab';
 import { FeesTab } from '@/components/cases/FeesTab';
+import { FactsTab } from '@/components/cases/FactsTab';
 
 export default function CaseDetailPage() {
   const router = useRouter();
@@ -531,6 +532,7 @@ export default function CaseDetailPage() {
 
   const tabs = [
     { id: 'Overview', count: null },
+    { id: 'Facts', count: null },
     { id: 'Contacts', count: null },
     { id: 'Fees', count: null },
     { id: 'Hearings', count: hearings.length },
@@ -947,6 +949,11 @@ export default function CaseDetailPage() {
             </div>
 
           </div>
+        )}
+
+        {/* ── Tab: Facts ────────────────────────────────────────────── */}
+        {activeTab === 'Facts' && (
+          <FactsTab caseId={caseId} caseData={caseData} onUpdate={fetchCaseData} />
         )}
 
         {/* ── Tab: Contacts ─────────────────────────────────────────── */}
