@@ -128,6 +128,18 @@ export const cases = {
   },
 };
 
+// ── Fees ───────────────────────────────────────────────────────────
+export const fees = {
+  getSummary: (caseId: string) =>
+    request<any>(`/cases/${caseId}/fees`),
+  updateSchedule: (caseId: string, body: any) =>
+    request<any>(`/cases/${caseId}/fees/schedule`, { method: 'POST', body: JSON.stringify(body) }),
+  createMilestone: (caseId: string, body: any) =>
+    request<any>(`/cases/${caseId}/fees/milestones`, { method: 'POST', body: JSON.stringify(body) }),
+  recordPayment: (caseId: string, body: any) =>
+    request<any>(`/cases/${caseId}/fees/payments`, { method: 'POST', body: JSON.stringify(body) }),
+};
+
 // ── Documents ─────────────────────────────────────────────────────
 export const documents = {
   list: (caseId: string) =>
@@ -148,6 +160,8 @@ export const documents = {
     }
     return request<any>(`/cases/${caseId}/documents/${resourceId}`, { method: 'PATCH', body: JSON.stringify(body) });
   },
+  serve: (caseId: string, resourceId: string) =>
+    request<any>(`/cases/${caseId}/documents/${resourceId}/serve`, { method: 'POST' }),
   delete: (caseId: string, resourceId: string) =>
     request<any>(`/cases/${caseId}/documents/${resourceId}`, { method: 'DELETE' }),
 };
