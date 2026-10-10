@@ -917,12 +917,16 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase">Current Stage</Label>
-                <Input 
-                  placeholder="e.g. Final Arguments" 
+                <select 
                   value={caseForm.stage}
                   onChange={(e) => setCaseForm({ ...caseForm, stage: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
-                />
+                  className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none"
+                >
+                  <option value="">Select Stage</option>
+                  <option value="Pre-Filing / Filing Stage">Pre-Filing / Filing Stage</option>
+                  <option value="Hearing / Trial Stage">Hearing / Trial Stage</option>
+                  <option value="Argument / Final Order Stage">Argument / Final Order Stage</option>
+                </select>
               </div>
 
               <div className="space-y-1.5">
@@ -931,28 +935,6 @@ export default function DashboardPage() {
                   placeholder="e.g. Justice A. Rao" 
                   value={caseForm.judge}
                   onChange={(e) => setCaseForm({ ...caseForm, judge: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Client Name</Label>
-                <Input 
-                  placeholder="e.g. R. Patel" 
-                  value={caseForm.client_name}
-                  onChange={(e) => setCaseForm({ ...caseForm, client_name: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Opposing Party</Label>
-                <Input 
-                  placeholder="e.g. State of Gujarat" 
-                  value={caseForm.opposing_party}
-                  onChange={(e) => setCaseForm({ ...caseForm, opposing_party: e.target.value })}
                   className="bg-[#111111] border-white/10 h-9 text-sm"
                 />
               </div>
