@@ -8,30 +8,17 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
   ChevronRight, 
   Plus, 
   Search, 
-  Filter, 
   Download, 
   Clock, 
   Scale, 
-  Check, 
-  AlertCircle, 
-  FileText, 
-  X, 
   Loader2, 
   ExternalLink,
-  Briefcase,
-  List,
-  Grid,
-  Columns,
-  Sparkles,
-  MapPin,
-  User,
   Gavel
 } from 'lucide-react';
 import { 
@@ -43,7 +30,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { calendar as calendarApi, hearings as hearingsApi, tasks as tasksApi, cases as casesApi } from '@/lib/api';
-import { CalendarDocket, CalendarEvent, CaseItem } from '@/lib/types';
+import { CalendarDocket, CalendarEvent } from '@/lib/types';
 import { 
   format, 
   addMonths, 
@@ -58,8 +45,6 @@ import {
   isToday, 
   parseISO, 
   addDays, 
-  subDays,
-  startOfDay,
   isSameWeek
 } from 'date-fns';
 
@@ -247,16 +232,10 @@ export default function CalendarPage() {
   // Filtered Events
   const filteredEvents = useMemo(() => {
     return allEvents.filter(e => {
-      // Type filter
       if (eventTypeFilter !== 'ALL' && e.type !== eventTypeFilter) return false;
-
-      // Court filter
       if (selectedCourt !== 'ALL' && e.court !== selectedCourt) return false;
-
-      // Case filter
       if (selectedCaseId !== 'ALL' && e.caseId !== selectedCaseId) return false;
 
-      // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const match = 
@@ -288,24 +267,22 @@ export default function CalendarPage() {
     return filteredEvents.filter(e => isSameDay(e.date, selectedDate));
   }, [filteredEvents, selectedDate]);
 
+  // Upcoming hearings this week for Inspector
+  const thisWeekHearings = useMemo(() => {
+    return filteredEvents.filter(e => e.type === 'HEARING' && isSameWeek(e.date, currentDate, { weekStartsOn: 1 }));
+  }, [filteredEvents, currentDate]);
+
+  // Next upcoming appearance
+  const nextAppearance = useMemo(() => {
+    const now = new Date();
+    return filteredEvents.find(e => e.type === 'HEARING' && e.date >= now);
+  }, [filteredEvents]);
+
   // Events for Week View (7 days)
   const weekDays = useMemo(() => {
     const start = startOfWeek(currentDate, { weekStartsOn: 1 });
     return Array.from({ length: 7 }).map((_, i) => addDays(start, i));
   }, [currentDate]);
-
-  // KPI Metrics
-  const metrics = useMemo(() => {
-    const thisMonth = currentDate.getMonth();
-    const thisYear = currentDate.getFullYear();
-
-    const hearingsThisMonth = filteredEvents.filter(e => e.type === 'HEARING' && e.date.getMonth() === thisMonth && e.date.getFullYear() === thisYear).length;
-    const hearingsThisWeek = filteredEvents.filter(e => e.type === 'HEARING' && isSameWeek(e.date, new Date(), { weekStartsOn: 1 })).length;
-    const pendingDeadlines = docket.tasks.filter(t => t.status !== 'COMPLETED').length;
-    const todayAppearances = filteredEvents.filter(e => e.type === 'HEARING' && isToday(e.date)).length;
-
-    return { hearingsThisMonth, hearingsThisWeek, pendingDeadlines, todayAppearances };
-  }, [filteredEvents, currentDate, docket.tasks]);
 
   // Navigation handlers
   const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
@@ -408,7 +385,7 @@ export default function CalendarPage() {
     return (
       <AppShell>
         <div className="flex h-full items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
         </div>
       </AppShell>
     );
@@ -416,258 +393,125 @@ export default function CalendarPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-full max-w-6xl mx-auto pb-16 space-y-6">
+      <div className="flex flex-col h-full max-w-[1300px] mx-auto px-6 sm:px-8 py-8 pb-16 space-y-6">
         
         {/* ── Top Header & Action Controls ────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl sm:text-3xl font-heading font-semibold tracking-tight text-foreground">
-                Calendar & Docket
-              </h1>
-              <Badge variant="outline" className="bg-[#1a231f] text-[#4ADE80] border-[#2D4537] text-xs font-normal py-0.5">
-                <Scale className="w-3 h-3 mr-1" />
-                {currentOrg?.name || 'Litigation Practice'}
-              </Badge>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Court hearings, submission deadlines, and case milestones in one unified schedule.
+            <h1 className="text-3xl font-serif text-[#f3f4f5] tracking-tight">
+              Calendar & docket
+            </h1>
+            <p className="text-sm text-[#879292] mt-1">
+              Hearings, filing deadlines and milestones on one schedule
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button 
-              variant="outline" 
-              size="sm"
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button 
               onClick={handleExportIcs}
-              className="h-9 bg-[#111111] border-white/10 hover:bg-white/5 text-xs text-muted-foreground hover:text-foreground"
-              title="Download .ics file to sync with Google Calendar, Apple Calendar, or Outlook"
+              className="h-8 bg-[#141717] border border-[#272b2b] hover:bg-[#1a1e1e] text-[#f3f4f5] text-xs font-medium px-3.5 rounded-lg transition-colors flex items-center gap-1.5"
+              title="Download .ics file"
             >
-              <Download className="w-3.5 h-3.5 mr-1.5" /> Export iCal
-            </Button>
+              <Download className="w-3.5 h-3.5 text-[#879292]" /> Export iCal
+            </button>
 
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                setTaskForm({ caseId: docket.cases[0]?.id || '', title: '', dueDate: format(selectedDate, 'yyyy-MM-dd'), priority: 'PENDING' });
-                setAddTaskModalOpen(true);
-              }}
-              className="h-9 bg-[#111111] border-white/10 hover:bg-white/5 text-xs"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" /> Deadline
-            </Button>
-
-            <Button 
-              size="sm"
+            <button 
               onClick={() => {
                 setHearingForm({ caseId: docket.cases[0]?.id || '', date: `${format(selectedDate, 'yyyy-MM-dd')}T10:30`, notes: '' });
                 setScheduleHearingModalOpen(true);
               }}
-              className="h-9 bg-[#2D4537] hover:bg-[#385945] text-[#4ADE80] font-medium text-xs border border-[#4ADE80]/30 shadow-none"
+              className="h-8 bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs px-4 rounded-lg transition-colors flex items-center gap-1"
             >
-              <Plus className="w-3.5 h-3.5 mr-1" /> Schedule Hearing
-            </Button>
-          </div>
-        </div>
-
-        {/* ── KPI Metric Summary Row (Clickable filter cards) ────────── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <div 
-            onClick={() => setEventTypeFilter('HEARING')}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-              eventTypeFilter === 'HEARING'
-                ? 'bg-[#1a231f] border-[#2D4537] shadow-[inset_0_0_0_1px_rgba(74,222,128,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
-            }`}
-          >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Month Hearings</div>
-              <div className="text-xl font-bold font-heading text-emerald-400 mt-0.5">{metrics.hearingsThisMonth}</div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <Gavel className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div 
-            onClick={() => setEventTypeFilter('ALL')}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-              eventTypeFilter === 'ALL'
-                ? 'bg-[#1f1624] border-purple-500/40 shadow-[inset_0_0_0_1px_rgba(168,85,247,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
-            }`}
-          >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">All Docket Items</div>
-              <div className="text-xl font-bold font-heading text-purple-400 mt-0.5">{allEvents.length}</div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
-              <CalendarIcon className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div 
-            onClick={() => setEventTypeFilter('TASK')}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-              eventTypeFilter === 'TASK'
-                ? 'bg-[#261c14] border-orange-500/40 shadow-[inset_0_0_0_1px_rgba(249,115,22,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
-            }`}
-          >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Pending Deadlines</div>
-              <div className="text-xl font-bold font-heading text-orange-400 mt-0.5">{metrics.pendingDeadlines}</div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div 
-            onClick={() => setEventTypeFilter('HEARING')}
-            className="p-3.5 bg-[#111111] border border-white/5 hover:border-white/15 rounded-xl transition-all cursor-pointer flex items-center justify-between"
-          >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Today Appearances</div>
-              <div className="text-xl font-bold font-heading text-[#4ADE80] mt-0.5">{metrics.todayAppearances}</div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-[#4ADE80]/10 text-[#4ADE80] flex items-center justify-center">
-              <Scale className="w-4 h-4" />
-            </div>
+              <Plus className="w-3.5 h-3.5" /> Schedule hearing
+            </button>
           </div>
         </div>
 
         {/* ── Calendar Toolbar & View Switcher ────────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#111111] border border-white/5 p-3 rounded-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           
           {/* Month / Date Navigator */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-[#16161a] border border-white/10 rounded-lg p-0.5">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center bg-[#141717] border border-[#272b2b] rounded-lg overflow-hidden">
+              <button 
                 onClick={handlePrevMonth}
-                className="w-7 h-7 text-muted-foreground hover:text-foreground"
+                className="px-2.5 py-1.5 text-xs text-[#879292] hover:text-white border-r border-[#272b2b] transition-colors"
+                title="Previous month"
               >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button 
                 onClick={handleToday}
-                className="h-7 text-xs font-semibold px-2 text-foreground hover:bg-white/5"
+                className="px-3 py-1.5 text-xs font-medium text-[#f3f4f5] hover:bg-white/5 border-r border-[#272b2b] transition-colors"
               >
                 Today
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              </button>
+              <button 
                 onClick={handleNextMonth}
-                className="w-7 h-7 text-muted-foreground hover:text-foreground"
+                className="px-2.5 py-1.5 text-xs text-[#879292] hover:text-white transition-colors"
+                title="Next month"
               >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            <div className="text-base sm:text-lg font-heading font-semibold text-foreground ml-2">
+            <div className="text-lg font-serif font-medium text-white ml-2">
               {format(currentDate, 'MMMM yyyy')}
             </div>
           </div>
 
           {/* View Mode Tabs */}
-          <div className="flex items-center gap-1 bg-[#16161a] border border-white/10 p-1 rounded-lg self-start md:self-auto">
-            {(['month', 'week', 'day', 'agenda'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`px-3 py-1 text-xs font-medium rounded-md capitalize transition-all ${
-                  viewMode === mode 
-                    ? 'bg-[#1a231f] text-[#4ADE80] shadow-sm font-semibold' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {mode === 'day' ? 'Cause List' : mode}
-              </button>
-            ))}
+          <div className="inline-flex items-center bg-[#141717] border border-[#272b2b] p-0.5 rounded-lg text-xs self-start sm:self-auto">
+            {(['month', 'week', 'day', 'agenda'] as const).map(mode => {
+              const label = mode === 'month' ? 'Month' : mode === 'week' ? 'Week' : mode === 'day' ? 'Cause list' : 'Agenda';
+              const isActive = viewMode === mode;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`px-3 py-1 rounded-md transition-all font-medium ${
+                    isActive 
+                      ? 'bg-[#1e2323] text-white shadow-sm font-semibold' 
+                      : 'text-[#879292] hover:text-[#f3f4f5]'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
-        </div>
-
-        {/* ── Search Bar (Left) & Court/Matter Filters (Right) ─────────── */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-2 border-b border-border/50 text-xs">
-          {/* Left: Wide Search Input */}
-          <div className="relative flex-1 w-full max-w-xl">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input 
-              placeholder="Search docket by case title, matter number, or appearance notes..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#111111] border-white/10 pl-9 pr-4 h-9 text-xs rounded-xl focus-visible:ring-1 focus-visible:ring-[#4ADE80] placeholder:text-muted-foreground/60"
-            />
-          </div>
-
-          {/* Right: Matter & Court Dropdowns */}
-          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
-            <div className="flex items-center gap-1.5 bg-[#111111] border border-white/10 rounded-xl px-2.5 h-9 text-xs">
-              <span className="text-muted-foreground">Matter:</span>
-              <select 
-                value={selectedCaseId}
-                onChange={(e) => setSelectedCaseId(e.target.value)}
-                className="bg-transparent text-foreground focus:outline-none cursor-pointer max-w-[150px] truncate"
-              >
-                <option value="ALL" className="bg-[#16161a]">All Matters</option>
-                {docket.cases.map(c => (
-                  <option key={c.id} value={c.id} className="bg-[#16161a]">{c.title}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-1.5 bg-[#111111] border border-white/10 rounded-xl px-2.5 h-9 text-xs">
-              <span className="text-muted-foreground">Court:</span>
-              <select 
-                value={selectedCourt}
-                onChange={(e) => setSelectedCourt(e.target.value)}
-                className="bg-transparent text-foreground focus:outline-none cursor-pointer max-w-[140px] truncate"
-              >
-                <option value="ALL" className="bg-[#16161a]">All Courts</option>
-                {uniqueCourts.map(c => (
-                  <option key={c} value={c} className="bg-[#16161a]">{c}</option>
-                ))}
-              </select>
-            </div>
-          </div>
         </div>
 
         {/* ── Main View Container ─────────────────────────────────────── */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <span className="text-xs">Loading court docket...</span>
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-[#879292]">
+            <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
+            <span className="text-xs">Loading docket...</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
             
             {/* ── MAIN CALENDAR VIEW AREA ──────────────────────────────── */}
-            <div className="bg-[#111111] border border-white/5 rounded-xl overflow-hidden shadow-2xl">
+            <div className="bg-[#121515] border border-[#222828] rounded-xl overflow-hidden">
               
               {/* ── VIEW: MONTH ────────────────────────────────────────── */}
               {viewMode === 'month' && (
                 <div>
                   {/* Days of Week Header */}
-                  <div className="grid grid-cols-7 border-b border-white/5 text-center text-[11px] font-semibold tracking-wider text-muted-foreground uppercase py-2.5 bg-[#16161a]">
-                    <span>Mon</span>
-                    <span>Tue</span>
-                    <span>Wed</span>
-                    <span>Thu</span>
-                    <span>Fri</span>
-                    <span className="text-muted-foreground/50">Sat</span>
-                    <span className="text-muted-foreground/50">Sun</span>
+                  <div className="grid grid-cols-7 border-b border-[#222828] text-center text-[11px] font-mono tracking-wider text-[#6f7a7a] uppercase py-2.5 bg-[#141717]/60">
+                    <span>MON</span>
+                    <span>TUE</span>
+                    <span>WED</span>
+                    <span>THU</span>
+                    <span>FRI</span>
+                    <span>SAT</span>
+                    <span>SUN</span>
                   </div>
 
                   {/* Days Grid */}
-                  <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-white/5">
-                    {calendarDays.map((day, idx) => {
+                  <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-[#222828]">
+                    {calendarDays.map((day) => {
                       const isCurrentMonth = isSameMonth(day, currentDate);
                       const isTodayDate = isToday(day);
                       const isSelected = isSameDay(day, selectedDate);
@@ -680,34 +524,43 @@ export default function CalendarPage() {
                           key={day.toISOString()}
                           onClick={() => setSelectedDate(day)}
                           className={`
-                            min-h-[105px] p-2 flex flex-col justify-between cursor-pointer transition-all relative group
-                            ${isCurrentMonth ? 'bg-transparent' : 'bg-black/30 opacity-40'}
-                            ${isSelected ? 'ring-1 ring-inset ring-[#4ADE80] bg-[#1a231f]/40' : 'hover:bg-white/[0.02]'}
+                            min-h-[110px] p-2 flex flex-col justify-between cursor-pointer transition-colors relative group
+                            ${isCurrentMonth ? 'bg-transparent' : 'bg-black/20 opacity-30'}
+                            ${isSelected ? 'bg-[#161b1a]' : 'hover:bg-white/[0.02]'}
                           `}
                         >
                           {/* Day Number Header */}
                           <div className="flex items-center justify-between">
-                            <span className={`
-                              text-xs font-mono font-medium w-6 h-6 rounded-full flex items-center justify-center
-                              ${isTodayDate 
-                                ? 'bg-[#4ADE80] text-black font-bold shadow-[0_0_10px_rgba(74,222,128,0.4)]' 
-                                : isSelected ? 'text-[#4ADE80]' : 'text-muted-foreground'}
-                            `}>
-                              {format(day, 'd')}
-                            </span>
+                            {isTodayDate ? (
+                              <span className="w-5 h-5 rounded-full bg-[#2dd4bf] text-black font-semibold flex items-center justify-center text-xs">
+                                {format(day, 'd')}
+                              </span>
+                            ) : (
+                              <span className={`text-xs font-mono ${isSelected ? 'text-[#2dd4bf] font-medium' : 'text-[#6f7a7a]'}`}>
+                                {format(day, 'd')}
+                              </span>
+                            )}
 
-                            {dayEvents.length > 0 && (
-                              <span className="text-[10px] text-muted-foreground font-mono">
+                            {dayEvents.length > 0 && !isTodayDate && (
+                              <span className="text-[10px] text-[#6f7a7a] font-mono">
                                 {dayEvents.length}
                               </span>
                             )}
                           </div>
 
-                          {/* Event Pills List */}
+                          {/* Event Bars List */}
                           <div className="space-y-1 my-1 overflow-hidden">
-                            {dayEvents.slice(0, 2).map((event) => {
+                            {dayEvents.slice(0, 2).map((event, i) => {
                               const isHearing = event.type === 'HEARING';
                               const isTask = event.type === 'TASK';
+                              
+                              // Visual bar colors matching artifact:
+                              // Coral/red for hearings, amber for tasks, mint for alternative hearings
+                              const borderStyle = isTask 
+                                ? 'border-l-2 border-[#f59e0b] bg-[#f59e0b]/10 text-[#f59e0b]'
+                                : i % 2 === 0
+                                  ? 'border-l-2 border-[#f87171] bg-[#f87171]/10 text-[#f3f4f5]'
+                                  : 'border-l-2 border-[#2dd4bf] bg-[#2dd4bf]/10 text-[#f3f4f5]';
 
                               return (
                                 <div
@@ -717,35 +570,27 @@ export default function CalendarPage() {
                                     setSelectedEvent(event);
                                     setEventDetailsModalOpen(true);
                                   }}
-                                  className={`
-                                    text-[10px] px-1.5 py-0.5 rounded truncate font-medium flex items-center gap-1 transition-all
-                                    ${isHearing 
-                                      ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/25' 
-                                      : isTask 
-                                        ? 'bg-orange-500/15 text-orange-300 border border-orange-500/20 hover:bg-orange-500/25' 
-                                        : 'bg-purple-500/15 text-purple-300 border border-purple-500/20'}
-                                  `}
+                                  className={`text-[11px] pl-1.5 pr-1 py-0.5 rounded-r truncate font-normal transition-all ${borderStyle}`}
                                   title={`${event.title} (${event.court || ''})`}
                                 >
-                                  <span className="font-mono text-[9px] opacity-75">
-                                    {format(event.date, 'HH:mm')}
-                                  </span>
+                                  {isHearing && (
+                                    <span className="font-mono text-[10px] opacity-75 mr-1">
+                                      {format(event.date, 'HH:mm')}
+                                    </span>
+                                  )}
                                   <span className="truncate">{event.title}</span>
                                 </div>
                               );
                             })}
 
                             {dayEvents.length > 2 && (
-                              <div className="text-[9px] text-muted-foreground/80 font-mono px-1">
+                              <div className="text-[9px] text-[#6f7a7a] font-mono px-1">
                                 +{dayEvents.length - 2} more
                               </div>
                             )}
                           </div>
 
-                          {/* Quick hover add shortcut */}
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-end">
-                            <span className="text-[9px] text-muted-foreground">+ Add</span>
-                          </div>
+                          <div className="h-2"></div>
                         </div>
                       );
                     })}
@@ -755,8 +600,8 @@ export default function CalendarPage() {
 
               {/* ── VIEW: WEEK ─────────────────────────────────────────── */}
               {viewMode === 'week' && (
-                <div className="divide-y divide-white/5">
-                  <div className="grid grid-cols-7 border-b border-white/5 text-center text-xs py-3 bg-[#16161a]">
+                <div className="divide-y divide-[#222828]">
+                  <div className="grid grid-cols-7 border-b border-[#222828] text-center text-xs py-3 bg-[#141717]">
                     {weekDays.map(day => {
                       const isTodayDate = isToday(day);
                       const isSelected = isSameDay(day, selectedDate);
@@ -768,14 +613,14 @@ export default function CalendarPage() {
                           onClick={() => setSelectedDate(day)}
                           className="cursor-pointer p-1"
                         >
-                          <div className="text-[11px] text-muted-foreground uppercase font-semibold">{format(day, 'EEE')}</div>
+                          <div className="text-[11px] text-[#6f7a7a] uppercase font-mono">{format(day, 'EEE')}</div>
                           <div className={`
                             text-sm font-mono font-bold w-7 h-7 mx-auto mt-1 rounded-full flex items-center justify-center
-                            ${isTodayDate ? 'bg-[#4ADE80] text-black' : isSelected ? 'border border-[#4ADE80] text-[#4ADE80]' : 'text-foreground'}
+                            ${isTodayDate ? 'bg-[#2dd4bf] text-black' : isSelected ? 'border border-[#2dd4bf] text-[#2dd4bf]' : 'text-[#f3f4f5]'}
                           `}>
                             {format(day, 'd')}
                           </div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">{dayEvents.length} items</div>
+                          <div className="text-[10px] text-[#6f7a7a] mt-0.5">{dayEvents.length} items</div>
                         </div>
                       );
                     })}
@@ -788,9 +633,9 @@ export default function CalendarPage() {
 
                       return (
                         <div key={day.toISOString()} className="space-y-2">
-                          <div className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                          <div className="text-xs font-serif text-[#879292] flex items-center gap-2">
                             <span>{format(day, 'EEEE, dd MMMM')}</span>
-                            <span className="h-px flex-1 bg-white/5"></span>
+                            <span className="h-px flex-1 bg-[#222828]"></span>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -801,22 +646,20 @@ export default function CalendarPage() {
                                   setSelectedEvent(event);
                                   setEventDetailsModalOpen(true);
                                 }}
-                                className="p-3 rounded-xl bg-[#16161a] border border-white/5 hover:border-white/15 cursor-pointer transition-all flex items-start justify-between gap-3"
+                                className="p-3 rounded-lg bg-[#141717] border border-[#272b2b] hover:border-[#384040] cursor-pointer transition-all flex items-start justify-between gap-3"
                               >
                                 <div>
-                                  <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+                                  <div className="flex items-center gap-2 text-xs font-mono text-[#879292]">
                                     <span>{format(event.date, 'HH:mm')}</span>
                                     <span>&middot;</span>
-                                    <Badge variant="outline" className={`text-[10px] py-0 h-4 ${event.type === 'HEARING' ? 'text-emerald-400 border-emerald-500/20' : 'text-orange-400 border-orange-500/20'}`}>
+                                    <span className={event.type === 'HEARING' ? 'text-[#2dd4bf]' : 'text-[#f59e0b]'}>
                                       {event.type}
-                                    </Badge>
+                                    </span>
                                   </div>
-                                  <div className="text-sm font-medium text-foreground mt-1">{event.title}</div>
-                                  <div className="text-xs text-muted-foreground mt-0.5">{event.court} {event.stage ? `· ${event.stage}` : ''}</div>
+                                  <div className="text-sm font-serif font-medium text-[#f3f4f5] mt-1">{event.title}</div>
+                                  <div className="text-xs text-[#879292] mt-0.5">{event.court} {event.stage ? `· ${event.stage}` : ''}</div>
                                 </div>
-                                <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground">
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                </Button>
+                                <ExternalLink className="w-3.5 h-3.5 text-[#6f7a7a]" />
                               </div>
                             ))}
                           </div>
@@ -830,50 +673,47 @@ export default function CalendarPage() {
               {/* ── VIEW: DAY / CAUSE LIST ─────────────────────────────── */}
               {viewMode === 'day' && (
                 <div className="p-6 space-y-6">
-                  <div className="flex items-center justify-between pb-4 border-b border-white/5">
+                  <div className="flex items-center justify-between pb-4 border-b border-[#222828]">
                     <div>
-                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Daily Cause List</div>
-                      <h2 className="text-xl font-heading font-semibold text-foreground mt-0.5">
+                      <div className="text-[10px] font-mono text-[#6f7a7a] uppercase tracking-wider">Cause List</div>
+                      <h2 className="text-xl font-serif font-semibold text-[#f3f4f5] mt-0.5">
                         {format(selectedDate, 'EEEE, dd MMMM yyyy')}
                       </h2>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        size="sm"
-                        onClick={() => {
-                          setHearingForm({ caseId: docket.cases[0]?.id || '', date: `${format(selectedDate, 'yyyy-MM-dd')}T10:30`, notes: '' });
-                          setScheduleHearingModalOpen(true);
-                        }}
-                        className="h-8 text-xs bg-[#4ADE80] text-black font-semibold"
-                      >
-                        + Add to Today's List
-                      </Button>
-                    </div>
+                    <button 
+                      onClick={() => {
+                        setHearingForm({ caseId: docket.cases[0]?.id || '', date: `${format(selectedDate, 'yyyy-MM-dd')}T10:30`, notes: '' });
+                        setScheduleHearingModalOpen(true);
+                      }}
+                      className="h-8 text-xs bg-[#2dd4bf] text-[#091b18] font-semibold px-3 rounded-lg flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add to Today
+                    </button>
                   </div>
 
                   {selectedDayEvents.length === 0 ? (
-                    <div className="py-16 text-center text-muted-foreground border border-white/5 rounded-xl bg-[#16161a]">
-                      <CalendarIcon className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <div className="py-16 text-center text-[#879292] border border-[#222828] rounded-xl bg-[#141717]/40">
+                      <CalendarIcon className="w-8 h-8 mx-auto mb-2 opacity-30 text-[#879292]" />
                       <p className="text-sm">No court appearances or deadlines listed for {format(selectedDate, 'dd MMMM')}.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {selectedDayEvents.map((event, idx) => (
+                      {selectedDayEvents.map((event) => (
                         <div 
                           key={event.id}
-                          className="p-4 bg-[#16161a] border border-white/5 rounded-xl hover:border-white/15 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                          className="p-4 bg-[#141717] border border-[#272b2b] rounded-xl hover:border-[#384040] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                         >
                           <div className="flex items-start gap-4">
                             <div className="text-center font-mono w-14 flex-shrink-0 pt-0.5">
-                              <div className="text-base font-bold text-foreground">{format(event.date, 'HH:mm')}</div>
-                              <div className="text-[10px] text-muted-foreground uppercase">{event.type}</div>
+                              <div className="text-base font-bold text-[#f3f4f5]">{format(event.date, 'HH:mm')}</div>
+                              <div className="text-[10px] text-[#879292] uppercase">{event.type}</div>
                             </div>
 
                             <div>
-                              <div className="text-base font-medium text-foreground">{event.title}</div>
-                              <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
-                                <span className="text-foreground/90 font-medium">{event.court || 'Court'}</span>
+                              <div className="text-base font-serif font-medium text-[#f3f4f5]">{event.title}</div>
+                              <div className="text-xs text-[#879292] mt-1 flex flex-wrap items-center gap-2">
+                                <span className="text-[#f3f4f5]">{event.court || 'Court'}</span>
                                 {event.judge && (
                                   <>
                                     <span>&middot;</span>
@@ -883,30 +723,24 @@ export default function CalendarPage() {
                                 {event.stage && (
                                   <>
                                     <span>&middot;</span>
-                                    <Badge variant="outline" className="text-[10px] py-0 h-4 border-purple-500/20 text-purple-400">
-                                      {event.stage}
-                                    </Badge>
+                                    <span className="text-[#818cf8] font-mono text-[11px]">{event.stage}</span>
                                   </>
                                 )}
                               </div>
                               {event.notes && (
-                                <p className="text-xs text-muted-foreground/80 mt-2 font-serif bg-white/[0.02] p-2 rounded border border-white/5">
+                                <p className="text-xs text-[#879292] mt-2 font-serif bg-black/20 p-2 rounded border border-[#272b2b]">
                                   {event.notes}
                                 </p>
                               )}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 self-end sm:self-center">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => router.push(`/cases/${event.caseId}`)}
-                              className="h-8 text-xs bg-transparent border-white/10 hover:border-[#4ADE80]/40 hover:text-[#4ADE80]"
-                            >
-                              Open Case Brief &rarr;
-                            </Button>
-                          </div>
+                          <button 
+                            onClick={() => router.push(`/cases/${event.caseId}`)}
+                            className="h-8 text-xs bg-[#141717] border border-[#272b2b] text-[#f3f4f5] hover:border-[#2dd4bf]/40 hover:text-[#2dd4bf] px-3 rounded-lg transition-colors self-end sm:self-center"
+                          >
+                            Open Case Brief &rarr;
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -916,9 +750,9 @@ export default function CalendarPage() {
 
               {/* ── VIEW: AGENDA / LIST ────────────────────────────────── */}
               {viewMode === 'agenda' && (
-                <div className="p-5 space-y-4 max-h-[650px] overflow-y-auto">
+                <div className="p-5 space-y-3 max-h-[650px] overflow-y-auto">
                   {filteredEvents.length === 0 ? (
-                    <div className="py-16 text-center text-muted-foreground">
+                    <div className="py-16 text-center text-[#879292]">
                       <p className="text-sm">No upcoming events match the filters.</p>
                     </div>
                   ) : (
@@ -929,39 +763,37 @@ export default function CalendarPage() {
                           setSelectedEvent(event);
                           setEventDetailsModalOpen(true);
                         }}
-                        className="p-3.5 bg-[#16161a] border border-white/5 rounded-xl hover:border-white/15 cursor-pointer transition-all flex items-center justify-between gap-4"
+                        className="p-3.5 bg-[#141717] border border-[#272b2b] rounded-xl hover:border-[#384040] cursor-pointer transition-all flex items-center justify-between gap-4"
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-16 text-center font-mono flex-shrink-0">
-                            <div className="text-xs font-bold text-foreground">{format(event.date, 'dd MMM')}</div>
-                            <div className="text-[10px] text-muted-foreground">{format(event.date, 'HH:mm')}</div>
+                            <div className="text-xs font-bold text-[#f3f4f5]">{format(event.date, 'dd MMM')}</div>
+                            <div className="text-[10px] text-[#879292]">{format(event.date, 'HH:mm')}</div>
                           </div>
 
                           <div className="min-w-0">
-                            <div className="text-sm font-medium text-foreground truncate">{event.title}</div>
-                            <div className="text-xs text-muted-foreground truncate mt-0.5">
+                            <div className="text-sm font-serif font-medium text-[#f3f4f5] truncate">{event.title}</div>
+                            <div className="text-xs text-[#879292] truncate mt-0.5">
                               {event.court || 'Court'} &middot; {event.stage || event.type}
                             </div>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <Badge variant="outline" className={`text-[10px] ${
-                            event.type === 'HEARING' ? 'text-emerald-400 border-emerald-500/20' : 'text-orange-400 border-orange-500/20'
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                            event.type === 'HEARING' ? 'text-[#2dd4bf] bg-[#2dd4bf]/10' : 'text-[#f59e0b] bg-[#f59e0b]/10'
                           }`}>
                             {event.type}
-                          </Badge>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          </span>
+                          <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/cases/${event.caseId}`);
                             }}
-                            className="w-7 h-7 text-muted-foreground hover:text-foreground"
+                            className="p-1.5 text-[#6f7a7a] hover:text-[#f3f4f5]"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
-                          </Button>
+                          </button>
                         </div>
                       </div>
                     ))
@@ -971,88 +803,103 @@ export default function CalendarPage() {
 
             </div>
 
-            {/* ── RIGHT DAY INSPECTOR SIDEBAR ──────────────────────────── */}
-            <aside className="bg-[#111111] border border-white/5 rounded-xl p-5 space-y-5">
-              <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                <div>
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Selected Date</div>
-                  <div className="text-base font-heading font-semibold text-foreground mt-0.5">
-                    {format(selectedDate, 'EEEE, dd MMM')}
-                  </div>
-                </div>
-
+            {/* ── RIGHT DAY INSPECTOR SIDEBAR (EXACT MATCH TO ARTIFACT) ─── */}
+            <aside className="w-full bg-[#121515] border border-[#222828] rounded-xl p-5 flex flex-col gap-5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif text-lg font-medium text-white">
+                  {format(selectedDate, 'EEEE, d MMMM')}
+                </h3>
                 {isToday(selectedDate) && (
-                  <Badge className="bg-[#4ADE80] text-black font-semibold text-[10px]">Today</Badge>
+                  <span className="font-mono text-[10px] text-[#2dd4bf] tracking-widest font-semibold uppercase">
+                    TODAY
+                  </span>
                 )}
               </div>
 
-              {/* Items on this day */}
-              <div className="space-y-3">
-                <div className="text-xs font-semibold text-muted-foreground">
-                  Listed Events &middot; {selectedDayEvents.length}
+              {/* Status on selected day */}
+              {selectedDayEvents.length === 0 ? (
+                <p className="text-xs text-[#879292] leading-relaxed">
+                  Nothing listed. Your next appearance is on {nextAppearance ? format(nextAppearance.date, 'EEE d MMM') : 'schedule'}.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {selectedDayEvents.map(event => (
+                    <div 
+                      key={event.id}
+                      className="border-l-2 border-[#2dd4bf] pl-3 py-1 flex flex-col gap-0.5"
+                    >
+                      <span className="text-xs text-[#2dd4bf] font-mono">
+                        {format(event.date, 'HH:mm')}
+                      </span>
+                      <span 
+                        onClick={() => router.push(`/cases/${event.caseId}`)}
+                        className="font-serif text-sm font-semibold text-white hover:text-[#2dd4bf] cursor-pointer"
+                      >
+                        {event.title}
+                      </span>
+                      <span className="text-xs text-[#879292]">
+                        {event.stage || event.type} &middot; {event.court}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* THIS WEEK section */}
+              <div className="pt-3 border-t border-[#222828] space-y-4">
+                <div className="font-mono text-[10px] tracking-wider text-[#6f7a7a] uppercase font-semibold">
+                  THIS WEEK
                 </div>
 
-                {selectedDayEvents.length === 0 ? (
-                  <p className="text-xs text-muted-foreground/70 py-2">
-                    No hearings or deadlines on this day.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {selectedDayEvents.map(event => (
-                      <div 
-                        key={event.id}
-                        className="p-3 bg-[#16161a] border border-white/5 rounded-xl text-xs space-y-1.5"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[11px] font-bold text-foreground">
-                            {format(event.date, 'HH:mm')}
+                <div className="space-y-3.5">
+                  {thisWeekHearings.length > 0 ? (
+                    thisWeekHearings.slice(0, 4).map((h, idx) => {
+                      const borderColor = idx % 2 === 0 ? 'border-[#f87171]' : 'border-[#2dd4bf]';
+                      const textColor = idx % 2 === 0 ? 'text-[#f87171]' : 'text-[#2dd4bf]';
+
+                      return (
+                        <div key={h.id} className={`border-l-2 ${borderColor} pl-3 py-0.5 flex flex-col gap-0.5`}>
+                          <span className={`text-xs ${textColor} font-mono`}>
+                            {format(h.date, 'EEE d MMM')} &middot; {format(h.date, 'HH:mm')}
                           </span>
-                          <Badge variant="outline" className="text-[9px] py-0 h-4 border-white/10">
-                            {event.type}
-                          </Badge>
-                        </div>
-                        <div className="font-medium text-foreground">{event.title}</div>
-                        <div className="text-[11px] text-muted-foreground">{event.court} {event.stage ? `· ${event.stage}` : ''}</div>
-                        
-                        <div className="pt-2 flex justify-end">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => router.push(`/cases/${event.caseId}`)}
-                            className="h-6 text-[10px] bg-transparent border-white/10 hover:border-[#4ADE80]/40 hover:text-[#4ADE80]"
+                          <span 
+                            onClick={() => router.push(`/cases/${h.caseId}`)}
+                            className="font-serif text-sm font-semibold text-white hover:text-[#2dd4bf] cursor-pointer"
                           >
-                            Open Brief &rarr;
-                          </Button>
+                            {h.caseTitle || h.title}
+                          </span>
+                          <span className="text-xs text-[#879292]">
+                            {h.stage || 'Pleadings'} &middot; {h.court || 'Court'}
+                          </span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      );
+                    })
+                  ) : (
+                    <p className="text-xs text-[#879292]">No hearings scheduled this week.</p>
+                  )}
+                </div>
               </div>
 
-              {/* Quick action buttons for selected day */}
-              <div className="pt-2 border-t border-white/5 space-y-2">
-                <Button 
-                  size="sm"
+              {/* Quick actions on selected date */}
+              <div className="pt-3 border-t border-[#222828] space-y-2">
+                <button 
                   onClick={() => {
                     setHearingForm({ caseId: docket.cases[0]?.id || '', date: `${format(selectedDate, 'yyyy-MM-dd')}T10:30`, notes: '' });
                     setScheduleHearingModalOpen(true);
                   }}
-                  className="w-full h-8 text-xs bg-[#4ADE80] text-black font-semibold"
+                  className="w-full h-8 text-xs bg-[#141717] border border-[#272b2b] hover:bg-[#1c2020] text-[#f3f4f5] font-medium rounded-lg flex items-center justify-center gap-1 transition-colors"
                 >
-                  <Plus className="w-3.5 h-3.5 mr-1" /> Add Hearing on this Date
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="sm"
+                  <Plus className="w-3.5 h-3.5 text-[#2dd4bf]" /> Schedule on this date
+                </button>
+                <button 
                   onClick={() => {
                     setTaskForm({ caseId: docket.cases[0]?.id || '', title: '', dueDate: format(selectedDate, 'yyyy-MM-dd'), priority: 'PENDING' });
                     setAddTaskModalOpen(true);
                   }}
-                  className="w-full h-8 text-xs bg-transparent border-white/10 hover:bg-white/5"
+                  className="w-full h-8 text-xs bg-[#141717] border border-[#272b2b] hover:bg-[#1c2020] text-[#879292] hover:text-[#f3f4f5] font-medium rounded-lg flex items-center justify-center gap-1 transition-colors"
                 >
-                  <Plus className="w-3.5 h-3.5 mr-1" /> Add Task Deadline
-                </Button>
+                  <Clock className="w-3.5 h-3.5 text-[#f59e0b]" /> Add filing deadline
+                </button>
               </div>
             </aside>
 
@@ -1063,22 +910,22 @@ export default function CalendarPage() {
 
       {/* ── SCHEDULE HEARING DIALOG ──────────────────────────────────── */}
       <Dialog open={scheduleHearingModalOpen} onOpenChange={setScheduleHearingModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading font-semibold">Schedule Court Hearing</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="text-lg font-serif font-semibold text-white">Schedule Court Hearing</DialogTitle>
+            <DialogDescription className="text-xs text-[#879292]">
               Add upcoming court date and agenda to docket.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleScheduleHearingSubmit} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Case *</Label>
+              <Label className="text-xs font-mono text-[#879292] uppercase">Case *</Label>
               <select 
                 required
                 value={hearingForm.caseId}
                 onChange={(e) => setHearingForm({ ...hearingForm, caseId: e.target.value })}
-                className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none"
+                className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none"
               >
                 <option value="">Select a case...</option>
                 {docket.cases.map(c => (
@@ -1088,29 +935,29 @@ export default function CalendarPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Hearing Date & Time *</Label>
+              <Label className="text-xs font-mono text-[#879292] uppercase">Hearing Date & Time *</Label>
               <Input 
                 required
                 type="datetime-local"
                 value={hearingForm.date}
                 onChange={(e) => setHearingForm({ ...hearingForm, date: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Agenda / Notes</Label>
+              <Label className="text-xs font-mono text-[#879292] uppercase">Agenda / Notes</Label>
               <Input 
                 placeholder="e.g. Final arguments on bail plea" 
                 value={hearingForm.notes}
                 onChange={(e) => setHearingForm({ ...hearingForm, notes: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
               />
             </div>
 
             <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setScheduleHearingModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={submittingHearing} className="bg-[#4ADE80] text-black font-semibold">
+              <Button type="button" variant="ghost" onClick={() => setScheduleHearingModalOpen(false)} className="text-[#879292] hover:text-white">Cancel</Button>
+              <Button type="submit" disabled={submittingHearing} className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold">
                 {submittingHearing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                 Save to Docket
               </Button>
@@ -1121,22 +968,22 @@ export default function CalendarPage() {
 
       {/* ── ADD TASK DEADLINE DIALOG ─────────────────────────────────── */}
       <Dialog open={addTaskModalOpen} onOpenChange={setAddTaskModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading font-semibold">Add Filing Deadline / Task</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="text-lg font-serif font-semibold text-white">Add Filing Deadline / Task</DialogTitle>
+            <DialogDescription className="text-xs text-[#879292]">
               Add task deadline for case preparation.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleAddTaskSubmit} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Case *</Label>
+              <Label className="text-xs font-mono text-[#879292] uppercase">Case *</Label>
               <select 
                 required
                 value={taskForm.caseId}
                 onChange={(e) => setTaskForm({ ...taskForm, caseId: e.target.value })}
-                className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none"
+                className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none"
               >
                 <option value="">Select a case...</option>
                 {docket.cases.map(c => (
@@ -1146,29 +993,29 @@ export default function CalendarPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Deadline Title *</Label>
+              <Label className="text-xs font-mono text-[#879292] uppercase">Deadline Title *</Label>
               <Input 
                 required
                 placeholder="e.g. File written arguments with registry" 
                 value={taskForm.title}
                 onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Due Date</Label>
+              <Label className="text-xs font-mono text-[#879292] uppercase">Due Date</Label>
               <Input 
                 type="date"
                 value={taskForm.dueDate}
                 onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
               />
             </div>
 
             <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setAddTaskModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={submittingTask} className="bg-[#4ADE80] text-black font-semibold">
+              <Button type="button" variant="ghost" onClick={() => setAddTaskModalOpen(false)} className="text-[#879292] hover:text-white">Cancel</Button>
+              <Button type="submit" disabled={submittingTask} className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold">
                 {submittingTask ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                 Save Deadline
               </Button>
@@ -1180,58 +1027,60 @@ export default function CalendarPage() {
       {/* ── EVENT DETAILS DIALOG ─────────────────────────────────────── */}
       {selectedEvent && (
         <Dialog open={eventDetailsModalOpen} onOpenChange={setEventDetailsModalOpen}>
-          <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+          <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
             <DialogHeader>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className={`text-[10px] ${selectedEvent.type === 'HEARING' ? 'text-emerald-400 border-emerald-500/20' : 'text-orange-400 border-orange-500/20'}`}>
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                  selectedEvent.type === 'HEARING' ? 'text-[#2dd4bf] bg-[#2dd4bf]/10' : 'text-[#f59e0b] bg-[#f59e0b]/10'
+                }`}>
                   {selectedEvent.type}
-                </Badge>
-                <span className="text-xs text-muted-foreground font-mono">{format(selectedEvent.date, 'dd MMM yyyy · HH:mm')}</span>
+                </span>
+                <span className="text-xs text-[#879292] font-mono">{format(selectedEvent.date, 'dd MMM yyyy · HH:mm')}</span>
               </div>
-              <DialogTitle className="text-lg font-heading font-semibold mt-2">{selectedEvent.title}</DialogTitle>
+              <DialogTitle className="text-lg font-serif font-semibold mt-2 text-white">{selectedEvent.title}</DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-3 text-xs bg-[#111111] border border-white/5 rounded-xl p-3.5 my-2">
+            <div className="space-y-3 text-xs bg-[#0d0f0f] border border-[#272b2b] rounded-xl p-3.5 my-2">
               {selectedEvent.court && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Court</span>
-                  <span className="font-medium text-foreground">{selectedEvent.court}</span>
+                  <span className="text-[#879292]">Court</span>
+                  <span className="font-medium text-[#f3f4f5]">{selectedEvent.court}</span>
                 </div>
               )}
               {selectedEvent.judge && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Judge</span>
-                  <span className="text-foreground">{selectedEvent.judge}</span>
+                  <span className="text-[#879292]">Judge</span>
+                  <span className="text-[#f3f4f5]">{selectedEvent.judge}</span>
                 </div>
               )}
               {selectedEvent.stage && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Stage</span>
-                  <span className="text-foreground">{selectedEvent.stage}</span>
+                  <span className="text-[#879292]">Stage</span>
+                  <span className="text-[#f3f4f5]">{selectedEvent.stage}</span>
                 </div>
               )}
               {selectedEvent.caseNumber && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Case Number</span>
-                  <span className="font-mono text-foreground">{selectedEvent.caseNumber}</span>
+                  <span className="text-[#879292]">Case Number</span>
+                  <span className="font-mono text-[#f3f4f5]">{selectedEvent.caseNumber}</span>
                 </div>
               )}
               {selectedEvent.notes && (
-                <div className="pt-2 border-t border-white/5">
-                  <span className="text-muted-foreground block mb-1">Notes / Agenda:</span>
-                  <p className="text-foreground/90 font-serif leading-relaxed">{selectedEvent.notes}</p>
+                <div className="pt-2 border-t border-[#272b2b]">
+                  <span className="text-[#879292] block mb-1">Notes / Agenda:</span>
+                  <p className="text-[#f3f4f5] font-serif leading-relaxed">{selectedEvent.notes}</p>
                 </div>
               )}
             </div>
 
             <DialogFooter className="pt-2 gap-2">
-              <Button variant="ghost" onClick={() => setEventDetailsModalOpen(false)}>Close</Button>
+              <Button variant="ghost" onClick={() => setEventDetailsModalOpen(false)} className="text-[#879292] hover:text-white">Close</Button>
               <Button 
                 onClick={() => {
                   setEventDetailsModalOpen(false);
                   router.push(`/cases/${selectedEvent.caseId}`);
                 }}
-                className="bg-[#4ADE80] text-black font-semibold"
+                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold"
               >
                 Open Case Dashboard &rarr;
               </Button>

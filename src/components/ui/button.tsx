@@ -8,16 +8,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground hover:shadow-lg hover:shadow-primary/10 active:scale-[0.98]",
+        default: "bg-[#2dd4bf] text-[#091b18] font-semibold hover:bg-[#34d399] active:scale-[0.98] shadow-sm",
         outline:
-          "border-border/60 bg-background/50 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground active:scale-[0.98]",
+          "border border-[#272b2b] bg-transparent text-[#e5e7eb] hover:bg-[#1a1e1e] hover:text-white active:scale-[0.98]",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-[0.98]",
+          "border border-[#272b2b] bg-[#161919] text-[#e5e7eb] hover:bg-[#1e2424] hover:text-white active:scale-[0.98]",
         ghost:
-          "hover:bg-accent/80 hover:text-accent-foreground active:scale-[0.98]",
+          "text-[#879292] hover:bg-[#1a1e1e] hover:text-white active:scale-[0.98]",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 active:scale-[0.98]",
+        link: "text-[#2dd4bf] underline-offset-4 hover:underline",
       },
       size: {
         default:

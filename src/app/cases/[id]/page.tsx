@@ -28,7 +28,8 @@ import {
   ExternalLink,
   Layers,
   Cpu,
-  Send
+  Send,
+  Scale
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -41,7 +42,7 @@ import {
 import { cases as casesApi, tasks as tasksApi, documents as docsApi, hearings as hearingsApi, tools as toolsApi } from '@/lib/api';
 import { CaseDraftsTab } from '@/components/drafts/CaseDraftsTab';
 import { CaseItem, TaskItem, HearingItem, DocumentItem } from '@/lib/types';
-import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { format, parseISO, formatDistanceToNow, differenceInCalendarDays } from 'date-fns';
 import { ContactsTab } from '@/components/cases/ContactsTab';
 import { FeesTab } from '@/components/cases/FeesTab';
 import { FactsTab } from '@/components/cases/FactsTab';
@@ -530,24 +531,29 @@ export default function CaseDetailPage() {
     }
   };
 
-  const tabs = [
-    { id: 'Overview', count: null },
-    { id: 'Facts', count: null },
-    { id: 'Contacts', count: null },
-    { id: 'Fees', count: null },
-    { id: 'Hearings', count: hearings.length },
-    { id: 'Documents', count: documents.length },
-    { id: 'Drafts', count: null },
-    { id: 'Tools', count: caseTools.length },
-    { id: 'Tasks', count: tasks.length },
-  ];
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return '—';
+    try {
+      return format(parseISO(dateStr), 'dd MMM yyyy');
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatDateTime = (dateStr?: string | null) => {
+    if (!dateStr) return '—';
+    try {
+      return format(parseISO(dateStr), 'dd MMM yyyy · HH:mm');
+    } catch {
+      return dateStr;
+    }
+  };
 
   if (loading) {
     return (
-      <AppShell caseId={caseId}>
-        <div className="flex flex-col h-full items-center justify-center gap-3 py-20 text-muted-foreground">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <span className="text-xs">Loading case file...</span>
+      <AppShell>
+        <div className="flex h-full items-center justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
         </div>
       </AppShell>
     );
@@ -555,123 +561,105 @@ export default function CaseDetailPage() {
 
   if (!caseData) {
     return (
-      <AppShell caseId={caseId}>
-        <div className="flex flex-col h-full items-center justify-center gap-3 py-20 text-muted-foreground">
-          <p className="text-sm font-medium">Case not found or inaccessible.</p>
-          <Button variant="outline" size="sm" onClick={() => router.push('/cases')}>
-            Back to Cases
+      <AppShell>
+        <div className="flex flex-col items-center justify-center h-full py-24 text-center">
+          <Scale className="w-10 h-10 text-[#6f7a7a] mb-3" />
+          <h2 className="text-lg font-serif font-semibold text-white">Matter not found</h2>
+          <p className="text-xs text-[#879292] mt-1 mb-4">The requested matter could not be loaded or may have been deleted.</p>
+          <Button onClick={() => router.push('/cases')} className="bg-[#2dd4bf] text-[#091b18] text-xs font-semibold">
+            Back to Matters
           </Button>
         </div>
       </AppShell>
     );
   }
 
-  const formatDate = (dateStr: string | null | undefined) => {
-    if (!dateStr) return '—';
-    try {
-      return format(parseISO(dateStr), 'dd MMM yyyy');
-    } catch {
-      return '—';
-    }
-  };
+  const hearingDate = caseData.next_hearing_date ? parseISO(caseData.next_hearing_date) : null;
+  const daysDiff = hearingDate ? differenceInCalendarDays(hearingDate, new Date()) : null;
+  const daysLabel = daysDiff === 0 
+    ? 'TODAY' 
+    : daysDiff === 1 
+    ? 'IN 1 DAY' 
+    : daysDiff !== null && daysDiff > 1 
+    ? `IN ${daysDiff} DAYS` 
+    : 'UPCOMING';
 
-  const formatDateTime = (dateStr: string | null | undefined) => {
-    if (!dateStr) return '—';
-    try {
-      return format(parseISO(dateStr), 'dd MMM yyyy · HH:mm');
-    } catch {
-      return '—';
-    }
-  };
-
-  const formatRelativeDate = (dateStr: string | null | undefined) => {
-    if (!dateStr) return '';
-    try {
-      return formatDistanceToNow(parseISO(dateStr), { addSuffix: true });
-    } catch {
-      return '';
-    }
-  };
+  const tabs = [
+    { id: 'Brief', count: null },
+    { id: 'Documents', count: documents.length },
+    { id: 'Hearings', count: hearings.length },
+    { id: 'Tasks', count: tasks.length },
+    { id: 'Drafts', count: null },
+    { id: 'Facts', count: null },
+    { id: 'Contacts', count: null },
+    { id: 'Fees', count: null },
+    { id: 'Tools', count: caseTools.length },
+  ];
 
   return (
-    <AppShell caseId={caseId}>
-      <div className="flex flex-col h-full max-w-5xl mx-auto pb-16">
+    <AppShell 
+      caseId={caseId}
+      customBreadcrumbs={[
+        { label: currentOrg?.name || 'Test Law Chambers', href: '/dashboard' },
+        { label: 'Matters', href: '/cases' },
+        { label: caseData.title, href: `/cases/${caseId}` },
+        { label: 'Hearing brief' },
+      ]}
+    >
+      <div className="flex flex-col h-full max-w-6xl mx-auto px-6 sm:px-8 py-8 space-y-6">
         
-        {/* ── Top Header ─────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-border/50">
-          <div className="flex items-start gap-4">
-            <button 
-              onClick={() => router.push('/cases')} 
-              className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs font-medium mt-1 p-1 rounded-md hover:bg-white/5 transition-colors flex-shrink-0"
-            >
-              <ChevronLeft className="w-4 h-4" /> Cases
-            </button>
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-2xl font-heading font-semibold tracking-tight text-foreground">
-                  {caseData.title}
-                </h1>
-                <Badge className="bg-[#1a231f] text-[#4ADE80] border-[#2D4537] font-normal text-xs py-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] mr-1.5"></span>
-                  {caseData.status || 'OPEN'}
-                </Badge>
-              </div>
-              <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
-                <span className="font-mono">{caseData.case_number || 'No Ref'}</span>
-                {caseData.court && (
-                  <>
-                    <span>&middot;</span>
-                    <span>{caseData.court}</span>
-                  </>
-                )}
-                {caseData.stage && (
-                  <>
-                    <span>&middot;</span>
-                    <span className="text-foreground/80">{caseData.stage}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2.5 self-start sm:self-auto">
-            {caseData.next_hearing_date && (
-              <div className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1.5 bg-[#111111] border border-white/5 px-2.5 py-1 rounded-lg">
-                <span>NEXT:</span>
-                <span className="text-foreground font-mono">{format(parseISO(caseData.next_hearing_date), 'dd MMM · HH:mm')}</span>
-                <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[10px] py-0 h-4">
-                  {formatRelativeDate(caseData.next_hearing_date)}
-                </Badge>
+        {/* ── Top Header Section (Matches Hearing Brief in Artifact) ──── */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+          <div className="space-y-1.5">
+            {hearingDate && (
+              <div className="text-[11px] font-mono tracking-wider uppercase font-semibold text-[#f59e0b]">
+                {format(hearingDate, 'EEE d MMM · HH:mm').toUpperCase()} · {daysLabel}
               </div>
             )}
+            <h1 className="text-3xl sm:text-4xl font-serif tracking-tight text-[#f3f4f5]">
+              Hearing brief
+            </h1>
+            <p className="text-xs text-[#879292]">
+              {[caseData.court, caseData.stage || 'Pleadings', caseData.judge ? `before Judge ${caseData.judge}` : '']
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3 self-start md:self-auto">
             <Button 
               variant="outline" 
               size="sm"
-              onClick={handleOpenEdit}
-              className="h-8 text-xs bg-[#111111] border-white/10 hover:bg-white/5 rounded-lg"
+              onClick={() => alert('Exporting hearing brief...')}
+              className="h-9 px-4 text-xs bg-[#151919] hover:bg-[#1f2424] border-[#272e2e] text-[#f3f4f5] rounded-lg"
             >
-              <Edit3 className="w-3.5 h-3.5 mr-1" /> Edit Case
+              Export
+            </Button>
+            <Button 
+              size="sm"
+              onClick={() => alert('Hearing brief approved for filing.')}
+              className="h-9 px-5 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium rounded-lg shadow-sm"
+            >
+              Approve
             </Button>
           </div>
         </div>
 
         {/* ── Tabs Bar ───────────────────────────────────────────────── */}
-        <div className="flex gap-6 border-b border-white/5 mb-6 overflow-x-auto">
+        <div className="flex gap-4 border-b border-[#1e2323] overflow-x-auto text-xs pb-1">
           {tabs.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`pb-3 text-xs font-medium border-b-2 transition-all relative flex items-center gap-2 whitespace-nowrap
-                ${activeTab === tab.id 
-                  ? 'border-[#4ADE80] text-foreground font-semibold' 
-                  : 'border-transparent text-muted-foreground hover:text-foreground'}
+              onClick={() => setActiveTab(tab.id === 'Brief' ? 'Overview' : tab.id)}
+              className={`pb-2.5 px-1 font-medium border-b-2 transition-all relative flex items-center gap-1.5 whitespace-nowrap
+                ${(activeTab === 'Overview' && tab.id === 'Brief') || activeTab === tab.id
+                  ? 'border-[#2dd4bf] text-[#2dd4bf]' 
+                  : 'border-transparent text-[#6f7a7a] hover:text-[#f3f4f5]'}
               `}
             >
               {tab.id}
               {tab.count !== null && (
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
-                  activeTab === tab.id ? 'bg-[#1a231f] text-[#4ADE80]' : 'bg-white/5 text-muted-foreground'
-                }`}>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-md font-mono bg-[#161a1a] text-[#879292]">
                   {tab.count}
                 </span>
               )}
@@ -679,275 +667,162 @@ export default function CaseDetailPage() {
           ))}
         </div>
 
-        {/* ── Tab: Overview ─────────────────────────────────────────── */}
-        {activeTab === 'Overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
+        {/* ── Tab: Brief / Overview (Hearing Brief from Artifact) ───── */}
+        {(activeTab === 'Overview' || activeTab === 'Brief') && (
+          <div className="space-y-8">
             
-            {/* Left Column */}
-            <div className="space-y-6">
-              {/* Summary Block — collapsed by default */}
-              <div className="bg-[#14101e] border border-[#A855F7]/30 rounded-xl overflow-hidden relative">
-                <div className="absolute top-0 left-0 w-1 h-full bg-[#A855F7]/50"></div>
-                <div
-                  className="flex items-center justify-between px-4 py-2.5 cursor-pointer select-none"
-                  onClick={() => setShowSummary(v => !v)}
-                >
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-[#A855F7]" />
-                    <span className="text-[10px] font-bold text-[#A855F7] tracking-widest uppercase">Summary &amp; Facts</span>
-                    {caseData.description && !showSummary && (
-                      <span className="text-[10px] text-muted-foreground/60 font-normal ml-1 truncate max-w-[200px] hidden sm:inline">
-                        {caseData.description.slice(0, 65)}{caseData.description.length > 65 ? '…' : ''}
-                      </span>
+            {/* Legend Box */}
+            <div className="bg-[#121515] border border-[#1e2323] rounded-xl p-4 sm:p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3.5 text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-[3px] h-3.5 bg-[#2dd4bf] rounded-full flex-shrink-0" />
+                  <span className="text-[#c5cccc]">Supported by a document you can open</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-[3px] h-3.5 bg-[#f59e0b] rounded-full flex-shrink-0" />
+                  <span className="text-[#c5cccc]">Stated by the client, no document yet</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-[3px] h-3.5 bg-[#60a5fa] rounded-full flex-shrink-0" />
+                  <span className="text-[#c5cccc]">The other side&apos;s position</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-[3px] h-3.5 bg-[#a78bfa] rounded-full flex-shrink-0" />
+                  <span className="text-[#c5cccc]">Written by LegalDesk — not evidence</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Two-Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
+              
+              {/* Left Column: Facts Relied On */}
+              <div className="space-y-4">
+                <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a] mb-2">
+                  FACTS RELIED ON
+                </div>
+
+                {/* Fact 1 - Green (Supported) */}
+                <div className="border-l-[3px] border-[#2dd4bf] bg-[#141717] p-5 rounded-r-xl space-y-2">
+                  <p className="text-base font-serif text-[#f3f4f5] leading-relaxed">
+                    Invoice 4471 records a payment of ₹42,000 by the claimant on 3 March 2026.
+                  </p>
+                  <p className="text-xs text-[#2dd4bf]">
+                    Exhibit A, page 2 · &ldquo;Total paid: 42,000.00&rdquo;
+                  </p>
+                </div>
+
+                {/* Fact 2 - Green (Supported) */}
+                <div className="border-l-[3px] border-[#2dd4bf] bg-[#141717] p-5 rounded-r-xl space-y-2">
+                  <p className="text-base font-serif text-[#f3f4f5] leading-relaxed">
+                    The fit-out agreement is dated 10 February 2026 and provides for completion within eight weeks.
+                  </p>
+                  <p className="text-xs text-[#2dd4bf]">
+                    Exhibit C, page 1 · clause 3.1
+                  </p>
+                </div>
+
+                {/* Fact 3 - Amber (Client statement, gap) */}
+                <div className="border-l-[3px] border-[#f59e0b] bg-[#141717] p-5 rounded-r-xl space-y-3">
+                  <p className="text-base font-serif text-[#f3f4f5] leading-relaxed">
+                    <span className="text-[#f59e0b]">The client states that</span> the salesperson guaranteed a full refund if delivery slipped past the agreed date.
+                  </p>
+                  <p className="text-xs text-[#879292]">
+                    Consultation, 12 March 2026 · no supporting document
+                  </p>
+                  <div className="bg-[#1c1610] border border-[#3d2c18] rounded-lg p-3 text-xs text-[#f59e0b]">
+                    This cannot be pleaded as a fact, and LegalDesk will not write it into a draft as one.
+                  </div>
+                </div>
+
+                {/* Fact 4 - Blue (Respondent contention) */}
+                <div className="border-l-[3px] border-[#60a5fa] bg-[#141717] p-5 rounded-r-xl space-y-2">
+                  <p className="text-base font-serif text-[#f3f4f5] leading-relaxed">
+                    <span className="text-[#60a5fa]">The respondent contends that</span> the delay followed scope changes requested by the claimant in writing on 2 April 2026.
+                  </p>
+                  <p className="text-xs text-[#879292]">
+                    Reply, paragraph 7
+                  </p>
+                </div>
+
+                {/* Fact 5 - Purple (LegalDesk analysis) */}
+                <div className="border-l-[3px] border-[#a78bfa] bg-[#131624] border border-[#2b3360] p-5 rounded-xl space-y-2">
+                  <p className="text-base font-serif text-[#f3f4f5] leading-relaxed">
+                    <span className="text-[#818cf8]">It appears from the material that</span> {caseData.description || 'the invoice total and inspection records differ by ₹14,400, which may bear on the scope-change defence.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Column: Exhibits & Gap Callout */}
+              <div className="space-y-6">
+                
+                {/* Exhibits List */}
+                <div className="space-y-3">
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">
+                    EXHIBITS
+                  </div>
+                  <div className="space-y-2">
+                    {documents.length > 0 ? (
+                      documents.map((doc, idx) => {
+                        const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+                        const letter = letters[idx] || `${idx + 1}`;
+                        return (
+                          <div key={doc.id || idx} className="flex items-center justify-between p-3 rounded-lg bg-[#141717] border border-[#1e2323] text-xs">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="font-mono text-[#2dd4bf] font-bold">{letter}</span>
+                              <span className="text-[#f3f4f5] truncate font-medium">{doc.title}</span>
+                            </div>
+                            <span className="text-[#6f7a7a] font-mono flex-shrink-0 text-[11px]">{(doc as any).pages || 3} pp</span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-[#141717] border border-[#1e2323] text-xs">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="font-mono text-[#2dd4bf] font-bold">A</span>
+                            <span className="text-[#f3f4f5] truncate font-medium">Invoice 4471</span>
+                          </div>
+                          <span className="text-[#6f7a7a] font-mono text-[11px]">3 pp</span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-[#141717] border border-[#1e2323] text-xs">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="font-mono text-[#2dd4bf] font-bold">B</span>
+                            <span className="text-[#f3f4f5] truncate font-medium">Inspection report</span>
+                          </div>
+                          <span className="text-[#6f7a7a] font-mono text-[11px]">11 pp</span>
+                        </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-[#141717] border border-[#1e2323] text-xs">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="font-mono text-[#2dd4bf] font-bold">C</span>
+                            <span className="text-[#f3f4f5] truncate font-medium">Fit-out agreement</span>
+                          </div>
+                          <span className="text-[#6f7a7a] font-mono text-[11px]">9 pp</span>
+                        </div>
+                      </>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => { e.stopPropagation(); handleOpenEdit(); }}
-                      className="h-5 text-[10px] bg-transparent border-white/10 hover:bg-white/5 px-2 py-0"
-                    >
-                      Edit
-                    </Button>
-                    <span className={`text-muted-foreground text-[10px] transition-transform duration-200 ${showSummary ? 'rotate-180' : ''}`}>▼</span>
-                  </div>
                 </div>
-                {showSummary && (
-                  <div className="px-4 pb-3 pt-0 border-t border-[#A855F7]/10">
-                    <p className="text-[12px] leading-relaxed text-foreground/85 font-serif mt-2">
-                      {caseData.description || 'No description provided. Click edit to provide legal issues, key grounds, and client background.'}
-                    </p>
-                  </div>
-                )}
-              </div>
 
-
-              {/* AI Instructions Block */}
-              <div className="bg-[#14101e] border border-[#A855F7]/30 rounded-xl p-5 relative overflow-hidden mt-6">
-                <div className="absolute top-0 left-0 w-1 h-full bg-[#A855F7]/50"></div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#A855F7]" />
-                    <span className="text-[10px] font-bold text-[#A855F7] tracking-widest uppercase">AI Instructions</span>
+                {/* Gap Alert Card */}
+                <div className="bg-[#1c1612] border border-[#3d2c18] rounded-xl p-5 space-y-3.5">
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#f59e0b] font-semibold">
+                    ONE GAP BEFORE FILING
                   </div>
-                  {!editingInstructions ? (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => {
-                        setTempInstructions(caseData.instructions || '');
-                        setEditingInstructions(true);
-                      }}
-                      className="h-6 text-[11px] bg-transparent border-white/10 hover:bg-white/5"
-                    >
-                      Edit
-                    </Button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setEditingInstructions(false)}
-                        className="h-6 text-[11px] hover:bg-white/5"
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        onClick={handleSaveInstructions}
-                        disabled={savingInstructions}
-                        className="h-6 text-[11px] bg-[#A855F7] hover:bg-[#A855F7]/80 text-white"
-                      >
-                        {savingInstructions ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-                        Save
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                {editingInstructions ? (
-                  <textarea 
-                    rows={3}
-                    placeholder="Instructions to guide the Associate AI (e.g. Focus on procedural delays, match specific penal codes)..." 
-                    value={tempInstructions}
-                    onChange={(e) => setTempInstructions(e.target.value)}
-                    className="w-full bg-[#111111] border border-[#A855F7]/30 rounded-lg p-2.5 text-sm text-foreground focus:outline-none resize-none focus:border-[#A855F7]/70 transition-colors"
-                  />
-                ) : (
-                  <p className="text-[14px] leading-relaxed text-foreground/90 font-serif">
-                    {caseData.instructions || 'No AI instructions provided. Click edit to guide how the AI assistant analyzes this case.'}
+                  <p className="text-xs text-[#d1d5db] leading-relaxed">
+                    The refund undertaking rests on the client&apos;s account alone. If an email or message records it, adding that document moves the statement into the supported column.
                   </p>
-                )}
-              </div>
-
-              {/* Grid: Next Hearing & At a glance */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Next Hearing Card */}
-                <div className="bg-[#111111] border border-white/5 rounded-xl p-4">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Next Hearing</div>
-                  {caseData.next_hearing_date ? (
-                    <>
-                      <div className="text-xl font-heading font-medium text-foreground mb-1">
-                        {formatDateTime(caseData.next_hearing_date)}
-                      </div>
-                      <div className="text-xs text-muted-foreground mb-3">
-                        {caseData.court} &middot; {caseData.judge || 'Bench'}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setHearingModalOpen(true)}
-                          className="h-7 text-xs bg-transparent border-white/10 text-muted-foreground hover:text-foreground"
-                        >
-                          Reschedule
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="py-3">
-                      <p className="text-xs text-muted-foreground mb-2">No hearing scheduled</p>
-                      <Button 
-                        size="sm" 
-                        onClick={() => setHearingModalOpen(true)}
-                        className="h-7 text-xs bg-[#4ADE80] text-black font-semibold"
-                      >
-                        + Schedule Hearing
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* At a Glance Metadata */}
-                <div className="bg-[#111111] border border-white/5 rounded-xl p-4">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2.5">At a Glance</div>
-                  <div className="grid grid-cols-[80px_1fr] gap-y-2 text-xs">
-                    <div className="text-muted-foreground">Court</div>
-                    <div className="font-medium text-foreground truncate">{caseData.court || '—'}</div>
-                    <div className="text-muted-foreground">Judge</div>
-                    <div className="text-foreground truncate">{caseData.judge || '—'}</div>
-                    <div className="text-muted-foreground">Filed</div>
-                    <div className="text-foreground">{formatDate(caseData.filing_date)}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tasks List */}
-              <div className="bg-[#111111] border border-white/5 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Tasks &middot; {tasks.length}
-                  </div>
-                  <button 
-                    onClick={() => setTaskModalOpen(true)} 
-                    className="text-xs text-[#4ADE80] hover:underline flex items-center gap-1 font-medium"
+                  <Button 
+                    onClick={() => setDocModalOpen(true)}
+                    className="w-full bg-[#141717] hover:bg-[#1e2424] border border-[#2b3333] text-[#f3f4f5] text-xs font-medium h-9 rounded-lg"
                   >
-                    <Plus className="w-3 h-3" /> Add Task
-                  </button>
+                    Upload the document
+                  </Button>
                 </div>
 
-                {tasks.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-2">No tasks for this case yet.</p>
-                ) : (
-                  <div className="space-y-2 divide-y divide-white/5">
-                    {tasks.map(t => (
-                      <div key={t.id} className="flex items-center justify-between pt-2 text-xs">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <button
-                            onClick={() => handleToggleTaskStatus(t)}
-                            className={`w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${
-                              t.status === 'COMPLETED' ? 'bg-[#4ADE80] border-[#4ADE80] text-black' : 'border-muted-foreground/40 hover:border-[#4ADE80]'
-                            }`}
-                          >
-                            {t.status === 'COMPLETED' && <Check className="w-3 h-3 stroke-[3]" />}
-                          </button>
-                          <span className={t.status === 'COMPLETED' ? 'line-through text-muted-foreground truncate' : 'text-foreground truncate'}>
-                            {t.title}
-                          </span>
-                        </div>
-                        <span className={`text-[10px] font-mono flex-shrink-0 ml-2 ${
-                          t.status === 'COMPLETED' ? 'text-[#4ADE80]' : t.status === 'OVERDUE' ? 'text-destructive' : 'text-muted-foreground'
-                        }`}>
-                          {t.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Column: Documents & Activity */}
-            <div className="space-y-6">
-              
-              {/* Documents Card */}
-              <div className="bg-[#111111] border border-white/5 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Documents &middot; {documents.length}
-                  </div>
-                  <button 
-                    onClick={() => setDocModalOpen(true)} 
-                    className="text-xs text-[#4ADE80] hover:underline flex items-center gap-1 font-medium"
-                  >
-                    <Plus className="w-3 h-3" /> Upload
-                  </button>
-                </div>
-
-                {documents.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-2">No documents mapped to this case collection.</p>
-                ) : (
-                  <div className="space-y-2.5">
-                    {documents.slice(0, 4).map((doc, idx) => (
-                      <div key={doc.id || doc._id || idx} className="flex items-center justify-between text-xs p-2 rounded-lg bg-[#16161a] border border-white/5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                          <span className="truncate text-foreground font-medium">{doc.title}</span>
-                        </div>
-                        <Badge variant="outline" className="text-[10px] font-mono border-white/10 flex-shrink-0">
-                          {doc.type || 'DOC'}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Hearings List */}
-              <div className="bg-[#111111] border border-white/5 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Hearing History &middot; {hearings.length}
-                  </div>
-                  <button 
-                    onClick={() => setHearingModalOpen(true)} 
-                    className="text-xs text-[#4ADE80] hover:underline flex items-center gap-1 font-medium"
-                  >
-                    <Plus className="w-3 h-3" /> Schedule
-                  </button>
-                </div>
-
-                {hearings.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-2">No hearings recorded.</p>
-                ) : (
-                  <div className="space-y-2.5">
-                    {hearings.map((h, idx) => (
-                      <div key={h.id || idx} className="p-2.5 rounded-lg bg-[#16161a] border border-white/5 text-xs">
-                        <div className="flex items-center justify-between font-medium text-foreground">
-                          <span>{formatDateTime(h.date)}</span>
-                          <span className="text-[10px] font-mono text-muted-foreground">{h.status || 'SCHEDULED'}</span>
-                        </div>
-                        {h.notes && (
-                          <p className="text-muted-foreground mt-1 text-[11px]">{h.notes}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
             </div>
-
           </div>
         )}
 

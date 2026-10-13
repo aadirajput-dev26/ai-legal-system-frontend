@@ -5,28 +5,20 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useOrg } from '@/lib/org-context';
 import { AppShell } from '@/components/layout/AppShell';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { 
   Bell, 
   CheckCheck, 
   RefreshCw, 
   Trash2, 
-  ExternalLink, 
   Check, 
   Search, 
   Gavel, 
   Clock, 
-  FileText, 
   Sparkles, 
-  AlertCircle, 
-  Scale, 
   Loader2, 
   ShieldAlert, 
   FolderClosed,
-  ChevronRight,
-  Filter
+  Scale
 } from 'lucide-react';
 import { notifications as notificationsApi } from '@/lib/api';
 import { NotificationItem } from '@/lib/types';
@@ -137,16 +129,13 @@ export default function NotificationsPage() {
   // Filtered Notifications
   const filteredNotifications = useMemo(() => {
     return notifications.filter(n => {
-      // Tab filter
       if (activeTab === 'UNREAD' && n.is_read) return false;
       if (activeTab === 'HEARING_ALERT' && n.type !== 'HEARING_ALERT') return false;
       if (activeTab === 'TASK_DUE' && n.type !== 'TASK_DUE') return false;
       if (activeTab === 'AI_INSIGHT' && n.type !== 'AI_INSIGHT' && n.type !== 'CASE_UPDATE') return false;
 
-      // Priority filter
       if (priorityFilter !== 'ALL' && n.priority !== priorityFilter) return false;
 
-      // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const match = 
@@ -161,7 +150,6 @@ export default function NotificationsPage() {
     });
   }, [notifications, activeTab, priorityFilter, searchQuery]);
 
-  // Priority counters
   const urgentCount = useMemo(() => {
     return notifications.filter(n => (n.priority === 'URGENT' || n.priority === 'HIGH') && !n.is_read).length;
   }, [notifications]);
@@ -178,43 +166,37 @@ export default function NotificationsPage() {
     }
   };
 
-  // Helper for notification icons and colors
   const getNotificationVisuals = (item: NotificationItem) => {
     switch (item.type) {
       case 'HEARING_ALERT':
         return {
           icon: Gavel,
-          badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-          iconBg: 'bg-emerald-500/10 text-emerald-400',
+          typeColor: 'text-[#f87171]',
           typeLabel: 'Court Hearing'
         };
       case 'TASK_DUE':
         return {
           icon: Clock,
-          badgeColor: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-          iconBg: 'bg-orange-500/10 text-orange-400',
+          typeColor: 'text-[#f59e0b]',
           typeLabel: 'Task Deadline'
         };
       case 'AI_INSIGHT':
         return {
           icon: Sparkles,
-          badgeColor: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-          iconBg: 'bg-purple-500/10 text-purple-400',
-          typeLabel: 'AI Brief'
+          typeColor: 'text-[#818cf8]',
+          typeLabel: 'LegalDesk Brief'
         };
       case 'CASE_UPDATE':
         return {
           icon: FolderClosed,
-          badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-          iconBg: 'bg-blue-500/10 text-blue-400',
-          typeLabel: 'Case Milestone'
+          typeColor: 'text-[#2dd4bf]',
+          typeLabel: 'Matter Update'
         };
       default:
         return {
           icon: Bell,
-          badgeColor: 'bg-white/5 text-muted-foreground border-white/10',
-          iconBg: 'bg-white/5 text-muted-foreground',
-          typeLabel: 'System Alert'
+          typeColor: 'text-[#879292]',
+          typeLabel: 'Alert'
         };
     }
   };
@@ -223,7 +205,7 @@ export default function NotificationsPage() {
     return (
       <AppShell>
         <div className="flex h-full items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
         </div>
       </AppShell>
     );
@@ -231,289 +213,220 @@ export default function NotificationsPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-full max-w-5xl mx-auto pb-16 space-y-6">
+      <div className="flex flex-col h-full max-w-[1100px] mx-auto px-6 sm:px-8 py-8 pb-16 space-y-7">
         
-        {/* ── Top Header & Global Actions ─────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Top Header & Global Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-heading font-semibold tracking-tight text-foreground">
-                Notifications & Alerts
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-3xl font-serif text-[#f3f4f5] tracking-tight">
+                Notifications
               </h1>
               {unreadCount > 0 && (
-                <Badge className="bg-[#4ADE80] text-black font-bold text-xs py-0.5 px-2">
+                <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-[#2dd4bf] text-[#091b18]">
                   {unreadCount} unread
-                </Badge>
+                </span>
               )}
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Real-time court appearance alerts, filing deadlines, and case updates for {currentOrg?.name || 'firm'}.
+            <p className="text-sm text-[#879292] mt-1">
+              Court appearance alerts, filing deadlines, and matter updates for {currentOrg?.name || 'firm'}.
             </p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={handleSyncAlerts}
               disabled={syncing}
-              className="h-9 bg-[#111111] border-white/10 hover:bg-white/5 text-xs text-muted-foreground hover:text-foreground"
-              title="Rescan docket for new countdown alerts"
+              className="h-8 bg-[#141717] border border-[#272b2b] hover:bg-[#1e2323] text-xs text-[#f3f4f5] px-3.5 rounded-lg flex items-center gap-1.5 transition-colors"
             >
-              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-[#879292] ${syncing ? 'animate-spin' : ''}`} />
               {syncing ? 'Checking...' : 'Check Alerts'}
-            </Button>
+            </button>
 
             {unreadCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
+              <button
                 onClick={handleMarkAllAsRead}
-                className="h-9 bg-[#1a231f] border-[#2D4537] text-[#4ADE80] hover:bg-[#223028] text-xs font-medium"
+                className="h-8 bg-[#141717] border border-[#272b2b] text-[#2dd4bf] hover:bg-[#1e2323] text-xs font-medium px-3.5 rounded-lg flex items-center gap-1.5 transition-colors"
               >
-                <CheckCheck className="w-4 h-4 mr-1.5" /> Mark all read
-              </Button>
+                <CheckCheck className="w-3.5 h-3.5" /> Mark all read
+              </button>
             )}
           </div>
         </div>
 
-        {/* ── Summary Stats Strip (Clickable Filter Cards) ─────────────── */}
+        {/* Summary Stats Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
           <div 
             onClick={() => { setActiveTab('ALL'); setPriorityFilter('ALL'); }}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+            className={`p-4 rounded-xl border transition-all cursor-pointer ${
               activeTab === 'ALL' && priorityFilter === 'ALL'
-                ? 'bg-[#1a231f] border-[#2D4537] shadow-[inset_0_0_0_1px_rgba(74,222,128,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
+                ? 'bg-[#141717] border-[#2dd4bf]/40'
+                : 'bg-[#121515] border-[#222828] hover:border-[#272b2b]'
             }`}
           >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Total Alerts</div>
-              <div className="text-xl font-bold font-heading text-foreground mt-0.5">{notifications.length}</div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-white/5 text-muted-foreground flex items-center justify-center">
-              <Bell className="w-4 h-4" />
-            </div>
+            <div className="text-[10px] font-mono text-[#6f7a7a] uppercase tracking-wider">Total Alerts</div>
+            <div className="text-xl font-serif font-semibold text-white mt-0.5">{notifications.length}</div>
           </div>
 
           <div 
             onClick={() => { setActiveTab('UNREAD'); setPriorityFilter('ALL'); }}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+            className={`p-4 rounded-xl border transition-all cursor-pointer ${
               activeTab === 'UNREAD'
-                ? 'bg-[#1a231f] border-[#2D4537] shadow-[inset_0_0_0_1px_rgba(74,222,128,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
+                ? 'bg-[#141717] border-[#2dd4bf]/40'
+                : 'bg-[#121515] border-[#222828] hover:border-[#272b2b]'
             }`}
           >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Unread</div>
-              <div className="text-xl font-bold font-heading text-[#4ADE80] mt-0.5">{unreadCount}</div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-[#4ADE80]/10 text-[#4ADE80] flex items-center justify-center">
-              <Check className="w-4 h-4" />
-            </div>
+            <div className="text-[10px] font-mono text-[#6f7a7a] uppercase tracking-wider">Unread</div>
+            <div className="text-xl font-serif font-semibold text-[#2dd4bf] mt-0.5">{unreadCount}</div>
           </div>
 
           <div 
             onClick={() => { setPriorityFilter('URGENT'); setActiveTab('ALL'); }}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+            className={`p-4 rounded-xl border transition-all cursor-pointer ${
               priorityFilter === 'URGENT'
-                ? 'bg-[#291717] border-red-500/40 shadow-[inset_0_0_0_1px_rgba(239,68,68,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
+                ? 'bg-[#141717] border-[#f87171]/40'
+                : 'bg-[#121515] border-[#222828] hover:border-[#272b2b]'
             }`}
           >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Urgent / High</div>
-              <div className="text-xl font-bold font-heading text-destructive mt-0.5">{urgentCount}</div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center">
-              <ShieldAlert className="w-4 h-4" />
-            </div>
+            <div className="text-[10px] font-mono text-[#6f7a7a] uppercase tracking-wider">Urgent</div>
+            <div className="text-xl font-serif font-semibold text-[#f87171] mt-0.5">{urgentCount}</div>
           </div>
 
           <div 
             onClick={() => { setActiveTab('HEARING_ALERT'); setPriorityFilter('ALL'); }}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+            className={`p-4 rounded-xl border transition-all cursor-pointer ${
               activeTab === 'HEARING_ALERT'
-                ? 'bg-[#1f1624] border-purple-500/40 shadow-[inset_0_0_0_1px_rgba(168,85,247,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
+                ? 'bg-[#141717] border-[#818cf8]/40'
+                : 'bg-[#121515] border-[#222828] hover:border-[#272b2b]'
             }`}
           >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Court Hearings</div>
-              <div className="text-xl font-bold font-heading text-purple-400 mt-0.5">{hearingAlertsCount}</div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
-              <Gavel className="w-4 h-4" />
-            </div>
+            <div className="text-[10px] font-mono text-[#6f7a7a] uppercase tracking-wider">Hearings</div>
+            <div className="text-xl font-serif font-semibold text-[#818cf8] mt-0.5">{hearingAlertsCount}</div>
           </div>
         </div>
 
-        {/* ── Search Bar (Left) & Priority Filter (Right) ────────────────── */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-2 border-b border-border/50 text-xs">
-          {/* Left: Wide Search Input */}
-          <div className="relative flex-1 w-full max-w-xl">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Search notifications by title, case name, appearance notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#111111] border-white/10 pl-9 pr-4 h-9 text-xs rounded-xl focus-visible:ring-1 focus-visible:ring-[#4ADE80] placeholder:text-muted-foreground/60"
-            />
-          </div>
+        {/* Search Bar & Priority Filter */}
+        <div className="flex items-center justify-between gap-4">
+          <input
+            type="text"
+            placeholder="Search notifications by title, matter name, or notes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 bg-[#121515] border border-[#222828] text-xs text-[#f3f4f5] placeholder-[#6f7a7a] px-3.5 py-2 rounded-xl focus:outline-none focus:border-[#2dd4bf]"
+          />
 
-          {/* Right: Priority dropdown */}
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Priority:</span>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value as any)}
-              className="bg-[#111111] border border-white/10 rounded-xl h-9 px-3 text-xs text-foreground focus:outline-none cursor-pointer min-w-[140px]"
-            >
-              <option value="ALL" className="bg-[#16161a]">All Priorities</option>
-              <option value="URGENT" className="bg-[#16161a]">🚨 Urgent</option>
-              <option value="HIGH" className="bg-[#16161a]">High</option>
-              <option value="NORMAL" className="bg-[#16161a]">Normal</option>
-            </select>
-          </div>
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value as any)}
+            className="bg-[#121515] border border-[#222828] text-xs text-[#879292] px-3.5 py-2 rounded-xl focus:outline-none cursor-pointer"
+          >
+            <option value="ALL">All Priorities</option>
+            <option value="URGENT">Urgent</option>
+            <option value="HIGH">High</option>
+            <option value="NORMAL">Normal</option>
+          </select>
         </div>
 
-        {/* ── Notifications Feed List ─────────────────────────────────── */}
+        {/* Notifications Feed List */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <span className="text-xs">Loading notifications...</span>
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-[#879292]">
+            <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
+            <span className="text-xs">Loading alerts...</span>
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="text-center py-20 px-4 rounded-xl border border-white/5 bg-[#111111] my-4 space-y-3">
-            <div className="w-12 h-12 rounded-full bg-[#1a231f] text-[#4ADE80] flex items-center justify-center mx-auto">
-              <CheckCheck className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-semibold text-foreground">All caught up!</h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              No notifications matching your active filter criteria. Check back for upcoming court hearings and deadline reminders.
+          <div className="text-center py-16 px-4 rounded-xl border border-[#222828] bg-[#121515] space-y-3">
+            <CheckCheck className="w-8 h-8 mx-auto text-[#2dd4bf]" />
+            <h3 className="text-base font-serif font-semibold text-white">All caught up</h3>
+            <p className="text-xs text-[#879292] max-w-sm mx-auto">
+              No notifications matching your filter criteria.
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSyncAlerts}
-              className="mt-2 h-8 text-xs bg-transparent border-white/10 hover:bg-white/5"
-            >
-              <RefreshCw className="w-3 h-3 mr-1.5" /> Rescan Docket
-            </Button>
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {filteredNotifications.map((item) => {
               const visuals = getNotificationVisuals(item);
-              const isUrgent = item.priority === 'URGENT';
-              const isHigh = item.priority === 'HIGH';
 
               return (
                 <div
                   key={item.id}
-                  className={`
-                    p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-4 group
-                    ${!item.is_read 
-                      ? 'bg-[#151c18] border-[#2D4537] shadow-[0_0_15px_rgba(45,69,55,0.25)]' 
-                      : 'bg-[#111111] border-white/5 hover:border-white/15 hover:bg-white/[0.02] opacity-80'}
-                  `}
+                  className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-4 ${
+                    !item.is_read 
+                      ? 'bg-[#141717] border-[#2dd4bf]/30' 
+                      : 'bg-[#121515] border-[#222828] hover:border-[#272b2b] opacity-80'
+                  }`}
                 >
                   <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                    {/* Visual Icon */}
-                    <div className={`w-9 h-9 rounded-xl ${visuals.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                      <visuals.icon className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-lg bg-[#0d0f0f] border border-[#272b2b] flex items-center justify-center flex-shrink-0 text-[#2dd4bf]">
+                      <visuals.icon className={`w-4 h-4 ${visuals.typeColor}`} />
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-1">
-                      {/* Top Meta Line */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className={`text-[10px] py-0 h-4 ${visuals.badgeColor}`}>
+                        <span className={`text-[10px] font-mono uppercase font-semibold ${visuals.typeColor}`}>
                           {visuals.typeLabel}
-                        </Badge>
-
-                        {isUrgent && (
-                          <Badge variant="destructive" className="text-[9px] py-0 h-4 font-bold tracking-wider uppercase">
-                            Urgent
-                          </Badge>
-                        )}
-                        {isHigh && !isUrgent && (
-                          <Badge variant="outline" className="text-[9px] py-0 h-4 border-orange-500/20 text-orange-400 font-bold uppercase">
-                            High Priority
-                          </Badge>
-                        )}
+                        </span>
 
                         {item.court && (
-                          <span className="text-[11px] text-muted-foreground font-mono">
-                            {item.court}
+                          <span className="text-[11px] text-[#6f7a7a] font-mono">
+                            &middot; {item.court}
                           </span>
                         )}
 
-                        <span className="text-[11px] text-muted-foreground/60 font-mono ml-auto">
+                        <span className="text-[10px] text-[#6f7a7a] font-mono ml-auto">
                           {formatRelativeTime(item.created_at)}
                         </span>
                       </div>
 
-                      {/* Title & Message */}
                       <div className="flex items-center gap-2">
                         {!item.is_read && (
-                          <span className="w-2 h-2 rounded-full bg-[#4ADE80] shadow-[0_0_8px_rgba(74,222,128,0.8)] flex-shrink-0"></span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf] flex-shrink-0"></span>
                         )}
-                        <h3 className={`text-sm font-semibold truncate ${!item.is_read ? 'text-foreground font-medium' : 'text-foreground/90'}`}>
+                        <h3 className="text-sm font-serif font-semibold text-white truncate">
                           {item.title}
                         </h3>
                       </div>
 
-                      <p className="text-xs text-muted-foreground leading-relaxed font-serif pt-0.5">
+                      <p className="text-xs text-[#879292] leading-relaxed font-serif">
                         {item.message}
                       </p>
 
-                      {/* Related Case Tag */}
                       {item.case_title && (
-                        <div className="pt-1 flex items-center gap-2 text-[11px] text-muted-foreground/80">
-                          <Scale className="w-3 h-3 text-muted-foreground/50" />
-                          <span className="font-medium text-foreground/80">{item.case_title}</span>
+                        <div className="pt-1 flex items-center gap-1.5 text-[11px] text-[#879292]">
+                          <Scale className="w-3 h-3 text-[#6f7a7a]" />
+                          <span className="text-white font-medium">{item.case_title}</span>
                           {item.case_number && (
-                            <>
-                              <span>&middot;</span>
-                              <span className="font-mono text-[10px]">{item.case_number}</span>
-                            </>
+                            <span className="font-mono text-[#6f7a7a]">&middot; {item.case_number}</span>
                           )}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Actions Right Side */}
-                  <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5 w-full sm:w-auto justify-end">
+                  <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#222828] w-full sm:w-auto justify-end">
                     {item.link && (
-                      <Button
-                        size="sm"
+                      <button
                         onClick={() => router.push(item.link!)}
-                        className="h-8 text-xs bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold rounded-lg shadow-sm"
+                        className="h-7 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold px-3 rounded-lg transition-colors"
                       >
-                        View Case &rarr;
-                      </Button>
+                        View matter &rarr;
+                      </button>
                     )}
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <button
                       onClick={() => handleMarkAsRead(item)}
-                      className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      className="p-1.5 text-[#879292] hover:text-[#f3f4f5] transition-colors"
                       title={item.is_read ? 'Mark as unread' : 'Mark as read'}
                     >
-                      {item.is_read ? 'Mark Unread' : <Check className="w-4 h-4 text-[#4ADE80]" />}
-                    </Button>
+                      <Check className={`w-3.5 h-3.5 ${item.is_read ? 'opacity-40' : 'text-[#2dd4bf]'}`} />
+                    </button>
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
+                    <button
                       onClick={() => handleDeleteNotification(item.id)}
-                      className="w-8 h-8 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
-                      title="Dismiss notification"
+                      className="p-1.5 text-[#6f7a7a] hover:text-[#f87171] transition-colors"
+                      title="Dismiss"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                    </button>
                   </div>
                 </div>
               );

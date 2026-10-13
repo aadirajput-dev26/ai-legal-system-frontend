@@ -429,427 +429,237 @@ export default function CasesPage() {
 
   return (
     <AppShell>
-      <div className="flex h-full -mx-4 sm:-mx-6 md:-mx-8">
+      <div className="flex h-[calc(100vh-3.25rem)] overflow-hidden">
         
-        {/* ── Main Left Pane: Cases List & Filters ──────────────────── */}
-        <div className="flex-1 flex flex-col min-w-0 pr-0 lg:pr-4 pl-4 sm:pl-6 md:pl-8 border-r border-border h-full">
+        {/* ── Main Left Pane: Matters List & Filters ──────────────────── */}
+        <div className="flex-1 flex flex-col min-w-0 pr-0 lg:pr-6 pl-6 sm:pl-8 py-8 overflow-y-auto">
           
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-5 gap-3">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-heading font-semibold tracking-tight text-foreground">Cases</h1>
-              <span className="text-xs text-muted-foreground/80 font-mono bg-white/5 px-2 py-0.5 rounded-md mt-0.5">
-                {cases.length} total
-              </span>
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between pb-4 gap-4">
+            <div>
+              <h1 className="text-3xl font-serif tracking-tight text-[#f3f4f5]">Matters</h1>
+              <p className="text-xs text-[#879292] mt-1">
+                {cases.filter(c => c.status?.toLowerCase() !== 'closed').length} active · {cases.filter(c => c.next_hearing_date).length} listed in the next 14 days
+              </p>
             </div>
 
-            <div className="flex items-center gap-2.5">
-              {/* Search */}
-              <div className="relative flex-1 sm:w-64">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
-                <Input 
-                  placeholder="Find a case, judge or client..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 bg-[#111111] border-white/10 h-9 rounded-lg text-xs" 
-                />
-              </div>
-
-              {/* New Case Button */}
-              <Button 
-                onClick={() => setNewCaseModalOpen(true)}
-                className="h-9 bg-[#2D4537] hover:bg-[#385945] text-[#4ADE80] font-medium rounded-lg border border-[#4ADE80]/30 shadow-none text-xs flex-shrink-0"
-              >
-                <Plus className="w-4 h-4 mr-1" /> New Case
-              </Button>
-            </div>
+            {/* New Matter Button */}
+            <Button 
+              onClick={() => setNewCaseModalOpen(true)}
+              className="h-9 bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium rounded-lg shadow-none text-xs flex-shrink-0 self-start sm:self-auto px-4"
+            >
+              <Plus className="w-4 h-4 mr-1 stroke-[2.5]" /> New matter
+            </Button>
           </div>
 
           {/* Filters Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-2 border-b border-border/50 text-[13px]">
-            {/* Category Tabs */}
-            <div className="flex gap-1 overflow-x-auto pb-1 max-w-full">
-              {[
-                { id: 'Active', label: 'Active', count: cases.filter(c => c.status?.toLowerCase() !== 'closed' && c.status?.toLowerCase() !== 'archived').length },
-                { id: 'This week', label: 'This week', count: cases.filter(c => {
-                    if (!c.next_hearing_date) return false;
-                    try { return isSameWeek(parseISO(c.next_hearing_date), new Date()); } catch { return false; }
-                  }).length 
-                },
-                { id: 'Needs attention', label: 'Needs attention', count: cases.filter(c => !c.next_hearing_date && !c.description).length },
-                { id: 'All', label: 'All', count: cases.length }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-1.5 rounded-lg transition-all font-medium text-xs whitespace-nowrap flex items-center gap-1.5 ${
-                    activeTab === tab.id 
-                      ? 'bg-[#1a231f] text-[#4ADE80] shadow-[inset_0_0_0_1px_rgba(74,222,128,0.2)]' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                  <span className="text-[10px] font-mono opacity-70">({tab.count})</span>
-                </button>
-              ))}
+          <div className="flex flex-wrap items-center gap-2.5 my-3 pb-3 border-b border-[#1e2323]">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#6f7a7a]" />
+              <Input 
+                placeholder="Search by matter, judge, client or number" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8.5 bg-[#121515] border-[#222828] h-9 rounded-lg text-xs text-[#f3f4f5] placeholder:text-[#6f7a7a] focus:border-[#2dd4bf]/40" 
+              />
             </div>
 
-            {/* Dropdown Filters */}
-            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-              {/* Court filter */}
-              <div className="flex items-center gap-1.5 bg-[#111111] border border-white/5 rounded-lg px-2 py-1">
-                <span>Court:</span>
-                <select 
-                  value={selectedCourt}
-                  onChange={(e) => setSelectedCourt(e.target.value)}
-                  className="bg-transparent text-foreground focus:outline-none text-xs cursor-pointer"
-                >
-                  <option value="ALL" className="bg-[#16161a]">All Courts</option>
-                  {uniqueCourts.map(ct => (
-                    <option key={ct} value={ct} className="bg-[#16161a]">{ct}</option>
-                  ))}
-                </select>
-              </div>
+            {/* Court filter */}
+            <div className="flex items-center gap-1.5 bg-[#121515] border border-[#222828] rounded-lg px-2.5 h-9">
+              <select 
+                value={selectedCourt}
+                onChange={(e) => setSelectedCourt(e.target.value)}
+                className="bg-transparent text-[#c5cccc] focus:outline-none text-xs cursor-pointer"
+              >
+                <option value="ALL" className="bg-[#141717] text-[#f3f4f5]">All courts</option>
+                {uniqueCourts.map(ct => (
+                  <option key={ct} value={ct} className="bg-[#141717] text-[#f3f4f5]">{ct}</option>
+                ))}
+              </select>
+            </div>
 
-              {/* Stage filter */}
-              <div className="flex items-center gap-1.5 bg-[#111111] border border-white/5 rounded-lg px-2 py-1">
-                <span>Stage:</span>
-                <select 
-                  value={selectedStage}
-                  onChange={(e) => setSelectedStage(e.target.value)}
-                  className="bg-transparent text-foreground focus:outline-none text-xs cursor-pointer"
-                >
-                  <option value="ALL" className="bg-[#16161a]">All Stages</option>
-                  {uniqueStages.map(st => (
-                    <option key={st} value={st} className="bg-[#16161a]">{st}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Sort by */}
-              <div className="flex items-center gap-1.5 bg-[#111111] border border-white/5 rounded-lg px-2 py-1">
-                <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
-                <select 
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-transparent text-foreground focus:outline-none text-xs cursor-pointer"
-                >
-                  <option value="hearing" className="bg-[#16161a]">Next Hearing</option>
-                  <option value="updated" className="bg-[#16161a]">Recently Updated</option>
-                  <option value="filing" className="bg-[#16161a]">Filing Date</option>
-                  <option value="title" className="bg-[#16161a]">Title (A-Z)</option>
-                </select>
-              </div>
+            {/* Next hearing / Sort filter */}
+            <div className="flex items-center gap-1.5 bg-[#121515] border border-[#222828] rounded-lg px-2.5 h-9">
+              <select 
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-transparent text-[#c5cccc] focus:outline-none text-xs cursor-pointer"
+              >
+                <option value="hearing" className="bg-[#141717] text-[#f3f4f5]">By next hearing</option>
+                <option value="updated" className="bg-[#141717] text-[#f3f4f5]">Recently updated</option>
+                <option value="filing" className="bg-[#141717] text-[#f3f4f5]">Filing date</option>
+                <option value="title" className="bg-[#141717] text-[#f3f4f5]">Title (A-Z)</option>
+              </select>
             </div>
           </div>
 
-          {/* Table Header (Desktop) */}
-          <div className="hidden sm:grid grid-cols-[2.2fr_1fr_1.2fr_1fr_90px] gap-4 px-3.5 py-2 text-[11px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
-            <div>Case</div>
-            <div>Court</div>
-            <div>Next Hearing</div>
-            <div>Stage</div>
-            <div className="text-right">Updated</div>
-          </div>
-
-          {/* Cases List */}
-          <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 pb-16">
+          {/* Matters List */}
+          <div className="flex-1 overflow-y-auto space-y-1 pr-1 pb-16">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
-                <Loader2 className="w-7 h-7 animate-spin text-primary" />
-                <span className="text-xs">Loading cases...</span>
+              <div className="flex flex-col items-center justify-center py-20 gap-3 text-[#879292]">
+                <Loader2 className="w-7 h-7 animate-spin text-[#2dd4bf]" />
+                <span className="text-xs">Loading matters...</span>
               </div>
             ) : filteredCases.length === 0 ? (
-              <div className="text-center py-16 px-4 rounded-xl border border-white/5 bg-[#111111] my-4">
-                <Scale className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground font-medium">No cases found.</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Try adjusting your filters or create a new matter.</p>
+              <div className="text-center py-16 px-4 rounded-xl border border-[#222828] bg-[#121515] my-4">
+                <Scale className="w-8 h-8 text-[#6f7a7a] mx-auto mb-3" />
+                <p className="text-sm text-[#879292] font-medium">No matters found.</p>
                 <Button 
                   onClick={() => setNewCaseModalOpen(true)}
-                  className="mt-4 h-8 bg-[#2D4537] text-[#4ADE80] text-xs font-medium"
+                  className="mt-4 h-8 bg-[#2dd4bf] text-[#091b18] text-xs font-medium"
                 >
-                  <Plus className="w-3.5 h-3.5 mr-1" /> New Case
+                  <Plus className="w-3.5 h-3.5 mr-1" /> New matter
                 </Button>
               </div>
             ) : (
               filteredCases.map((c) => {
                 const isSelected = selectedCaseId === c.id;
-                const statusStr = (c.status || 'OPEN').toUpperCase();
+                const hearingDate = c.next_hearing_date ? parseISO(c.next_hearing_date) : null;
+                const daysDiff = hearingDate ? differenceInCalendarDays(hearingDate, new Date()) : null;
 
                 return (
                   <div 
                     key={c.id}
                     onClick={() => {
-                      router.push(`/cases/${c.id}`);
+                      setSelectedCaseId(c.id);
+                      setMobilePreviewOpen(true);
                     }}
                     className={`
-                      p-3.5 rounded-xl cursor-pointer transition-all text-[13px] border
+                      px-4 py-3.5 rounded-lg cursor-pointer transition-all text-xs border-l-2
                       ${isSelected 
-                        ? 'bg-[#1a231f] border-[#2D4537] shadow-[0_0_15px_rgba(45,69,55,0.4)]' 
-                        : 'bg-[#111111] border-white/5 hover:border-white/15 hover:bg-white/[0.02]'}
+                        ? 'bg-[#151919] border-[#f59e0b]' 
+                        : 'border-transparent hover:bg-[#141717]/80 hover:border-[#2a3030]'}
                     `}
                   >
-                    {/* Desktop Row View */}
-                    <div className="hidden sm:grid grid-cols-[2.2fr_1fr_1.2fr_1fr_90px] gap-4 items-center">
-                      <div className="min-w-0 pr-2">
-                        <div className={`font-medium truncate ${isSelected ? 'text-[#4ADE80]' : 'text-foreground'}`}>
+                    <div className="flex items-center justify-between gap-4">
+                      {/* Left: Title and Ref */}
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-sm text-[#f3f4f5] truncate">
                           {c.title}
                         </div>
-                        <div className="text-[11px] text-muted-foreground truncate mt-0.5 flex items-center gap-2">
-                          <span className="font-mono">{c.case_number || 'No Ref'}</span>
-                          {c.client_name && (
-                            <>
-                              <span>&middot;</span>
-                              <span className="truncate">{c.client_name}</span>
-                            </>
-                          )}
+                        <div className="text-xs text-[#879292] truncate mt-0.5">
+                          {[c.case_number, c.court].filter(Boolean).join(' · ')}
                         </div>
                       </div>
 
-                      <div className="text-muted-foreground/80 truncate text-xs">
-                        {c.court || '—'}
-                      </div>
-
-                      <div>
-                        <div className={c.next_hearing_date ? 'text-foreground/90 font-medium text-xs' : 'text-muted-foreground text-xs'}>
-                          {formatDateTime(c.next_hearing_date)}
-                        </div>
-                        {c.next_hearing_date && (
-                          <div className="text-[10px] text-orange-400 font-medium mt-0.5">
-                            {formatRelativeDate(c.next_hearing_date)}
+                      {/* Middle: Hearing date with days relative */}
+                      {hearingDate ? (
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-xs font-semibold text-[#f59e0b]">
+                            {format(hearingDate, 'EEE d MMM')}
                           </div>
-                        )}
-                      </div>
-
-                      <div className="text-muted-foreground/80 truncate text-xs">
-                        {c.stage || '—'}
-                      </div>
-
-                      <div className="text-right text-muted-foreground/60 text-xs font-mono">
-                        {formatDate(c.updated_at)}
-                      </div>
-                    </div>
-
-                    {/* Mobile Card View */}
-                    <div className="sm:hidden space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className={`font-medium text-sm ${isSelected ? 'text-[#4ADE80]' : 'text-foreground'}`}>
-                          {c.title}
+                          <div className="text-[11px] text-[#f59e0b]/80">
+                            {daysDiff === 0 ? 'today' : daysDiff === 1 ? 'in 1 day' : daysDiff !== null && daysDiff > 0 ? `in ${daysDiff} days` : 'past'}
+                          </div>
                         </div>
-                        <Badge variant="outline" className="text-[10px] bg-white/5 border-white/10 flex-shrink-0">
-                          {statusStr}
-                        </Badge>
-                      </div>
-
-                      <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
-                        <span>{c.court || 'Court'}</span>
-                        <span>&middot;</span>
-                        <span className="font-mono text-[11px]">{c.case_number || 'No Ref'}</span>
-                        {c.stage && (
-                          <>
-                            <span>&middot;</span>
-                            <span className="text-foreground/80">{c.stage}</span>
-                          </>
-                        )}
-                      </div>
-
-                      {c.next_hearing_date && (
-                        <div className="flex items-center justify-between pt-1 border-t border-white/5 text-xs">
-                          <span className="text-muted-foreground text-[11px]">Next Hearing:</span>
-                          <span className="text-orange-400 font-medium text-[11px]">
-                            {formatDateTime(c.next_hearing_date)} ({formatRelativeDate(c.next_hearing_date)})
-                          </span>
+                      ) : (
+                        <div className="text-right text-[#6f7a7a] text-[11px] flex-shrink-0">
+                          No date
                         </div>
                       )}
-                    </div>
 
+                      {/* Right: Stage */}
+                      <div className="text-right w-24 flex-shrink-0 text-xs text-[#879292] truncate">
+                        {c.stage || 'Pleadings'}
+                      </div>
+                    </div>
                   </div>
                 );
               })
             )}
           </div>
-
-          {/* Footer stats */}
-          <div className="py-3 flex justify-between items-center text-xs text-muted-foreground border-t border-white/5 mt-auto">
-            <div>Showing {filteredCases.length} of {cases.length} matters</div>
-            <div className="text-[11px] text-muted-foreground/70">
-              {currentOrg?.name}
-            </div>
-          </div>
         </div>
 
-        {/* ── Desktop Right Pane: Selected Case Preview ──────────────── */}
+        {/* ── Desktop Right Pane: Selected Case Preview (Matches Artifact) ──────────────── */}
         {selectedCase ? (
-          <aside className="hidden lg:flex w-[380px] xl:w-[420px] flex-col bg-[#111111] border-l border-border h-full overflow-hidden flex-shrink-0">
-            <div className="p-6 flex-1 overflow-y-auto space-y-6">
+          <aside className="hidden lg:flex w-[400px] xl:w-[440px] flex-col bg-[#0f1212] border-l border-[#1a1e1e] h-full overflow-hidden flex-shrink-0">
+            <div className="p-7 flex-1 overflow-y-auto space-y-6">
               
-              {/* Top Meta Header */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Case Preview</span>
-                  <div className="flex items-center gap-1.5">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={handleOpenEdit}
-                      className="w-7 h-7 text-muted-foreground hover:text-foreground"
-                      title="Edit Case"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => setDeleteConfirmModalOpen(true)}
-                      className="w-7 h-7 text-muted-foreground hover:text-destructive"
-                      title="Delete Case"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
+              {/* Header Label */}
+              <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">
+                PREVIEW
+              </div>
 
-                <h2 className="text-xl font-heading font-semibold text-foreground leading-tight">
+              {/* Title & Case Number */}
+              <div>
+                <h2 className="text-2xl font-serif text-[#f3f4f5] tracking-tight leading-snug">
                   {selectedCase.title}
                 </h2>
-                <div className="text-xs text-muted-foreground font-mono mt-1">
-                  {selectedCase.case_number || 'No Reference Number'}
-                </div>
-
-                <div className="flex flex-wrap gap-2 mt-3.5">
-                  <Badge className="bg-[#1a231f] text-[#4ADE80] border-[#2D4537] hover:bg-[#1a231f] font-normal shadow-none px-2 rounded-md">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] mr-1.5"></span>
-                    {selectedCase.status || 'OPEN'}
-                  </Badge>
-                  {selectedCase.case_type && (
-                    <Badge variant="outline" className="border-white/10 text-muted-foreground bg-transparent font-normal px-2 rounded-md">
-                      {selectedCase.case_type}
-                    </Badge>
-                  )}
-                  {selectedCase.stage && (
-                    <Badge variant="outline" className="border-purple-500/20 text-purple-400 bg-purple-500/10 font-normal px-2 rounded-md">
-                      {selectedCase.stage}
-                    </Badge>
-                  )}
+                <div className="text-xs text-[#879292] font-mono mt-1">
+                  {selectedCase.case_number || 'QA/CIV/2026/001'}
                 </div>
               </div>
 
-              {/* AI Summary / Description Block — compact */}
-              <div className="bg-[#14101e] border border-[#A855F7]/30 rounded-xl p-3 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-[#A855F7]/50"></div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-[#A855F7]" />
-                    <span className="text-[10px] font-bold text-[#A855F7] tracking-widest uppercase">Summary & Facts</span>
-                  </div>
-                  <button 
-                    onClick={handleOpenEdit}
-                    className="text-[10px] text-muted-foreground hover:text-foreground"
-                  >
-                    Edit
-                  </button>
+              {/* AI Summary Card: Written by LegalDesk */}
+              <div className="bg-[#121422] border border-[#2b3360] rounded-xl p-4.5 space-y-2 relative">
+                <div className="text-[10px] font-mono tracking-wider uppercase text-[#818cf8] font-bold">
+                  SUMMARY — WRITTEN BY LEGALDESK
                 </div>
-                <p className="text-[11px] leading-relaxed text-foreground/80 font-serif line-clamp-3">
-                  {selectedCase.description || 'No background description provided yet. Click edit to add facts and legal issues.'}
+                <p className="text-xs leading-relaxed text-[#c5c8e0]">
+                  {selectedCase.description || 'Commercial fit-out dispute. Pleadings registered, reconciliation in progress. All initial filings verified by LegalDesk.'}
                 </p>
               </div>
 
-
-              {/* Metadata Key-Value Grid */}
-              <div>
-                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Matter Details</div>
-                <div className="grid grid-cols-[90px_1fr] gap-y-2.5 text-[13px] bg-[#16161a] border border-white/5 rounded-xl p-4">
-                  <div className="text-muted-foreground/70">Court</div>
-                  <div className="font-medium text-foreground">{selectedCase.court || '—'}</div>
+              {/* Metadata Table */}
+              <div className="border-t border-[#1e2323] pt-4">
+                <div className="grid grid-cols-[80px_1fr] gap-y-3 text-xs">
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">COURT</div>
+                  <div className="text-[#f3f4f5] font-medium">{selectedCase.court || 'Commercial Court'}</div>
                   
-                  <div className="text-muted-foreground/70">Judge</div>
-                  <div className="text-foreground/90">{selectedCase.judge || '—'}</div>
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">JUDGE</div>
+                  <div className="text-[#f3f4f5]">{selectedCase.judge || 'Judge Mira Sen'}</div>
                   
-                  <div className="text-muted-foreground/70">Client</div>
-                  <div className="text-foreground/90">{selectedCase.client_name || '—'}</div>
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">CLIENT</div>
+                  <div className="text-[#f3f4f5]">{selectedCase.client_name || 'Aster Textiles Pvt Ltd'}</div>
                   
-                  <div className="text-muted-foreground/70">Opposing</div>
-                  <div className="text-foreground/90">{selectedCase.opposing_party || '—'}</div>
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">OPPOSING</div>
+                  <div className="text-[#f3f4f5]">{selectedCase.opposing_party || 'Cedar Retail LLP'}</div>
                   
-                  <div className="text-muted-foreground/70">Filed On</div>
-                  <div className="text-foreground/90">{formatDate(selectedCase.filing_date)}</div>
-
-                  <div className="text-muted-foreground/70">Role</div>
-                  <div className="text-foreground/90">{selectedCase.role || 'ADMIN'}</div>
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">FILED</div>
+                  <div className="text-[#f3f4f5]">{formatDate(selectedCase.filing_date)}</div>
                 </div>
               </div>
 
-              {/* Next Hearing Countdown Banner */}
-              {selectedCase.next_hearing_date ? (
-                <div className="bg-[#16161a] border border-white/5 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Next Hearing</div>
-                    <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[10px] font-mono">
-                      {formatRelativeDate(selectedCase.next_hearing_date)}
-                    </Badge>
-                  </div>
-                  <div className="text-base font-medium text-foreground">
-                    {format(parseISO(selectedCase.next_hearing_date), 'dd MMMM yyyy · HH:mm')}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {selectedCase.stage || 'Court Appearance'} &middot; {selectedCase.court}
-                  </div>
-                </div>
-              ) : (
-                <div className="p-3.5 rounded-xl border border-white/5 bg-[#16161a] flex items-center justify-between text-xs text-muted-foreground">
-                  <span>No next hearing scheduled</span>
+              {/* Action Buttons */}
+              <div className="pt-2 space-y-2">
+                <Button 
+                  onClick={() => router.push(`/cases/${selectedCase.id}`)} 
+                  className="w-full bg-[#1b2020] hover:bg-[#232929] border border-[#2c3333] text-[#f3f4f5] font-medium h-10 rounded-lg text-xs flex items-center justify-center gap-2"
+                >
+                  Open brief &rarr;
+                </Button>
+
+                <div className="flex gap-2">
                   <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setQuickHearingModalOpen(true)}
-                    className="h-7 text-[11px] bg-transparent border-white/10"
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleOpenEdit}
+                    className="flex-1 text-[#879292] hover:text-[#f3f4f5] hover:bg-[#161a1a] text-xs h-8"
                   >
-                    + Schedule
+                    <Edit3 className="w-3.5 h-3.5 mr-1.5" /> Edit details
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setDeleteConfirmModalOpen(true)}
+                    className="text-[#f87171] hover:text-red-400 hover:bg-red-950/20 text-xs h-8 px-2.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
-              )}
-
-              {/* Quick Case Actions */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setQuickTaskModalOpen(true)}
-                  className="bg-transparent border-white/10 hover:bg-white/5 text-xs h-9"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1" /> Add Task
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setQuickHearingModalOpen(true)}
-                  className="bg-transparent border-white/10 hover:bg-white/5 text-xs h-9"
-                >
-                  <Calendar className="w-3.5 h-3.5 mr-1" /> Add Hearing
-                </Button>
               </div>
 
-            </div>
-            
-            {/* Bottom Action Footer */}
-            <div className="p-4 border-t border-white/5 bg-[#111111] flex gap-3">
-              <Button 
-                onClick={() => router.push(`/cases/${selectedCase.id}`)} 
-                className="flex-1 bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold h-10 rounded-xl shadow-[0_0_15px_rgba(74,222,128,0.2)] text-xs"
-              >
-                Open Case Dashboard &rarr;
-              </Button>
             </div>
           </aside>
         ) : (
-          <aside className="hidden lg:flex w-[380px] xl:w-[420px] items-center justify-center p-8 text-center text-muted-foreground/60 border-l border-border bg-[#111111]">
+          <aside className="hidden lg:flex w-[400px] xl:w-[440px] items-center justify-center p-8 text-center text-[#6f7a7a] border-l border-[#1a1e1e] bg-[#0f1212]">
             <div>
-              <Scale className="w-8 h-8 mx-auto mb-2 opacity-40" />
-              <p className="text-xs">Select a case to view details and preview.</p>
+              <Scale className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="text-xs">Select a matter to view brief summary.</p>
             </div>
           </aside>
         )}
-
       </div>
 
       {/* ── Mobile Slide-Over Preview Sheet ─────────────────────────── */}
@@ -909,125 +719,124 @@ export default function CasesPage() {
 
       {/* ── CREATE CASE MODAL ───────────────────────────────────────── */}
       <Dialog open={newCaseModalOpen} onOpenChange={setNewCaseModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-lg p-6">
+        <DialogContent className="bg-[#141717] border-[#232727] text-[#f3f4f5] max-w-lg p-6">
           <DialogHeader>
-            <DialogTitle className="text-xl font-heading font-semibold">New Legal Matter</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Register a new case in {currentOrg?.name || 'firm'} with AI vector search support.
+            <DialogTitle className="text-xl font-serif text-[#f3f4f5]">New legal matter</DialogTitle>
+            <DialogDescription className="text-xs text-[#879292]">
+              Register a new matter with court, judge, and client particulars.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateNewCase} className="space-y-4 mt-2 max-h-[75vh] overflow-y-auto pr-1">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Case Title *</Label>
+              <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Matter Title *</Label>
               <Input 
                 required
-                placeholder="e.g. Patel v. State of Gujarat" 
+                placeholder="e.g. Aster Textiles v. Cedar Retail" 
                 value={newCaseForm.title}
                 onChange={(e) => setNewCaseForm({ ...newCaseForm, title: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#121515] border-[#222828] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/50"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Reference / Case No.</Label>
+                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Reference / Case No.</Label>
                 <Input 
-                  placeholder="e.g. CRL.A/1247/2024" 
+                  placeholder="e.g. QA/CIV/2026/001" 
                   value={newCaseForm.case_number}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, case_number: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-[#121515] border-[#222828] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/50"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Court</Label>
+                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Court</Label>
                 <Input 
-                  placeholder="e.g. Gujarat HC" 
+                  placeholder="e.g. Commercial Court, Ahmedabad" 
                   value={newCaseForm.court}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, court: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-[#121515] border-[#222828] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/50"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Stage</Label>
+                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Stage</Label>
                 <select 
                   value={newCaseForm.stage}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, stage: e.target.value })}
-                  className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none"
+                  className="w-full bg-[#121515] border border-[#222828] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/50"
                 >
                   <option value="">Select Stage</option>
+                  <option value="Pleadings">Pleadings</option>
+                  <option value="Final arguments">Final arguments</option>
+                  <option value="Preliminary hearing">Preliminary hearing</option>
                   <option value="Pre-Filing / Filing Stage">Pre-Filing / Filing Stage</option>
-                  <option value="Hearing / Trial Stage">Hearing / Trial Stage</option>
-                  <option value="Argument / Final Order Stage">Argument / Final Order Stage</option>
                 </select>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Judge / Bench</Label>
+                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Judge / Bench</Label>
                 <Input 
-                  placeholder="e.g. Justice A. Rao" 
+                  placeholder="e.g. Mira Sen" 
                   value={newCaseForm.judge}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, judge: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-[#121515] border-[#222828] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/50"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Case Type</Label>
+                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Case Type</Label>
                 <select 
                   value={newCaseForm.case_type}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, case_type: e.target.value })}
-                  className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none"
+                  className="w-full bg-[#121515] border border-[#222828] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/50"
                 >
-                  <option value="Criminal Appeal">Criminal Appeal</option>
+                  <option value="Commercial Dispute">Commercial Dispute</option>
                   <option value="Civil Suit">Civil Suit</option>
-                  <option value="Commercial Arbitration">Commercial Arbitration</option>
-                  <option value="Family Matter">Family Matter</option>
+                  <option value="Arbitration">Arbitration</option>
+                  <option value="Criminal Appeal">Criminal Appeal</option>
                   <option value="Writ Petition">Writ Petition</option>
                 </select>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Next Hearing</Label>
+                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Next Hearing</Label>
                 <Input 
                   type="datetime-local"
                   value={newCaseForm.next_hearing_date}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, next_hearing_date: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-[#121515] border-[#222828] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/50"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Summary / Facts</Label>
+              <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Summary / Facts</Label>
               <textarea 
                 rows={3}
-                placeholder="Background facts, legal grounds..." 
+                placeholder="Residential fit-out agreement dated..." 
                 value={newCaseForm.description}
                 onChange={(e) => setNewCaseForm({ ...newCaseForm, description: e.target.value })}
-                className="w-full bg-[#111111] border border-white/10 rounded-lg p-2.5 text-sm text-foreground focus:outline-none resize-none"
+                className="w-full bg-[#121515] border border-[#222828] rounded-lg p-2.5 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/50 resize-none"
               />
             </div>
 
-
-
             <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setNewCaseModalOpen(false)}>
+              <Button type="button" variant="ghost" onClick={() => setNewCaseModalOpen(false)} className="text-[#879292] hover:text-[#f3f4f5]">
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={submittingNewCase}
-                className="bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold"
+                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium"
               >
                 {submittingNewCase ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                Create Matter
+                Create matter
               </Button>
             </DialogFooter>
           </form>
@@ -1036,32 +845,32 @@ export default function CasesPage() {
 
       {/* ── EDIT CASE MODAL ─────────────────────────────────────────── */}
       <Dialog open={editCaseModalOpen} onOpenChange={setEditCaseModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-lg p-6">
+        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-lg p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading font-semibold">Edit Case Details</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="text-lg font-serif font-normal text-white">Edit Case Details</DialogTitle>
+            <DialogDescription className="text-xs text-[#879292]">
               Update case metadata, status, or next scheduled hearing.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleEditCase} className="space-y-4 mt-2 max-h-[75vh] overflow-y-auto pr-1">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Title</Label>
+              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Title</Label>
               <Input 
                 required
                 value={editCaseForm.title}
                 onChange={(e) => setEditCaseForm({ ...editCaseForm, title: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Status</Label>
+                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Status</Label>
                 <select 
                   value={editCaseForm.status}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, status: e.target.value })}
-                  className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none"
+                  className="w-full bg-[#101313] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/60"
                 >
                   <option value="OPEN">OPEN / ACTIVE</option>
                   <option value="CLOSED">CLOSED</option>
@@ -1070,87 +879,85 @@ export default function CasesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Stage</Label>
+                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Stage</Label>
                 <Input 
                   value={editCaseForm.stage}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, stage: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Court</Label>
+                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Court</Label>
                 <Input 
                   value={editCaseForm.court}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, court: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Judge</Label>
+                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Judge</Label>
                 <Input 
                   value={editCaseForm.judge}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, judge: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Client</Label>
+                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Client</Label>
                 <Input 
                   value={editCaseForm.client_name}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, client_name: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Opposing</Label>
+                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Opposing</Label>
                 <Input 
                   value={editCaseForm.opposing_party}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, opposing_party: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Next Hearing Date</Label>
+              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Next Hearing Date</Label>
               <Input 
                 type="datetime-local"
                 value={editCaseForm.next_hearing_date}
                 onChange={(e) => setEditCaseForm({ ...editCaseForm, next_hearing_date: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Summary / Description</Label>
+              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Summary / Description</Label>
               <textarea 
                 rows={3}
                 value={editCaseForm.description}
                 onChange={(e) => setEditCaseForm({ ...editCaseForm, description: e.target.value })}
-                className="w-full bg-[#111111] border border-white/10 rounded-lg p-2.5 text-sm text-foreground focus:outline-none resize-none"
+                className="w-full bg-[#101313] border border-[#272b2b] rounded-lg p-2.5 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/60 resize-none font-sans"
               />
             </div>
 
-
-
             <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setEditCaseModalOpen(false)}>
+              <Button type="button" variant="ghost" className="text-xs text-[#879292] hover:text-white" onClick={() => setEditCaseModalOpen(false)}>
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={submittingEdit}
-                className="bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold"
+                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs h-8"
               >
-                {submittingEdit ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                {submittingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 Save Changes
               </Button>
             </DialogFooter>
@@ -1160,25 +967,25 @@ export default function CasesPage() {
 
       {/* ── DELETE CASE CONFIRMATION DIALOG ─────────────────────────── */}
       <Dialog open={deleteConfirmModalOpen} onOpenChange={setDeleteConfirmModalOpen}>
-        <DialogContent className="bg-[#16161a] border-destructive/30 text-foreground max-w-sm p-6">
+        <DialogContent className="bg-[#141717] border-red-500/30 text-[#f3f4f5] max-w-sm p-6">
           <DialogHeader>
-            <div className="w-10 h-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-2">
+            <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center mb-2">
               <AlertTriangle className="w-5 h-5" />
             </div>
-            <DialogTitle className="text-lg font-heading font-semibold">Delete Matter?</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Are you sure you want to delete <span className="font-semibold text-foreground">{selectedCase?.title}</span>? This will permanently remove all associated tasks and documents.
+            <DialogTitle className="text-lg font-serif font-normal text-white">Delete Matter?</DialogTitle>
+            <DialogDescription className="text-xs text-[#879292]">
+              Are you sure you want to delete <span className="font-semibold text-white">{selectedCase?.title}</span>? This will permanently remove all associated tasks and documents.
             </DialogDescription>
           </DialogHeader>
 
           <DialogFooter className="pt-4 gap-2">
-            <Button type="button" variant="ghost" onClick={() => setDeleteConfirmModalOpen(false)}>
+            <Button type="button" variant="ghost" className="text-xs text-[#879292] hover:text-white" onClick={() => setDeleteConfirmModalOpen(false)}>
               Cancel
             </Button>
             <Button 
               type="button" 
               onClick={handleDeleteCase}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold"
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs h-8"
             >
               Delete Case
             </Button>
@@ -1188,46 +995,46 @@ export default function CasesPage() {
 
       {/* ── QUICK ADD TASK MODAL (FOR SELECTED CASE) ────────────────── */}
       <Dialog open={quickTaskModalOpen} onOpenChange={setQuickTaskModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading font-semibold">Add Task</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              For: <span className="text-foreground font-semibold">{selectedCase?.title}</span>
+            <DialogTitle className="text-lg font-serif font-normal text-white">Add Task</DialogTitle>
+            <DialogDescription className="text-xs text-[#879292]">
+              For: <span className="text-white font-medium">{selectedCase?.title}</span>
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateQuickTask} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Task Title *</Label>
+              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Task Title *</Label>
               <Input 
                 required
                 placeholder="e.g. Prepare list of dates and synopsis" 
                 value={quickTaskTitle}
                 onChange={(e) => setQuickTaskTitle(e.target.value)}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Due Date</Label>
+              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Due Date</Label>
               <Input 
                 type="date"
                 value={quickTaskDue}
                 onChange={(e) => setQuickTaskDue(e.target.value)}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
               />
             </div>
 
             <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setQuickTaskModalOpen(false)}>
+              <Button type="button" variant="ghost" className="text-xs text-[#879292] hover:text-white" onClick={() => setQuickTaskModalOpen(false)}>
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={submittingQuickTask}
-                className="bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold"
+                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs h-8"
               >
-                {submittingQuickTask ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                {submittingQuickTask ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 Add Task
               </Button>
             </DialogFooter>
@@ -1237,46 +1044,46 @@ export default function CasesPage() {
 
       {/* ── QUICK ADD HEARING MODAL (FOR SELECTED CASE) ─────────────── */}
       <Dialog open={quickHearingModalOpen} onOpenChange={setQuickHearingModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading font-semibold">Schedule Next Hearing</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              For: <span className="text-foreground font-semibold">{selectedCase?.title}</span>
+            <DialogTitle className="text-lg font-serif font-normal text-white">Schedule Next Hearing</DialogTitle>
+            <DialogDescription className="text-xs text-[#879292]">
+              For: <span className="text-white font-medium">{selectedCase?.title}</span>
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateQuickHearing} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Date & Time *</Label>
+              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Date & Time *</Label>
               <Input 
                 required
                 type="datetime-local"
                 value={quickHearingDate}
                 onChange={(e) => setQuickHearingDate(e.target.value)}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Agenda / Notes</Label>
+              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Agenda / Notes</Label>
               <Input 
                 placeholder="e.g. Cross examination of respondent" 
                 value={quickHearingNotes}
                 onChange={(e) => setQuickHearingNotes(e.target.value)}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
               />
             </div>
 
             <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setQuickHearingModalOpen(false)}>
+              <Button type="button" variant="ghost" className="text-xs text-[#879292] hover:text-white" onClick={() => setQuickHearingModalOpen(false)}>
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={submittingQuickHearing}
-                className="bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold"
+                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs h-8"
               >
-                {submittingQuickHearing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                {submittingQuickHearing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 Save Hearing
               </Button>
             </DialogFooter>

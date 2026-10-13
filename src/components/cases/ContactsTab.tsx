@@ -45,31 +45,31 @@ export function ContactsTab({ caseId, caseData, onUpdate }: { caseId: string, ca
   };
 
   const renderSection = (title: string, role: 'client' | 'opponent' | 'opponent_advocate') => (
-    <div className="bg-[#14101e] border border-[#A855F7]/30 rounded-xl p-6">
-      <h3 className="text-sm font-semibold text-[#A855F7] mb-4 uppercase tracking-widest">{title}</h3>
+    <div className="bg-[#141717] border border-[#272b2b] rounded-xl p-5">
+      <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#879292] mb-3">{title}</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Name</Label>
+          <Label className="text-[11px] font-mono text-[#879292]">Name</Label>
           <Input 
             value={contacts[role].name} 
             onChange={(e) => handleChange(role, 'name', e.target.value)} 
-            className="bg-[#111111] border-white/10 h-9"
+            className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 focus:border-[#2dd4bf]/60"
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Phone</Label>
+          <Label className="text-[11px] font-mono text-[#879292]">Phone</Label>
           <Input 
             value={contacts[role].phone} 
             onChange={(e) => handleChange(role, 'phone', e.target.value)} 
-            className="bg-[#111111] border-white/10 h-9"
+            className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 focus:border-[#2dd4bf]/60"
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Email</Label>
+          <Label className="text-[11px] font-mono text-[#879292]">Email</Label>
           <Input 
             value={contacts[role].email} 
             onChange={(e) => handleChange(role, 'email', e.target.value)} 
-            className="bg-[#111111] border-white/10 h-9"
+            className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 focus:border-[#2dd4bf]/60"
           />
         </div>
       </div>
@@ -77,14 +77,14 @@ export function ContactsTab({ caseId, caseData, onUpdate }: { caseId: string, ca
   );
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 max-w-4xl">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-heading font-semibold">Contacts & Parties</h2>
-          <p className="text-xs text-muted-foreground mt-1">Manage communication details for all parties involved in this matter.</p>
+          <h2 className="font-serif text-xl font-normal text-white">Contacts & Parties</h2>
+          <p className="text-xs text-[#879292] mt-0.5">Manage communication details for all parties involved in this matter.</p>
         </div>
-        <Button onClick={handleSave} disabled={loading} className="bg-[#A855F7] hover:bg-[#9333ea] text-white">
-          {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+        <Button onClick={handleSave} disabled={loading} className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs h-8">
+          {loading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1.5" />}
           Save Contacts
         </Button>
       </div>

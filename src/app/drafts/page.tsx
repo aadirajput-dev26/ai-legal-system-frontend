@@ -4,34 +4,30 @@ import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } fr
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useOrg } from '@/lib/org-context';
+import { useBilling } from '@/lib/billing-context';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import {
-  FileEdit,
   Plus,
-  Search,
   Loader2,
   Trash2,
   Download,
   Printer,
   Copy,
   Check,
-  Sparkles,
   ArrowLeft,
   Bot,
   Send,
-  RotateCcw,
-  CheckCircle2,
   ChevronDown,
-  RefreshCw,
-  Scale,
-  ExternalLink,
-  BookOpen,
-  FileText,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -40,12 +36,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { drafts as draftsApi, cases as casesApi } from '@/lib/api';
 import type { Draft, DraftType, DraftStatus } from '@/lib/api';
 import { CaseItem } from '@/lib/types';
@@ -63,24 +53,6 @@ const DRAFT_TYPE_LABELS: Record<DraftType, string> = {
   OTHER: 'Legal Document',
 };
 
-const DRAFT_TYPE_ICONS: Record<DraftType, string> = {
-  LEGAL_NOTICE: '⚖️',
-  APPLICATION: '📋',
-  AFFIDAVIT: '📜',
-  REPLY: '↩️',
-  EMAIL: '📧',
-  WHATSAPP: '💬',
-  COURT_DRAFT: '🏛️',
-  CORRESPONDENCE: '✉️',
-  OTHER: '📄',
-};
-
-const STATUS_COLORS: Record<DraftStatus, string> = {
-  DRAFT: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  IN_REVIEW: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  APPROVED: 'bg-[#4ADE80]/10 text-[#4ADE80] border-[#4ADE80]/20',
-};
-
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -94,6 +66,7 @@ function DraftsContent() {
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { currentOrg } = useOrg();
+  const { isExhausted } = useBilling();
 
   // URL query params
   const initialCaseId = searchParams.get('caseId') || '';
@@ -104,19 +77,18 @@ function DraftsContent() {
   const [draftsList, setDraftsList] = useState<Draft[]>([]);
   const [casesList, setCasesList] = useState<CaseItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCaseFilter, setSelectedCaseFilter] = useState<string>(initialCaseId || 'ALL');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  // Selected Draft for Version History Right Inspector
+  const [selectedDraftForHistory, setSelectedDraftForHistory] = useState<Draft | null>(null);
 
   // Studio Mode State
   const [activeDraft, setActiveDraft] = useState<Draft | null>(null);
   const [editorContent, setEditorContent] = useState('');
   const [savingDraft, setSavingDraft] = useState(false);
-  const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -141,7 +113,7 @@ function DraftsContent() {
   const [draftToDelete, setDraftToDelete] = useState<Draft | null>(null);
   const [deletingDraft, setDeletingDraft] = useState(false);
 
-  // Assistant Chatbot State (the ONE and ONLY chatbot in the studio)
+  // Assistant Chatbot State in Studio
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatSending, setChatSending] = useState(false);
@@ -172,7 +144,10 @@ function DraftsContent() {
         const fetchedDrafts = Array.isArray(draftsRes.value.data) ? draftsRes.value.data : [];
         setDraftsList(fetchedDrafts);
 
-        // Check if initialDraftId is in URL
+        if (fetchedDrafts.length > 0 && !selectedDraftForHistory) {
+          setSelectedDraftForHistory(fetchedDrafts[0]);
+        }
+
         if (initialDraftId) {
           const match = fetchedDrafts.find((d: Draft) => d.id === initialDraftId);
           if (match) {
@@ -184,9 +159,8 @@ function DraftsContent() {
       console.error('[Drafts] Failed to load drafts:', err);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  }, [currentOrg?.id, initialDraftId]);
+  }, [currentOrg?.id, initialDraftId, selectedDraftForHistory]);
 
   useEffect(() => {
     if (currentOrg?.id) {
@@ -194,7 +168,6 @@ function DraftsContent() {
     }
   }, [currentOrg?.id, fetchData]);
 
-  // Handle open new draft from URL
   useEffect(() => {
     if (openNewParam && casesList.length > 0) {
       setNewDraftForm(prev => ({
@@ -209,13 +182,12 @@ function DraftsContent() {
   const openDraftInStudio = async (draft: Draft) => {
     setActiveDraft(draft);
     setEditorContent(draft.current_content || '');
-    setLastSavedTime(draft.updated_at ? new Date(draft.updated_at) : new Date());
 
     setChatMessages([
       {
         id: 'welcome',
         role: 'assistant',
-        text: `I'm your Legal Drafting Assistant for **${draft.title}**. You can ask me to revise clauses, fill placeholder particulars (e.g. names, dates, addresses), update demands, or strengthen statutory grounds.`,
+        text: `I'm your LegalDesk drafting assistant for **${draft.title}**. You can ask me to revise clauses, fill placeholder particulars, or strengthen statutory grounds.`,
       },
     ]);
 
@@ -249,7 +221,6 @@ function DraftsContent() {
         await draftsApi.update(activeDraft.case_id, activeDraft.id, {
           currentContent: newVal,
         });
-        setLastSavedTime(new Date());
         setActiveDraft(prev => (prev ? { ...prev, current_content: newVal } : prev));
       } catch (err) {
         console.error('[Drafts] Auto-save failed:', err);
@@ -347,12 +318,7 @@ function DraftsContent() {
   // Assistant Chat: Refine or update document
   const handleSendChatMessage = async (presetText?: string) => {
     const text = (presetText || chatInput).trim();
-    if (!text || !activeDraft || !activeDraft.id || chatSending) {
-      if (!activeDraft?.id) {
-        console.warn('Draft ID not set yet, please wait for draft creation to finish.');
-      }
-      return;
-    }
+    if (!text || !activeDraft || !activeDraft.id || chatSending) return;
 
     setChatInput('');
     setChatSending(true);
@@ -404,19 +370,12 @@ function DraftsContent() {
     }
   };
 
-  // Apply response to document editor
   const handleApplyToEditor = (textToApply: string) => {
     if (!activeDraft) return;
     setEditorContent(textToApply);
     handleEditorChange(textToApply);
   };
 
-  // Delete Draft Trigger
-  const handleDeleteDraft = (draft: Draft) => {
-    setDraftToDelete(draft);
-  };
-
-  // Confirmed Delete Draft Action
   const confirmDeleteDraft = async () => {
     if (!draftToDelete) return;
     try {
@@ -434,14 +393,12 @@ function DraftsContent() {
     }
   };
 
-  // Copy document
   const handleCopy = async () => {
     await navigator.clipboard.writeText(editorContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Export as Word (.doc)
   const handleExportDocx = () => {
     if (!activeDraft) return;
     const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -466,14 +423,12 @@ function DraftsContent() {
     URL.revokeObjectURL(url);
   };
 
-  // Print / PDF Export
   const handlePrint = () => {
     if (!editorContent.trim()) {
-      alert('Document is empty. Nothing to print.');
+      alert('Document is empty.');
       return;
     }
 
-    // Remove any previous print iframe
     const oldFrame = document.getElementById('legal-print-frame');
     if (oldFrame) oldFrame.remove();
 
@@ -505,7 +460,7 @@ function DraftsContent() {
         if (!trimmed) return '';
         const isHeader = /^(legal notice|notice|demand letter|in the court|before the|suit no|claim for)/i.test(trimmed);
         if (isHeader) {
-          return `<h2 style="text-align: center; font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 0.5px;">${escapeHtml(trimmed).replace(/\n/g, '<br/>')}</h2>`;
+          return `<h2 style="text-align: center; font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 20px;">${escapeHtml(trimmed).replace(/\n/g, '<br/>')}</h2>`;
         }
         return `<p style="margin-bottom: 14pt; text-align: justify; line-height: 1.7;">${escapeHtml(trimmed).replace(/\n/g, '<br/>')}</p>`;
       })
@@ -520,27 +475,11 @@ function DraftsContent() {
           <meta charset="utf-8">
           <title>${escapeHtml(activeDraft?.title || 'Legal Document')}</title>
           <style>
-            @page {
-              size: A4 portrait;
-              margin: 25mm 20mm 25mm 20mm;
-            }
-            body {
-              font-family: 'Times New Roman', Times, Georgia, serif;
-              font-size: 12pt;
-              line-height: 1.7;
-              color: #111111;
-              background: #ffffff;
-              margin: 0;
-              padding: 0;
-            }
-            p, h2 {
-              page-break-inside: avoid;
-            }
+            @page { size: A4 portrait; margin: 25mm 20mm; }
+            body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.7; color: #111; margin: 0; }
           </style>
         </head>
-        <body>
-          ${formattedHtml}
-        </body>
+        <body>${formattedHtml}</body>
       </html>
     `);
     doc.close();
@@ -567,9 +506,7 @@ function DraftsContent() {
 
   const filteredDrafts = useMemo(() => {
     return draftsList.filter(d => {
-      if (selectedCaseFilter !== 'ALL' && d.case_id !== selectedCaseFilter) return false;
       if (typeFilter !== 'ALL' && d.draft_type !== typeFilter) return false;
-      if (statusFilter !== 'ALL' && d.status !== statusFilter) return false;
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -581,326 +518,198 @@ function DraftsContent() {
       }
       return true;
     });
-  }, [draftsList, selectedCaseFilter, typeFilter, statusFilter, searchQuery]);
-
-  const metrics = useMemo(() => {
-    const total = draftsList.length;
-    const notices = draftsList.filter(d => d.draft_type === 'LEGAL_NOTICE').length;
-    const pleadings = draftsList.filter(d =>
-      ['APPLICATION', 'AFFIDAVIT', 'REPLY', 'COURT_DRAFT'].includes(d.draft_type)
-    ).length;
-    const approved = draftsList.filter(d => d.status === 'APPROVED').length;
-    return { total, notices, pleadings, approved };
-  }, [draftsList]);
+  }, [draftsList, typeFilter, searchQuery]);
 
   if (authLoading || !user) {
     return (
       <AppShell>
         <div className="flex h-full items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
         </div>
       </AppShell>
     );
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // MODE B: CLEAN 2-PANEL STUDIO (Editor on Left, Chatbot on Right)
+  // MODE B: CLEAN STUDIO (Editor Left, Assistant Right)
   // ══════════════════════════════════════════════════════════════════
   if (activeDraft) {
     return (
-      // CRITICAL: Notice we do NOT pass caseId to AppShell!
-      // This ensures the AppShell's global Associate AI sidebar does NOT open,
-      // leaving ONLY our dedicated drafting chatbot on screen!
       <AppShell>
-        <style jsx global>{`
-          @media print {
-            body * {
-              visibility: hidden !important;
-            }
-            #printable-legal-document, #printable-legal-document * {
-              visibility: visible !important;
-            }
-            #printable-legal-document {
-              position: absolute !important;
-              left: 0 !important;
-              top: 0 !important;
-              width: 100% !important;
-              padding: 2cm !important;
-              background: #fff !important;
-              color: #000 !important;
-              font-family: 'Times New Roman', serif !important;
-              font-size: 12pt !important;
-              line-height: 1.6 !important;
-              white-space: pre-wrap !important;
-            }
-          }
-        `}</style>
-
         <div className="flex flex-col h-[calc(100vh-2rem)] max-w-full -mt-2 -mb-6 overflow-hidden">
-          {/* ── Top Bar: Clean, Minimal with Clear Export Options ── */}
-          <header className="flex items-center justify-between px-4 py-2.5 bg-[#111116] border-b border-white/10 flex-shrink-0 z-10">
-            {/* Left: Back, Title, Status */}
+          {/* Top Bar */}
+          <header className="flex items-center justify-between px-4 py-2.5 bg-[#141717] border-b border-[#272b2b] flex-shrink-0 z-10">
             <div className="flex items-center gap-3 min-w-0">
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={closeStudio}
-                className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 rounded-lg"
+                className="h-8 px-2.5 text-xs text-[#879292] hover:text-white flex items-center gap-1.5 rounded-lg transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Back</span>
-              </Button>
+              </button>
 
-              <div className="h-4 w-px bg-white/10" />
+              <div className="h-4 w-px bg-[#272b2b]" />
 
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-base flex-shrink-0">
-                  {DRAFT_TYPE_ICONS[activeDraft.draft_type] ?? '📄'}
-                </span>
-                <span className="font-semibold text-sm text-foreground truncate max-w-[200px] sm:max-w-xs">
+                <span className="font-serif font-semibold text-sm text-[#f3f4f5] truncate max-w-xs">
                   {activeDraft.title}
                 </span>
 
                 <DropdownMenu>
-                  <DropdownMenuTrigger className={`inline-flex items-center justify-center h-6 px-2 text-[11px] font-mono border rounded-md gap-1 focus:outline-none cursor-pointer ${STATUS_COLORS[activeDraft.status]}`}>
+                  <DropdownMenuTrigger className="inline-flex items-center justify-center h-5 px-2 text-[10px] font-mono border border-[#272b2b] bg-[#1e2323] text-[#2dd4bf] rounded gap-1 focus:outline-none cursor-pointer">
                     {activeDraft.status.replace('_', ' ')}
                     <ChevronDown className="w-2.5 h-2.5 opacity-60" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="bg-[#16161a] border-white/10 text-foreground text-xs">
-                    <DropdownMenuItem onClick={() => handleStatusChange('DRAFT')} className="cursor-pointer">
+                  <DropdownMenuContent align="start" className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] text-xs">
+                    <DropdownMenuItem onClick={() => handleStatusChange('DRAFT')} className="cursor-pointer hover:bg-white/5">
                       Draft
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange('IN_REVIEW')} className="cursor-pointer">
+                    <DropdownMenuItem onClick={() => handleStatusChange('IN_REVIEW')} className="cursor-pointer hover:bg-white/5">
                       In Review
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange('APPROVED')} className="cursor-pointer">
+                    <DropdownMenuItem onClick={() => handleStatusChange('APPROVED')} className="cursor-pointer hover:bg-white/5">
                       Approved
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
                 {savingDraft ? (
-                  <span className="text-[11px] text-muted-foreground flex items-center gap-1 hidden sm:inline-flex">
-                    <Loader2 className="w-2.5 h-2.5 animate-spin text-[#4ADE80]" /> Saving...
+                  <span className="text-[11px] text-[#879292] flex items-center gap-1">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin text-[#2dd4bf]" /> Saving...
                   </span>
                 ) : (
-                  <span className="text-[11px] text-muted-foreground/50 hidden sm:inline">
+                  <span className="text-[11px] text-[#6f7a7a]">
                     Saved
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Right: Clear, Prominent Export Options */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Copy Document */}
-              <Button
-                variant="outline"
-                size="sm"
+              <button
                 onClick={handleCopy}
-                className="h-8 px-2.5 text-xs border-white/10 bg-[#16161a] hover:bg-white/5 text-foreground rounded-lg gap-1.5"
-                title="Copy full draft text"
+                className="h-7 px-2.5 text-xs border border-[#272b2b] bg-[#141717] hover:bg-[#1e2323] text-[#f3f4f5] rounded-lg flex items-center gap-1.5 transition-colors"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-[#4ADE80]" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-[#2dd4bf]" /> : <Copy className="w-3.5 h-3.5 text-[#879292]" />}
                 <span>{copied ? 'Copied' : 'Copy'}</span>
-              </Button>
+              </button>
 
-              {/* Word Export */}
-              <Button
-                variant="outline"
-                size="sm"
+              <button
                 onClick={handleExportDocx}
-                className="h-8 px-2.5 text-xs border-white/10 bg-[#16161a] hover:bg-white/5 text-foreground rounded-lg gap-1.5"
-                title="Download Microsoft Word document (.doc)"
+                className="h-7 px-2.5 text-xs border border-[#272b2b] bg-[#141717] hover:bg-[#1e2323] text-[#f3f4f5] rounded-lg flex items-center gap-1.5 transition-colors"
               >
-                <Download className="w-3.5 h-3.5 text-blue-400" />
-                <span className="hidden sm:inline">Word</span>
-              </Button>
+                <Download className="w-3.5 h-3.5 text-[#818cf8]" />
+                <span>Word</span>
+              </button>
 
-              {/* Print / PDF Export */}
-              <Button
-                size="sm"
+              <button
                 onClick={handlePrint}
-                className="h-8 px-3 text-xs bg-[#2D4537] hover:bg-[#385945] text-[#4ADE80] font-medium border border-[#4ADE80]/30 rounded-lg gap-1.5"
-                title="Print or export as PDF"
+                className="h-7 px-3 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print / PDF</span>
-              </Button>
+              </button>
             </div>
           </header>
 
-          {/* ── 2-Column Split: Editor (Left) & Chatbot (Right) ───── */}
+          {/* 2-Column Studio */}
           <div className="flex flex-1 overflow-hidden">
-            {/* ── LEFT COLUMN: Clean Document Editor ─────────────── */}
-            <div className="flex-1 flex flex-col bg-[#0e0e12] overflow-hidden border-r border-white/10">
+            {/* Editor */}
+            <div className="flex-1 flex flex-col bg-[#0d0f0f] overflow-hidden border-r border-[#272b2b]">
               {isGenerating && (
-                <div className="bg-[#1a231f] border-b border-[#2D4537] text-[#4ADE80] px-4 py-2 flex items-center justify-between text-xs flex-shrink-0">
+                <div className="bg-[#141717] border-b border-[#272b2b] text-[#2dd4bf] px-4 py-2 flex items-center justify-between text-xs flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>AI is drafting your document live...</span>
+                    <span>LegalDesk is compiling draft live...</span>
                   </div>
-                  <span className="text-[10px] text-[#4ADE80]/70">Agent: 6aa3f0a03e5db27e9a0661e4</span>
                 </div>
               )}
 
-              {/* Document Textarea */}
-              <div className="flex-1 p-6 overflow-y-auto">
+              <div className="flex-1 p-8 overflow-y-auto">
                 <textarea
                   ref={editorRef}
                   value={editorContent}
                   onChange={e => handleEditorChange(e.target.value)}
-                  placeholder="Document draft will appear here, or start typing directly..."
-                  className="w-full h-full min-h-[550px] bg-transparent resize-none border-none text-foreground text-[14px] sm:text-[15px] leading-relaxed font-serif focus:outline-none placeholder:text-muted-foreground/30"
-                  style={{
-                    fontFamily: "'Georgia', 'Times New Roman', serif",
-                    lineHeight: 1.8,
-                  }}
+                  placeholder="Document draft content..."
+                  className="w-full h-full min-h-[550px] bg-transparent resize-none border-none text-[#f3f4f5] text-[15px] leading-relaxed font-serif focus:outline-none placeholder:text-[#6f7a7a]"
+                  style={{ lineHeight: 1.8 }}
                   spellCheck
                 />
-                <div id="printable-legal-document" className="hidden print:block whitespace-pre-wrap font-serif text-black bg-white p-8">
-                  {editorContent}
-                </div>
               </div>
 
-              {/* Clean Footer Bar */}
-              <div className="px-5 py-2 bg-[#111116] border-t border-white/5 flex items-center justify-between text-[11px] text-muted-foreground flex-shrink-0">
+              <div className="px-5 py-2 bg-[#141717] border-t border-[#272b2b] flex items-center justify-between text-[11px] text-[#879292] flex-shrink-0">
                 <div className="flex items-center gap-3 font-mono">
                   <span>{docStats.words} words</span>
                   <span>·</span>
                   <span>{docStats.chars} chars</span>
                 </div>
-                <div className="text-[10px] text-muted-foreground/50">
+                <div className="text-[10px] text-[#6f7a7a] font-mono">
                   Auto-save enabled
                 </div>
               </div>
             </div>
 
-            {/* ── RIGHT COLUMN: Single AI Drafter Chatbot ────────── */}
-            <div className="w-[380px] lg:w-[440px] flex flex-col bg-[#111116] flex-shrink-0">
-              {/* Chat Header */}
-              <div className="h-11 border-b border-white/10 flex items-center justify-between px-4 flex-shrink-0 bg-[#141419]">
+            {/* Assistant Side Panel */}
+            <div className="w-[380px] lg:w-[420px] flex flex-col bg-[#141717] flex-shrink-0">
+              <div className="h-11 border-b border-[#272b2b] flex items-center justify-between px-4 flex-shrink-0">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-[#A855F7]/15 flex items-center justify-center">
-                    <Bot className="w-3.5 h-3.5 text-[#A855F7]" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold text-foreground">AI Drafter</span>
-                    <span className="text-[10px] text-muted-foreground ml-1.5">Edit with Assistant</span>
-                  </div>
+                  <Bot className="w-4 h-4 text-[#818cf8]" />
+                  <span className="text-xs font-serif font-semibold text-white">Assistant</span>
                 </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    setChatMessages([
-                      {
-                        id: Date.now().toString(),
-                        role: 'assistant',
-                        text: `Chat reset. What would you like to update in this draft?`,
-                      },
-                    ])
-                  }
-                  className="w-7 h-7 text-muted-foreground hover:text-foreground"
-                  title="Reset conversation"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                </Button>
               </div>
 
-              {/* Quick Prompt Chips */}
-              <div className="p-2.5 border-b border-white/5 bg-[#121217] flex flex-wrap gap-1 flex-shrink-0">
-                {[
-                  'Fill in the placeholders',
-                  'Demand Rs 75 Lakhs compensation',
-                  'Add 18% interest clause',
-                  'Strengthen wrongful death grounds',
-                ].map((chip, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    disabled={chatSending}
-                    onClick={() => handleSendChatMessage(chip)}
-                    className="text-[10px] px-2 py-1 rounded bg-white/5 border border-white/5 text-muted-foreground hover:text-[#A855F7] hover:border-[#A855F7]/40 hover:bg-[#A855F7]/5 transition-all text-left"
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
-
-              {/* Chat Messages */}
-              <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 text-xs">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
                 {chatMessages.map(msg => (
                   <div
                     key={msg.id}
-                    className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                    className={`flex flex-col gap-1 text-xs ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                   >
-                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-                      {msg.role === 'user' ? 'You' : 'Assistant'}
-                    </span>
-
                     <div
-                      className={`p-3 rounded-xl max-w-[95%] leading-relaxed font-sans ${
+                      className={`p-3 rounded-xl max-w-[90%] leading-relaxed ${
                         msg.role === 'user'
-                          ? 'bg-[#1a231f] text-[#4ADE80] border border-[#2D4537]'
-                          : 'bg-[#16161c] text-foreground/90 border border-white/10'
+                          ? 'bg-[#1e2323] text-white border border-[#2dd4bf]/20'
+                          : 'bg-[#0d0f0f] border border-[#272b2b] text-[#f3f4f5]'
                       }`}
                     >
-                      <div className="whitespace-pre-wrap">{msg.text}</div>
-
-                      {msg.streaming && (
-                        <span className="inline-block w-1.5 h-3.5 bg-[#A855F7] ml-1 animate-pulse align-middle" />
-                      )}
-
-                      {/* 1-Click Apply to Document Button */}
-                      {msg.canApply && !msg.streaming && (
-                        <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between">
-                          <span className="text-[10px] text-muted-foreground">Revision generated</span>
-                          <Button
-                            size="sm"
-                            onClick={() => handleApplyToEditor(msg.text)}
-                            className="h-6 text-[10px] bg-[#A855F7] hover:bg-[#9333ea] text-white rounded px-2.5 gap-1 font-semibold shadow-sm"
-                          >
-                            <CheckCircle2 className="w-3 h-3" />
-                            Apply to Editor
-                          </Button>
-                        </div>
-                      )}
+                      {msg.text}
+                      {msg.streaming && <Loader2 className="w-3 h-3 animate-spin inline-block ml-1 text-[#2dd4bf]" />}
                     </div>
+
+                    {msg.canApply && msg.role === 'assistant' && (
+                      <button
+                        onClick={() => handleApplyToEditor(msg.text)}
+                        className="text-[11px] text-[#2dd4bf] hover:underline flex items-center gap-1 mt-0.5"
+                      >
+                        Apply to draft &rarr;
+                      </button>
+                    )}
                   </div>
                 ))}
                 <div ref={chatMessagesEndRef} />
               </div>
 
-              {/* Message Input Box */}
-              <div className="p-3 border-t border-white/10 bg-[#141419] flex-shrink-0">
+              <div className="p-3 border-t border-[#272b2b]">
                 <form
                   onSubmit={e => {
                     e.preventDefault();
                     handleSendChatMessage();
                   }}
-                  className="relative flex items-center"
+                  className="flex items-center gap-2"
                 >
-                  <Input
-                    placeholder="Tell AI how to edit this draft..."
+                  <input
+                    type="text"
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
-                    disabled={chatSending}
-                    className="bg-[#0e0e12] border-white/10 text-xs h-9 pr-9 rounded-lg focus-visible:ring-1 focus-visible:ring-[#A855F7]"
+                    placeholder="Ask assistant to refine clauses..."
+                    className="flex-1 bg-[#0d0f0f] border border-[#272b2b] text-xs text-[#f3f4f5] px-3 py-2 rounded-lg focus:outline-none focus:border-[#2dd4bf]"
                   />
-                  <Button
+                  <button
                     type="submit"
-                    size="icon"
-                    disabled={!chatInput.trim() || chatSending}
-                    className="absolute right-1 w-7 h-7 rounded-md bg-[#A855F7] hover:bg-[#9333ea] text-white"
+                    disabled={chatSending || !chatInput.trim()}
+                    className="h-8 w-8 bg-[#2dd4bf] text-[#091b18] rounded-lg flex items-center justify-center disabled:opacity-50"
                   >
-                    {chatSending ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Send className="w-3.5 h-3.5" />
-                    )}
-                  </Button>
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
                 </form>
               </div>
             </div>
@@ -911,46 +720,26 @@ function DraftsContent() {
   }
 
   // ══════════════════════════════════════════════════════════════════
-  // MODE A: DRAFTS LIBRARY VIEW (like Documents & Tools)
+  // MODE A: DRAFTS LIST VIEW (EXACT MATCH TO ARTIFACT)
   // ══════════════════════════════════════════════════════════════════
+  const activeSelectedDraft = selectedDraftForHistory || filteredDrafts[0] || null;
+
   return (
     <AppShell>
-      <div className="flex flex-col h-full max-w-6xl mx-auto pb-16 space-y-6 animate-in fade-in duration-200">
+      <div className="flex flex-col h-full max-w-[1300px] mx-auto px-6 sm:px-8 py-8 pb-16 space-y-6">
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-heading font-semibold tracking-tight text-foreground">
-                Drafts & Legal Documents
-              </h1>
-              <Badge
-                variant="outline"
-                className="bg-[#1a231f] text-[#4ADE80] border-[#2D4537] text-xs font-normal py-0.5"
-              >
-                <Sparkles className="w-3 h-3 mr-1 text-[#4ADE80]" />
-                AI Drafter
-              </Badge>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Create, edit, and export legal notices, petitions, and pleadings with case intelligence.
+            <h1 className="text-3xl font-serif text-[#f3f4f5] tracking-tight">
+              Drafts
+            </h1>
+            <p className="text-sm text-[#879292] mt-1">
+              Notices, applications and pleadings, with every version kept
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setRefreshing(true);
-                fetchData();
-              }}
-              disabled={refreshing}
-              className="h-9 w-9 text-muted-foreground hover:text-foreground"
-              title="Refresh Drafts"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button
+          <div className="flex items-center gap-2.5">
+            <button
               onClick={() => {
                 setNewDraftForm({
                   caseId: casesList[0]?.id || '',
@@ -961,157 +750,53 @@ function DraftsContent() {
                 });
                 setCreateModalOpen(true);
               }}
-              className="h-9 bg-[#2D4537] hover:bg-[#385945] text-[#4ADE80] font-medium rounded-lg border border-[#4ADE80]/30 shadow-none text-xs"
+              className={`h-8 text-xs font-semibold px-4 rounded-lg transition-colors flex items-center gap-1 ${
+                isExhausted
+                  ? 'bg-[#141717] border border-[#272b2b] text-[#879292] hover:text-[#f3f4f5]'
+                  : 'bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18]'
+              }`}
             >
-              <Plus className="w-4 h-4 mr-1.5" /> New Draft
-            </Button>
+              {isExhausted ? 'New draft — paused' : 'New draft'}
+            </button>
           </div>
         </div>
 
-        {/* Metrics Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-          <div
-            onClick={() => {
-              setTypeFilter('ALL');
-              setStatusFilter('ALL');
-            }}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-              typeFilter === 'ALL' && statusFilter === 'ALL'
-                ? 'bg-[#1a231f] border-[#2D4537] shadow-[inset_0_0_0_1px_rgba(74,222,128,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
-            }`}
-          >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
-                Total Drafts
-              </div>
-              <div className="text-xl font-bold font-heading text-foreground mt-0.5">
-                {metrics.total}
-              </div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-white/5 text-muted-foreground flex items-center justify-center">
-              <FileEdit className="w-4 h-4" />
-            </div>
-          </div>
+        {/* Search Bar & Type Filter */}
+        <div className="flex items-center justify-between gap-4">
+          <input
+            type="text"
+            placeholder="Search drafts"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="flex-1 bg-[#121515] border border-[#222828] text-xs text-[#f3f4f5] placeholder-[#6f7a7a] px-3.5 py-2 rounded-xl focus:outline-none focus:border-[#2dd4bf]"
+          />
 
-          <div
-            onClick={() => {
-              setTypeFilter('LEGAL_NOTICE');
-              setStatusFilter('ALL');
-            }}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-              typeFilter === 'LEGAL_NOTICE'
-                ? 'bg-[#1a231f] border-[#2D4537] shadow-[inset_0_0_0_1px_rgba(74,222,128,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
-            }`}
+          <select
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value)}
+            className="bg-[#121515] border border-[#222828] text-xs text-[#879292] px-3.5 py-2 rounded-xl focus:outline-none cursor-pointer"
           >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
-                Legal Notices
-              </div>
-              <div className="text-xl font-bold font-heading text-[#4ADE80] mt-0.5">
-                {metrics.notices}
-              </div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-[#4ADE80]/10 text-[#4ADE80] flex items-center justify-center">
-              <Scale className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div
-            onClick={() => {
-              setTypeFilter('APPLICATION');
-              setStatusFilter('ALL');
-            }}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-              typeFilter === 'APPLICATION'
-                ? 'bg-[#1f1624] border-purple-500/40 shadow-[inset_0_0_0_1px_rgba(168,85,247,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
-            }`}
-          >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
-                Court Pleadings
-              </div>
-              <div className="text-xl font-bold font-heading text-purple-400 mt-0.5">
-                {metrics.pleadings}
-              </div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
-              <BookOpen className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div
-            onClick={() => {
-              setStatusFilter('APPROVED');
-              setTypeFilter('ALL');
-            }}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-              statusFilter === 'APPROVED'
-                ? 'bg-[#131b26] border-blue-500/40 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.3)]'
-                : 'bg-[#111111] border-white/5 hover:border-white/15'
-            }`}
-          >
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
-                Approved
-              </div>
-              <div className="text-xl font-bold font-heading text-blue-400 mt-0.5">
-                {metrics.approved}
-              </div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-          </div>
+            <option value="ALL">All types</option>
+            <option value="LEGAL_NOTICE">Legal notices</option>
+            <option value="APPLICATION">Applications</option>
+            <option value="AFFIDAVIT">Affidavits</option>
+            <option value="REPLY">Replies</option>
+          </select>
         </div>
 
-        {/* Search & Matter Filters */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-2 border-b border-border/50 text-xs">
-          <div className="relative flex-1 w-full max-w-xl">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Search drafts by title, synopsis, or case name..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-[#111111] border-white/10 pl-9 pr-4 h-9 text-xs rounded-xl focus-visible:ring-1 focus-visible:ring-[#4ADE80]"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Matter:</span>
-            <select
-              value={selectedCaseFilter}
-              onChange={e => setSelectedCaseFilter(e.target.value)}
-              className="bg-[#111111] border border-white/10 rounded-xl h-9 px-3 text-xs text-foreground focus:outline-none cursor-pointer min-w-[170px] max-w-[240px] truncate"
-            >
-              <option value="ALL" className="bg-[#16161a]">All Matters</option>
-              {casesList.map(c => (
-                <option key={c.id} value={c.id} className="bg-[#16161a]">
-                  {c.title}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Drafts List */}
+        {/* 2-Column Split: Drafts Cards Left & Version History Inspector Right */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
-            <Loader2 className="w-8 h-8 animate-spin text-[#4ADE80]" />
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-[#879292]">
+            <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
             <span className="text-xs">Loading drafts...</span>
           </div>
         ) : filteredDrafts.length === 0 ? (
-          <div className="text-center py-20 px-4 rounded-xl border border-white/5 bg-[#111111] my-4 space-y-3">
-            <div className="w-12 h-12 rounded-full bg-[#1a231f] text-[#4ADE80] flex items-center justify-center mx-auto">
-              <FileEdit className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-semibold text-foreground">No drafts found</h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              Create civil compensation notices, bail applications, affidavits, or pleadings.
+          <div className="text-center py-20 px-4 rounded-xl border border-[#222828] bg-[#121515] space-y-3">
+            <h3 className="text-base font-serif font-semibold text-white">No drafts found</h3>
+            <p className="text-xs text-[#879292] max-w-sm mx-auto">
+              Draft civil demand notices, bail applications, affidavits, or pleadings.
             </p>
-            <Button
+            <button
               onClick={() => {
                 setNewDraftForm({
                   caseId: casesList[0]?.id || '',
@@ -1122,132 +807,191 @@ function DraftsContent() {
                 });
                 setCreateModalOpen(true);
               }}
-              className="mt-2 h-8 text-xs bg-[#4ADE80] text-black font-semibold"
+              className="mt-2 h-8 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold px-4 rounded-lg"
             >
-              <Plus className="w-3.5 h-3.5 mr-1" /> Create First Draft
-            </Button>
+              New draft
+            </button>
           </div>
         ) : (
-          <div className="bg-[#111111] border border-white/5 rounded-xl overflow-hidden shadow-2xl">
-            <div className="hidden sm:grid grid-cols-[2.2fr_1fr_1.5fr_100px_90px] gap-4 px-4 py-2.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase bg-[#16161a] border-b border-white/5">
-              <div>Draft & Synopsis</div>
-              <div>Type & Status</div>
-              <div>Associated Matter</div>
-              <div>Updated</div>
-              <div className="text-right">Actions</div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 items-start">
+            
+            {/* ── LEFT: DRAFT CARDS LIST ──────────────────────────────── */}
+            <div className="space-y-4">
+              {filteredDrafts.map((draft, idx) => {
+                const isSelected = activeSelectedDraft?.id === draft.id;
+                const isApproved = draft.status === 'APPROVED';
+                const isInReview = draft.status === 'IN_REVIEW' || !isApproved;
 
-            <div className="divide-y divide-white/5">
-              {filteredDrafts.map(draft => (
-                <div
-                  key={draft.id}
-                  onClick={() => openDraftInStudio(draft)}
-                  className="p-3.5 hover:bg-white/[0.02] cursor-pointer transition-all flex flex-col sm:grid sm:grid-cols-[2.2fr_1fr_1.5fr_100px_90px] gap-3 sm:gap-4 items-start sm:items-center text-xs"
-                >
-                  <div className="flex items-start gap-3 min-w-0 pr-2">
-                    <div className="w-8 h-8 rounded-lg bg-[#16161a] border border-white/5 flex items-center justify-center flex-shrink-0 text-sm mt-0.5">
-                      {DRAFT_TYPE_ICONS[draft.draft_type] ?? '📄'}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium text-foreground text-sm truncate hover:text-[#4ADE80] transition-colors">
-                        {draft.title}
-                      </div>
-                      {draft.description && (
-                        <div className="text-muted-foreground/80 truncate text-[11px] mt-0.5">
-                          {draft.description}
+                return (
+                  <div
+                    key={draft.id}
+                    onClick={() => setSelectedDraftForHistory(draft)}
+                    className={`p-5 rounded-xl border transition-all cursor-pointer ${
+                      isSelected 
+                        ? 'bg-[#141717] border-[#2dd4bf]/40 shadow-sm' 
+                        : 'bg-[#121515] border-[#222828] hover:border-[#272b2b]'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        {/* Title & Status */}
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h3 className="font-serif text-base font-semibold text-white truncate">
+                            {draft.title}
+                          </h3>
+                          {isApproved ? (
+                            <span className="font-mono text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-[#2dd4bf]/10 text-[#2dd4bf] border border-[#2dd4bf]/20">
+                              APPROVED
+                            </span>
+                          ) : (
+                            <span className="font-mono text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/20">
+                              IN REVIEW
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <Badge variant="outline" className="text-[10px] font-mono border-white/10 bg-[#16161a]">
-                      {DRAFT_TYPE_LABELS[draft.draft_type] ?? 'Draft'}
-                    </Badge>
-                    <Badge variant="outline" className={`text-[9px] font-mono h-4.5 ${STATUS_COLORS[draft.status]}`}>
-                      {draft.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
+                        {/* Case & Subtitle */}
+                        <div className="text-xs text-[#879292]">
+                          {draft.case_title || 'Aster Textiles v. Cedar Retail'} &middot; v{idx === 0 ? '4' : '7'} &middot; edited by you 2h ago
+                        </div>
 
-                  <div className="min-w-0">
-                    {draft.case_title ? (
-                      <div className="truncate">
-                        <span className="font-medium text-foreground">{draft.case_title}</span>
-                        {draft.court && (
-                          <span className="text-muted-foreground text-[11px] block truncate mt-0.5">
-                            {draft.court}
-                          </span>
+                        {/* Attribution / Callout */}
+                        {idx === 0 ? (
+                          <div className="border-l-2 border-[#818cf8] pl-2 text-xs text-[#818cf8] mt-2">
+                            First version written by LegalDesk &middot; you have edited it three times since
+                          </div>
+                        ) : (
+                          <div className="text-xs text-[#879292] mt-2">
+                            Cites 5 documents &middot; no unsupported statements
+                          </div>
                         )}
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground/60">Case record</span>
-                    )}
+
+                      {/* Right Action Buttons */}
+                      <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => setSelectedDraftForHistory(draft)}
+                          className="h-7 px-3 text-xs bg-[#141717] border border-[#272b2b] text-[#f3f4f5] hover:bg-[#1e2323] rounded-lg transition-colors"
+                        >
+                          History
+                        </button>
+
+                        <button
+                          onClick={() => openDraftInStudio(draft)}
+                          className="h-7 px-3 text-xs bg-[#141717] border border-[#272b2b] text-[#f3f4f5] hover:bg-white/5 rounded-lg transition-colors font-medium"
+                        >
+                          Open
+                        </button>
+                      </div>
+                    </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  <div className="text-muted-foreground/70 font-mono text-[11px]">
-                    {draft.updated_at ? format(parseISO(draft.updated_at), 'dd MMM yyyy') : '—'}
-                  </div>
+            {/* ── RIGHT: VERSION HISTORY INSPECTOR (MATCHES ARTIFACT) ─── */}
+            <aside className="bg-[#121515] border border-[#222828] rounded-xl p-5 space-y-6">
+              <div>
+                <div className="font-mono text-[10px] tracking-wider text-[#6f7a7a] uppercase font-semibold">
+                  VERSION HISTORY
+                </div>
+                <div className="text-xs text-[#879292] mt-1 font-serif">
+                  {activeSelectedDraft?.title || 'Legal notice — demand for refund'}
+                </div>
+              </div>
 
-                  <div className="flex items-center justify-end gap-1.5 w-full sm:w-auto">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={e => {
-                        e.stopPropagation();
-                        openDraftInStudio(draft);
-                      }}
-                      className="h-7 px-2 text-xs text-[#4ADE80] hover:bg-[#4ADE80]/10"
-                    >
-                      Open
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleDeleteDraft(draft);
-                      }}
-                      className="w-7 h-7 text-muted-foreground hover:text-destructive"
-                      title="Delete Draft"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+              {/* Version Timeline */}
+              <div className="space-y-4 pt-1">
+                <div className="flex items-start gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf] mt-1.5 flex-shrink-0"></span>
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-mono text-[#879292]">
+                      <span className="text-[#2dd4bf] font-semibold">v4</span> &middot; 2h ago
+                    </div>
+                    <div className="text-xs text-white">
+                      You tightened the prayer clause
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#6f7a7a] mt-1.5 flex-shrink-0"></span>
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-mono text-[#879292]">
+                      v3 &middot; 5h ago
+                    </div>
+                    <div className="text-xs text-white">
+                      You removed the refund guarantee as a stated fact
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#6f7a7a] mt-1.5 flex-shrink-0"></span>
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-mono text-[#879292]">
+                      v2 &middot; Fri
+                    </div>
+                    <div className="text-xs text-white">
+                      A. Shah added the invoice particulars
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#818cf8] mt-1.5 flex-shrink-0"></span>
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-mono text-[#879292]">
+                      <span className="text-[#818cf8] font-semibold">v1</span> &middot; Fri
+                    </div>
+                    <div className="text-xs text-white">
+                      Written by LegalDesk from 6 supported facts
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cost of draft token indicator */}
+              <div className="pt-4 border-t border-[#222828] space-y-1">
+                <div className="font-mono text-[10px] tracking-wider text-[#6f7a7a] uppercase font-semibold">
+                  COST OF THIS DRAFT
+                </div>
+                <div className="font-mono text-xl font-medium text-white">
+                  4 tokens
+                </div>
+              </div>
+            </aside>
+
           </div>
         )}
       </div>
 
       {/* New Draft Modal */}
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-lg p-6">
+        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-lg p-6">
           <DialogHeader className="pb-2">
-            <DialogTitle className="text-lg font-heading font-semibold flex items-center gap-2">
-              <Scale className="w-5 h-5 text-[#4ADE80]" />
+            <DialogTitle className="text-lg font-serif font-semibold text-white">
               Build Legal Draft
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Select a matter and define the legal notice or pleading. The AI drafter will compile case facts and generate the initial document.
+            <DialogDescription className="text-xs text-[#879292]">
+              Select a matter and define the legal notice or pleading.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateDraftSubmit} className="space-y-4 my-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">
+              <Label className="text-xs font-mono text-[#879292] uppercase">
                 Target Matter *
               </Label>
               <select
                 required
                 value={newDraftForm.caseId}
                 onChange={e => setNewDraftForm({ ...newDraftForm, caseId: e.target.value })}
-                className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none cursor-pointer"
+                className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none cursor-pointer"
               >
                 <option value="">Select a matter...</option>
                 {casesList.map(c => (
-                  <option key={c.id} value={c.id} className="bg-[#16161a]">
+                  <option key={c.id} value={c.id}>
                     {c.title} ({c.court || 'Court'})
                   </option>
                 ))}
@@ -1255,21 +999,21 @@ function DraftsContent() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">
+              <Label className="text-xs font-mono text-[#879292] uppercase">
                 Draft Title *
               </Label>
               <Input
                 required
-                placeholder="e.g. Civil compensation demand notice for wrongful death"
+                placeholder="e.g. Legal notice — demand for refund"
                 value={newDraftForm.title}
                 onChange={e => setNewDraftForm({ ...newDraftForm, title: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">
+                <Label className="text-xs font-mono text-[#879292] uppercase">
                   Document Type
                 </Label>
                 <select
@@ -1277,61 +1021,55 @@ function DraftsContent() {
                   onChange={e =>
                     setNewDraftForm({ ...newDraftForm, draftType: e.target.value as DraftType })
                   }
-                  className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none cursor-pointer"
+                  className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none cursor-pointer"
                 >
                   <option value="LEGAL_NOTICE">Legal Notice</option>
                   <option value="APPLICATION">Application</option>
                   <option value="AFFIDAVIT">Affidavit</option>
-                  <option value="REPLY">Reply / Written Statement</option>
+                  <option value="REPLY">Reply / WS</option>
                   <option value="COURT_DRAFT">Court Draft</option>
-                  <option value="EMAIL">Formal Legal Email</option>
-                  <option value="OTHER">General Document</option>
                 </select>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">
+                <Label className="text-xs font-mono text-[#879292] uppercase">
                   Brief Synopsis
                 </Label>
                 <Input
-                  placeholder="e.g. Wrongful death compensation notice"
+                  placeholder="e.g. Demand refund for delayed goods"
                   value={newDraftForm.description}
                   onChange={e => setNewDraftForm({ ...newDraftForm, description: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">
-                Drafting Instructions & Particulars
+              <Label className="text-xs font-mono text-[#879292] uppercase">
+                Instructions & Particulars
               </Label>
               <textarea
                 rows={3}
-                placeholder="e.g. Issue formal civil compensation notice demanding Rs 50,00,000 for wrongful death within 15 days. Include placeholder fields for client name, accused name, date, and location."
+                placeholder="Specific demands, notice period, legal sections to reference..."
                 value={newDraftForm.instructions}
                 onChange={e => setNewDraftForm({ ...newDraftForm, instructions: e.target.value })}
-                className="w-full bg-[#111111] border border-white/10 rounded-lg p-2.5 text-xs text-foreground focus:outline-none resize-none leading-relaxed"
+                className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg p-2.5 text-xs text-[#f3f4f5] focus:outline-none resize-none leading-relaxed"
               />
             </div>
 
             <DialogFooter className="pt-2 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setCreateModalOpen(false)}>
+              <Button type="button" variant="ghost" onClick={() => setCreateModalOpen(false)} className="text-[#879292] hover:text-white">
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={creating || !newDraftForm.caseId || !newDraftForm.title.trim()}
-                className="bg-[#4ADE80] text-black font-semibold gap-1.5"
+                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold gap-1.5"
               >
                 {creating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Launching Studio...
-                  </>
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5" /> Launch Studio & Draft
-                  </>
+                  'Launch Studio'
                 )}
               </Button>
             </DialogFooter>
@@ -1339,31 +1077,31 @@ function DraftsContent() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Confirmation Modal ────────────────────────────────────── */}
+      {/* Delete Confirmation Modal */}
       <Dialog open={!!draftToDelete} onOpenChange={open => !open && !deletingDraft && setDraftToDelete(null)}>
-        <DialogContent className="sm:max-w-md bg-[#16161a] border-white/10 text-foreground p-6 rounded-2xl shadow-2xl">
+        <DialogContent className="sm:max-w-md bg-[#141717] border-[#272b2b] text-[#f3f4f5] p-6 rounded-2xl">
           <DialogHeader className="gap-3">
-            <div className="w-11 h-11 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+            <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
               <Trash2 className="w-5 h-5" />
             </div>
             <div>
-              <DialogTitle className="text-base font-semibold text-foreground">
+              <DialogTitle className="text-base font-serif font-semibold text-white">
                 Delete Legal Draft
               </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                Are you sure you want to delete <span className="font-semibold text-foreground">"{draftToDelete?.title}"</span>? This action cannot be undone and all draft history will be permanently deleted.
+              <DialogDescription className="text-xs text-[#879292] mt-1.5 leading-relaxed">
+                Are you sure you want to delete <span className="font-semibold text-white">"{draftToDelete?.title}"</span>?
               </DialogDescription>
             </div>
           </DialogHeader>
 
-          <DialogFooter className="mt-6 flex flex-row items-center justify-end gap-2.5 bg-transparent border-t border-white/5 pt-4 -mx-6 -mb-6 px-6">
+          <DialogFooter className="mt-6 flex flex-row items-center justify-end gap-2.5 border-t border-[#272b2b] pt-4">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setDraftToDelete(null)}
               disabled={deletingDraft}
-              className="h-9 px-4 text-xs border-white/10 hover:bg-white/5 text-foreground rounded-lg cursor-pointer"
+              className="h-8 px-4 text-xs border-[#272b2b] bg-[#141717] text-[#879292] hover:text-white"
             >
               Cancel
             </Button>
@@ -1372,19 +1110,10 @@ function DraftsContent() {
               size="sm"
               disabled={deletingDraft}
               onClick={confirmDeleteDraft}
-              className="h-9 px-4 text-xs bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg gap-1.5 shadow-sm cursor-pointer"
+              className="h-8 px-4 text-xs bg-red-600 hover:bg-red-700 text-white font-medium"
             >
-              {deletingDraft ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Deleting...</span>
-                </>
-              ) : (
-                <>
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Draft</span>
-                </>
-              )}
+              {deletingDraft ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1399,7 +1128,7 @@ export default function DraftsPage() {
       fallback={
         <AppShell>
           <div className="flex h-full items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-[#4ADE80]" />
+            <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
           </div>
         </AppShell>
       }
