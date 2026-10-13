@@ -8,27 +8,15 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { 
-  Settings as SettingsIcon, 
   Building, 
   Users, 
-  Cpu, 
   User as UserIcon, 
-  ShieldCheck, 
   Plus, 
   Trash2, 
   Check, 
-  ExternalLink, 
-  Sparkles, 
-  Database, 
-  Globe, 
-  Key, 
   Loader2, 
-  Lock,
-  Mail,
   LogOut,
-  Scale
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -38,14 +26,14 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { organisations as orgsApi, tools as toolsApi, cases as casesApi } from '@/lib/api';
+import { organisations as orgsApi } from '@/lib/api';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, logout, loading: authLoading } = useAuth();
   const { currentOrg, orgs, switchOrg, refreshOrgs } = useOrg();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'integrations' | 'user'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'user'>('profile');
 
   // Firm Profile state
   const [orgName, setOrgName] = useState('');
@@ -61,10 +49,6 @@ export default function SettingsPage() {
   const [inviteRole, setInviteRole] = useState<'ADMIN' | 'EDITOR' | 'VIEWER'>('EDITOR');
   const [submittingInvite, setSubmittingInvite] = useState(false);
   const [inviteError, setInviteError] = useState('');
-
-  // Integrations state
-  const [testingViasocket, setTestingViasocket] = useState(false);
-  const [viasocketTestResult, setViasocketTestResult] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
@@ -138,7 +122,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Change Member Role
   const handleUpdateRole = async (memberUserId: string, newRole: string) => {
     if (!currentOrg?.id) return;
     try {
@@ -149,7 +132,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Remove Member
   const handleRemoveMember = async (memberUserId: string) => {
     if (!currentOrg?.id) return;
     try {
@@ -160,36 +142,11 @@ export default function SettingsPage() {
     }
   };
 
-  // Test ViaSocket Connection
-  const handleTestViasocket = async () => {
-    try {
-      setTestingViasocket(true);
-      setViasocketTestResult(null);
-      // Try to get token from first case if available
-      const casesRes = await casesApi.list(currentOrg!.id);
-      const firstCase = casesRes.data?.[0];
-      if (firstCase) {
-        const tokenRes = await toolsApi.getToken(firstCase.id);
-        if (tokenRes.success) {
-          setViasocketTestResult('✅ ViaSocket Embed Auth Token verified successfully!');
-        } else {
-          setViasocketTestResult('⚠️ Token endpoint responded with error.');
-        }
-      } else {
-        setViasocketTestResult('✅ ViaSocket configured (Project ID: proj7sjwjtmh, Org ID: 18105). Create a matter to launch widget.');
-      }
-    } catch (err: any) {
-      setViasocketTestResult('✅ ViaSocket credentials active in environment.');
-    } finally {
-      setTestingViasocket(false);
-    }
-  };
-
   if (authLoading || !user) {
     return (
       <AppShell>
         <div className="flex h-full items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
         </div>
       </AppShell>
     );
@@ -197,38 +154,32 @@ export default function SettingsPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-full max-w-5xl mx-auto pb-16 space-y-6">
+      <div className="flex flex-col h-full max-w-[1100px] mx-auto px-6 sm:px-8 py-8 pb-16 space-y-7">
         
-        {/* ── Top Header ─────────────────────────────────────────────── */}
+        {/* Top Header */}
         <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-heading font-semibold tracking-tight text-foreground">
-              Firm Settings & Administration
-            </h1>
-            <Badge variant="outline" className="bg-[#1a231f] text-[#4ADE80] border-[#2D4537] text-xs font-normal py-0.5">
-              <Building className="w-3 h-3 mr-1" />
-              {currentOrg?.name || 'Firm'}
-            </Badge>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Manage your legal organization, counsel roles, AI RAG vector stores, and automated ViaSocket tools.
+          <h1 className="text-3xl font-serif text-[#f3f4f5] tracking-tight">
+            Settings & Administration
+          </h1>
+          <p className="text-sm text-[#879292] mt-1">
+            Manage your practice, team roles, and account preferences.
           </p>
         </div>
 
-        {/* ── Settings Tabs ───────────────────────────────────────────── */}
-        <div className="flex gap-2 border-b border-border/50 pb-2 overflow-x-auto text-xs">
+        {/* Settings Tabs */}
+        <div className="flex gap-2 border-b border-[#222828] pb-2 overflow-x-auto text-xs">
           {[
-            { id: 'profile', label: 'Firm Profile', icon: Building },
+            { id: 'profile', label: 'Chambers Profile', icon: Building },
             { id: 'team', label: 'Team & RBAC', icon: Users, count: members.length },
-            { id: 'user', label: 'Counsel Profile', icon: UserIcon },
+            { id: 'user', label: 'Account', icon: UserIcon },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3 py-2 rounded-lg transition-all font-medium text-xs whitespace-nowrap flex items-center gap-2 ${
+              className={`px-3 py-1.5 rounded-lg transition-all font-medium text-xs whitespace-nowrap flex items-center gap-2 ${
                 activeTab === tab.id
-                  ? 'bg-[#1a231f] text-[#4ADE80] shadow-[inset_0_0_0_1px_rgba(74,222,128,0.2)]'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                  ? 'bg-[#1e2323] text-white shadow-sm font-semibold'
+                  : 'text-[#879292] hover:text-[#f3f4f5]'
               }`}
             >
               <tab.icon className="w-3.5 h-3.5" />
@@ -242,55 +193,55 @@ export default function SettingsPage() {
 
         {/* ── TAB: FIRM PROFILE ───────────────────────────────────────── */}
         {activeTab === 'profile' && (
-          <div className="bg-[#111111] border border-white/5 rounded-xl p-6 space-y-6">
+          <div className="bg-[#121515] border border-[#222828] rounded-xl p-6 space-y-6">
             <div>
-              <h2 className="text-lg font-heading font-semibold text-foreground">Organization Details</h2>
-              <p className="text-xs text-muted-foreground">Manage your firm name and legal jurisdiction profile.</p>
+              <h2 className="text-lg font-serif font-semibold text-white">Chambers Details</h2>
+              <p className="text-xs text-[#879292]">Manage practice name and description.</p>
             </div>
 
             <form onSubmit={handleSaveFirmProfile} className="space-y-4 max-w-lg">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Firm / Chambers Name *</Label>
+                <Label className="text-xs font-mono uppercase text-[#879292]">Chambers Name *</Label>
                 <Input
                   required
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
-                  className="bg-[#16161a] border-white/10 h-9 text-sm"
+                  className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Practice Areas / Description</Label>
+                <Label className="text-xs font-mono uppercase text-[#879292]">Practice Areas / Focus</Label>
                 <textarea
                   rows={3}
                   value={orgDesc}
                   onChange={(e) => setOrgDesc(e.target.value)}
-                  placeholder="e.g. Criminal Appellate, Commercial Litigation, Arbitration"
-                  className="w-full bg-[#16161a] border border-white/10 rounded-lg p-2.5 text-sm text-foreground focus:outline-none resize-none"
+                  placeholder="e.g. Commercial Litigation, Arbitration, Corporate"
+                  className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg p-2.5 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf] resize-none"
                 />
               </div>
 
               <div className="pt-2 flex items-center gap-3">
-                <Button
+                <button
                   type="submit"
                   disabled={savingOrg || (orgName === (currentOrg?.name || '') && orgDesc === (currentOrg?.description || ''))}
-                  className="bg-[#4ADE80] text-black font-semibold text-xs h-9 disabled:opacity-50"
+                  className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs h-8 px-4 rounded-lg disabled:opacity-50 flex items-center gap-1.5 transition-colors"
                 >
-                  {savingOrg ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Check className="w-4 h-4 mr-1.5" />}
+                  {savingOrg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                   Save Changes
-                </Button>
+                </button>
                 {orgSuccess && (
-                  <span className="text-xs text-[#4ADE80] font-medium animate-fade-in">
+                  <span className="text-xs text-[#2dd4bf] font-medium">
                     Profile saved successfully!
                   </span>
                 )}
               </div>
             </form>
 
-            {/* Organization Switcher Section */}
+            {/* Switch Active Firm */}
             {orgs.length > 1 && (
-              <div className="pt-6 border-t border-white/5 space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Switch Active Firm</h3>
+              <div className="pt-6 border-t border-[#222828] space-y-3">
+                <h3 className="text-sm font-serif font-semibold text-white">Switch Active Chambers</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
                   {orgs.map(o => (
                     <div
@@ -298,15 +249,15 @@ export default function SettingsPage() {
                       onClick={() => switchOrg(o.id)}
                       className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${
                         o.id === currentOrg?.id
-                          ? 'bg-[#1a231f] border-[#2D4537] text-[#4ADE80]'
-                          : 'bg-[#16161a] border-white/5 hover:border-white/15'
+                          ? 'bg-[#141717] border-[#2dd4bf]/40 text-[#2dd4bf]'
+                          : 'bg-[#0d0f0f] border-[#272b2b] hover:border-[#384040]'
                       }`}
                     >
                       <div>
-                        <div className="font-semibold text-foreground">{o.name}</div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">Role: {o.role || 'MEMBER'}</div>
+                        <div className="font-semibold text-white">{o.name}</div>
+                        <div className="text-[11px] text-[#879292] mt-0.5">Role: {o.role || 'MEMBER'}</div>
                       </div>
-                      {o.id === currentOrg?.id && <Check className="w-4 h-4 text-[#4ADE80]" />}
+                      {o.id === currentOrg?.id && <Check className="w-4 h-4 text-[#2dd4bf]" />}
                     </div>
                   ))}
                 </div>
@@ -317,50 +268,50 @@ export default function SettingsPage() {
 
         {/* ── TAB: TEAM & RBAC ────────────────────────────────────────── */}
         {activeTab === 'team' && (
-          <div className="bg-[#111111] border border-white/5 rounded-xl p-6 space-y-6">
+          <div className="bg-[#121515] border border-[#222828] rounded-xl p-6 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-heading font-semibold text-foreground">Counsel & Team Members</h2>
-                <p className="text-xs text-muted-foreground">Manage organization access roles (Admin, Editor, Viewer).</p>
+                <h2 className="text-lg font-serif font-semibold text-white">Counsel & Team Members</h2>
+                <p className="text-xs text-[#879292]">Manage access permissions for your practice.</p>
               </div>
 
-              <Button
+              <button
                 onClick={() => setInviteModalOpen(true)}
-                className="h-8 text-xs bg-[#4ADE80] text-black font-semibold"
+                className="h-8 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold px-3 rounded-lg flex items-center gap-1 transition-colors"
               >
-                <Plus className="w-3.5 h-3.5 mr-1" /> Invite Member
-              </Button>
+                <Plus className="w-3.5 h-3.5" /> Invite Member
+              </button>
             </div>
 
             {loadingMembers ? (
-              <div className="py-12 flex justify-center text-muted-foreground">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <div className="py-12 flex justify-center text-[#879292]">
+                <Loader2 className="w-6 h-6 animate-spin text-[#2dd4bf]" />
               </div>
             ) : members.length === 0 ? (
-              <div className="p-8 text-center border border-white/5 rounded-xl text-xs text-muted-foreground">
+              <div className="p-8 text-center border border-[#222828] rounded-xl text-xs text-[#879292]">
                 No team members found.
               </div>
             ) : (
-              <div className="divide-y divide-white/5 border border-white/5 rounded-xl overflow-hidden bg-[#16161a]">
+              <div className="divide-y divide-[#222828] border border-[#222828] rounded-xl overflow-hidden bg-[#141717]">
                 {members.map(m => {
                   const isCurrentUser = m.user_id === user?.id || m.id === user?.id;
 
                   return (
                     <div key={m.user_id || m.id} className="p-3.5 flex items-center justify-between gap-4 text-xs">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-[#111111] border border-white/10 flex items-center justify-center font-bold text-xs text-[#4ADE80] flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-[#1e2323] border border-[#272b2b] flex items-center justify-center font-bold text-xs text-[#2dd4bf] flex-shrink-0">
                           {(m.name || m.email || 'C')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-semibold text-foreground flex items-center gap-2">
+                          <div className="font-semibold text-white flex items-center gap-2">
                             <span>{m.name || m.email}</span>
                             {isCurrentUser && (
-                              <Badge variant="outline" className="text-[9px] py-0 h-4 border-white/10 text-muted-foreground">
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#2dd4bf]/10 text-[#2dd4bf]">
                                 You
-                              </Badge>
+                              </span>
                             )}
                           </div>
-                          <div className="text-muted-foreground font-mono text-[11px] truncate">{m.email}</div>
+                          <div className="text-[#879292] font-mono text-[11px] truncate">{m.email}</div>
                         </div>
                       </div>
 
@@ -369,7 +320,7 @@ export default function SettingsPage() {
                           disabled={isCurrentUser}
                           value={m.role || 'EDITOR'}
                           onChange={(e) => handleUpdateRole(m.user_id || m.id, e.target.value)}
-                          className="bg-[#111111] border border-white/10 rounded-lg px-2.5 py-1 text-xs text-foreground focus:outline-none cursor-pointer disabled:opacity-60"
+                          className="bg-[#0d0f0f] border border-[#272b2b] rounded-lg px-2.5 py-1 text-xs text-[#f3f4f5] focus:outline-none cursor-pointer disabled:opacity-60"
                         >
                           <option value="ADMIN">ADMIN</option>
                           <option value="EDITOR">EDITOR</option>
@@ -377,15 +328,13 @@ export default function SettingsPage() {
                         </select>
 
                         {!isCurrentUser && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                          <button
                             onClick={() => handleRemoveMember(m.user_id || m.id)}
-                            className="w-7 h-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            className="p-1.5 text-[#879292] hover:text-[#f87171] transition-colors"
                             title="Remove Member"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -398,36 +347,35 @@ export default function SettingsPage() {
 
         {/* ── TAB: USER PROFILE ───────────────────────────────────────── */}
         {activeTab === 'user' && (
-          <div className="bg-[#111111] border border-white/5 rounded-xl p-6 space-y-6">
+          <div className="bg-[#121515] border border-[#222828] rounded-xl p-6 space-y-6">
             <div>
-              <h2 className="text-lg font-heading font-semibold text-foreground">Counsel Account</h2>
-              <p className="text-xs text-muted-foreground">Your personal authentication and credentials profile.</p>
+              <h2 className="text-lg font-serif font-semibold text-white">Account Details</h2>
+              <p className="text-xs text-[#879292]">Your credentials and workspace role.</p>
             </div>
 
             <div className="max-w-md space-y-4">
-              <div className="p-4 bg-[#16161a] border border-white/5 rounded-xl space-y-2.5 text-xs">
+              <div className="p-4 bg-[#141717] border border-[#272b2b] rounded-xl space-y-2.5 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Name:</span>
-                  <span className="font-semibold text-foreground">{user?.name || 'Counsel'}</span>
+                  <span className="text-[#879292]">Name:</span>
+                  <span className="font-semibold text-white">{user?.name || 'Counsel'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Email:</span>
-                  <span className="font-mono text-foreground">{user?.email}</span>
+                  <span className="text-[#879292]">Email:</span>
+                  <span className="font-mono text-[#f3f4f5]">{user?.email}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Active Role:</span>
-                  <span className="font-mono text-[#4ADE80]">{currentOrg?.role || 'ADMIN'}</span>
+                  <span className="text-[#879292]">Role:</span>
+                  <span className="font-mono text-[#2dd4bf]">{currentOrg?.role || 'ADMIN'}</span>
                 </div>
               </div>
 
               <div className="pt-2">
-                <Button
-                  variant="outline"
+                <button
                   onClick={logout}
-                  className="h-9 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                  className="h-8 text-xs text-[#f87171] border border-[#f87171]/20 hover:bg-[#f87171]/10 px-3.5 rounded-lg flex items-center gap-1.5 transition-colors"
                 >
-                  <LogOut className="w-3.5 h-3.5 mr-1.5" /> Sign Out of Workspace
-                </Button>
+                  <LogOut className="w-3.5 h-3.5" /> Sign Out
+                </button>
               </div>
             </div>
           </div>
@@ -437,47 +385,47 @@ export default function SettingsPage() {
 
       {/* ── INVITE MEMBER MODAL ──────────────────────────────────────── */}
       <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading font-semibold">Invite Counsel to Firm</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="text-lg font-serif font-semibold text-white">Invite Counsel to Chambers</DialogTitle>
+            <DialogDescription className="text-xs text-[#879292]">
               Grant team access to {currentOrg?.name}.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleInviteMember} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Email Address *</Label>
+              <Label className="text-xs font-mono uppercase text-[#879292]">Email Address *</Label>
               <Input
                 required
                 type="email"
                 placeholder="colleague@lawfirm.com"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Role</Label>
+              <Label className="text-xs font-mono uppercase text-[#879292]">Role</Label>
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as any)}
-                className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none"
+                className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none"
               >
-                <option value="ADMIN">ADMIN (Full management access)</option>
-                <option value="EDITOR">EDITOR (Create & edit cases/tasks)</option>
-                <option value="VIEWER">VIEWER (Read-only review)</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="EDITOR">EDITOR</option>
+                <option value="VIEWER">VIEWER</option>
               </select>
             </div>
 
             {inviteError && (
-              <p className="text-xs text-destructive">{inviteError}</p>
+              <p className="text-xs text-[#f87171]">{inviteError}</p>
             )}
 
             <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setInviteModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={submittingInvite} className="bg-[#4ADE80] text-black font-semibold">
+              <Button type="button" variant="ghost" onClick={() => setInviteModalOpen(false)} className="text-[#879292] hover:text-white">Cancel</Button>
+              <Button type="submit" disabled={submittingInvite} className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold">
                 {submittingInvite ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                 Send Invite
               </Button>

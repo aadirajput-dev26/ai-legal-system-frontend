@@ -191,20 +191,20 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
 
       {/* ── View All Legal Intelligence Dialog ─────────────────────────── */}
       <Dialog open={viewAllOpen} onOpenChange={setViewAllOpen}>
-        <DialogContent className="sm:max-w-2xl bg-[#14121e] border-white/10 text-foreground p-6 rounded-2xl shadow-2xl max-h-[85vh] flex flex-col">
-          <DialogHeader className="pb-3 border-b border-white/5">
+        <DialogContent className="sm:max-w-2xl bg-[#141717] border-[#272b2b] text-[#f3f4f5] p-6 rounded-2xl shadow-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader className="pb-3 border-b border-[#272b2b]">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#A855F7]/15 border border-[#A855F7]/30 flex items-center justify-center text-[#A855F7]">
+              <div className="w-9 h-9 rounded-xl bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 flex items-center justify-center text-[#2dd4bf]">
                 <Scale className="w-5 h-5" />
               </div>
               <div>
-                <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                <DialogTitle className="text-lg font-serif font-normal text-white flex items-center gap-2">
                   Legal Intelligence & Statutory Updates
-                  <Badge variant="outline" className="text-[10px] text-[#A855F7] bg-[#A855F7]/10 border-[#A855F7]/30 py-0">
+                  <Badge variant="outline" className="text-[10px] font-mono text-[#2dd4bf] bg-[#1e2424] border-[#2dd4bf]/30 py-0">
                     {updates.length} Updates
                   </Badge>
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                <DialogDescription className="text-xs text-[#879292] mt-0.5">
                   Full text of recent statutory amendments, procedural guidelines, and legal frameworks relevant to your matters.
                 </DialogDescription>
               </div>
@@ -212,36 +212,36 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
 
             {/* Search Filter */}
             <div className="relative mt-3">
-              <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-[#879292] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search updates by act, keyword, or summary..."
                 value={modalSearch}
                 onChange={e => setModalSearch(e.target.value)}
-                className="w-full bg-[#0d0c14] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-[#A855F7]/50"
+                className="w-full bg-[#101313] border border-[#272b2b] rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#f3f4f5] placeholder:text-[#879292]/50 focus:outline-none focus:border-[#2dd4bf]/60 font-sans"
               />
             </div>
           </DialogHeader>
 
           {/* Scrollable list of full updates */}
-          <div className="flex-1 overflow-y-auto py-3 space-y-3.5 pr-1">
+          <div className="flex-1 overflow-y-auto py-3 space-y-3 pr-1">
             {filteredUpdates.length === 0 ? (
-              <div className="py-12 text-center text-xs text-muted-foreground">
+              <div className="py-12 text-center text-xs text-[#879292]">
                 No matching legal updates found.
               </div>
             ) : (
               filteredUpdates.map((item, idx) => (
                 <div
                   key={item.id || idx}
-                  className="p-4 rounded-xl bg-[#1a1727] border border-white/5 hover:border-[#A855F7]/30 transition-all space-y-2"
+                  className="p-4 rounded-xl bg-[#101313] border border-[#272b2b] hover:border-[#2dd4bf]/30 transition-all space-y-2"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="text-[9px] uppercase font-bold text-[#A855F7] bg-[#A855F7]/10 border-[#A855F7]/30 py-0 h-4">
+                        <Badge variant="outline" className="text-[9px] font-mono uppercase text-[#2dd4bf] bg-[#1e2424] border-[#2dd4bf]/30 py-0 h-4">
                           {item.type || 'Act'}
                         </Badge>
-                        <h4 className="text-sm font-semibold text-white leading-snug">
+                        <h4 className="text-sm font-medium text-white leading-snug">
                           {item.title}
                         </h4>
                       </div>
@@ -250,13 +250,12 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
                     {onInquire && (
                       <Button
                         type="button"
-                        variant="outline"
                         size="sm"
                         onClick={() => {
                           onInquire(item);
                           setViewAllOpen(false);
                         }}
-                        className="h-7 px-2.5 text-xs border-[#A855F7]/30 bg-[#A855F7]/10 hover:bg-[#A855F7]/25 text-[#C084FC] hover:text-white rounded-lg gap-1.5 flex-shrink-0"
+                        className="h-7 px-2.5 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold rounded-lg gap-1.5 flex-shrink-0 cursor-pointer"
                       >
                         <MessageSquare className="w-3 h-3" />
                         <span>Inquire</span>
@@ -265,12 +264,12 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
                   </div>
 
                   {/* Complete Full Summary */}
-                  <p className="text-xs text-muted-foreground/90 leading-relaxed whitespace-pre-wrap select-text">
+                  <p className="text-xs text-[#879292] leading-relaxed whitespace-pre-wrap select-text font-sans">
                     {item.summary}
                   </p>
 
-                  <div className="pt-1.5 border-t border-white/5 flex items-center justify-between text-[11px] text-muted-foreground/70">
-                    <span>Source: <strong className="text-muted-foreground">{item.source || 'Legal Gazette'}</strong></span>
+                  <div className="pt-1.5 border-t border-[#272b2b] flex items-center justify-between text-[11px] font-mono text-[#879292]">
+                    <span>Source: <strong className="text-white/80">{item.source || 'Legal Gazette'}</strong></span>
                     {item.date && <span>Date: {item.date}</span>}
                   </div>
                 </div>

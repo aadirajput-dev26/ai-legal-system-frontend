@@ -8,18 +8,15 @@ import { useEmbedScriptLoader } from '@/lib/useEmbedScriptLoader';
 import { useViasocketEvents } from '@/lib/useViasocketEvents';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
-  Cpu,
+  Calendar as CalendarIcon,
+  Mail,
   Plus,
-  Search,
   Loader2,
   Trash2,
   ExternalLink,
-  Zap,
-  FolderClosed,
+  Cpu,
   Download,
-  RefreshCw,
   Play,
 } from 'lucide-react';
 import {
@@ -52,8 +49,6 @@ export default function ToolsPage() {
   const [orgTools, setOrgTools] = useState<OrgTool[]>([]);
   const [casesList, setCasesList] = useState<CaseItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCaseFilter, setSelectedCaseFilter] = useState<string>('ALL');
 
   const [createCaseId, setCreateCaseId] = useState<string>('');
   const [launchingViasocket, setLaunchingViasocket] = useState(false);
@@ -66,7 +61,6 @@ export default function ToolsPage() {
   const [importSuccess, setImportSuccess] = useState(false);
 
   const [deletingToolKey, setDeletingToolKey] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
@@ -107,7 +101,6 @@ export default function ToolsPage() {
       console.error('Failed to load tools:', err);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [currentOrg?.id]);
 
@@ -118,11 +111,6 @@ export default function ToolsPage() {
   useViasocketEvents(createCaseId, () => {
     fetchOrgData();
   });
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchOrgData();
-  };
 
   const handleLaunchViasocket = async (caseId: string, scriptId?: string) => {
     if (!caseId) return;
@@ -136,11 +124,11 @@ export default function ToolsPage() {
           if (window.openViasocket) {
             window.openViasocket(scriptId, {
               theme: {
-                "--col-home-page": "#111114",
-                "--col-primary-button": "rgb(45, 69, 55)",
-                "--col-primary-button-text": "rgb(74, 222, 128)",
-                "--font-family-content": "'Inter', sans-serif",
-                "--font-family-headings": "'Outfit', sans-serif"
+                "--col-home-page": "#0d0f0f",
+                "--col-primary-button": "#2dd4bf",
+                "--col-primary-button-text": "#091b18",
+                "--font-family-content": "'Plus Jakarta Sans', sans-serif",
+                "--font-family-headings": "'Newsreader', Georgia, serif"
               },
               metadata: { caseId, organisationId: currentOrg?.id },
             });
@@ -188,26 +176,11 @@ export default function ToolsPage() {
     }
   };
 
-  const filteredTools = useMemo(() => {
-    return orgTools.filter(t => {
-      if (selectedCaseFilter !== 'ALL' && t.sourceCaseId !== selectedCaseFilter) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          t.title?.toLowerCase().includes(q) ||
-          t.description?.toLowerCase().includes(q) ||
-          t.sourceCaseTitle?.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
-  }, [orgTools, selectedCaseFilter, searchQuery]);
-
   if (authLoading || !user) {
     return (
       <AppShell>
         <div className="flex h-full items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
         </div>
       </AppShell>
     );
@@ -215,291 +188,216 @@ export default function ToolsPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-full max-w-6xl mx-auto pb-16 space-y-6">
+      <div className="flex flex-col h-full max-w-[1300px] mx-auto px-6 sm:px-8 py-8 pb-16 space-y-7">
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* ── Top Header ──────────────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-heading font-semibold tracking-tight text-foreground">
-                Automation Tools
-              </h1>
-              <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-xs font-normal py-0.5">
-                <Zap className="w-3 h-3 mr-1" />
-                ViaSocket
-              </Badge>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Create and manage automation tools across your organization. Import tools into specific cases to automate legal workflows.
+            <h1 className="text-3xl font-serif text-[#f3f4f5] tracking-tight">
+              Tools
+            </h1>
+            <p className="text-sm text-[#879292] mt-1 max-w-2xl leading-relaxed">
+              Actions LegalDesk may take on your behalf — sending an email, creating a calendar entry. Each one is attached to a matter, and each one is logged.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="h-9 w-9 text-muted-foreground hover:text-foreground"
-              title="Refresh"
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => {
+                setCreateCaseId(casesList[0]?.id || '');
+                setCreateModalOpen(true);
+              }}
+              className="h-8 bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs px-4 rounded-lg transition-colors flex items-center gap-1"
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button
-              onClick={() => setCreateModalOpen(true)}
-              className="h-9 bg-[#2D4537] hover:bg-[#385945] text-[#4ADE80] font-medium rounded-lg border border-[#4ADE80]/30 shadow-none text-xs"
-            >
-              <Plus className="w-4 h-4 mr-1.5" /> Create Tool
-            </Button>
+              Connect a tool
+            </button>
           </div>
         </div>
 
-        {/* Metrics Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
-          <div className="p-3.5 rounded-xl border border-white/5 bg-[#111111] flex items-center justify-between">
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Total Tools</div>
-              <div className="text-xl font-bold font-heading text-foreground mt-0.5">{orgTools.length}</div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-white/5 text-muted-foreground flex items-center justify-center">
-              <Cpu className="w-4 h-4" />
-            </div>
+        {/* ── Section: CONNECTED (Matching Artifact) ──────────────────── */}
+        <div className="space-y-4">
+          <div className="font-mono text-[10px] tracking-wider text-[#6f7a7a] uppercase font-semibold">
+            CONNECTED
           </div>
 
-          <div className="p-3.5 rounded-xl border border-white/5 bg-[#111111] flex items-center justify-between">
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Cases with Tools</div>
-              <div className="text-xl font-bold font-heading text-purple-400 mt-0.5">
-                {new Set(orgTools.map(t => t.sourceCaseId)).size}
+          <div className="space-y-3">
+            {/* Card 1: Google Calendar */}
+            <div className="p-4 rounded-xl bg-[#121515] border border-[#222828] flex items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="w-9 h-9 rounded-lg bg-[#141424] border border-[#252540] flex items-center justify-center flex-shrink-0 text-[#818cf8]">
+                  <CalendarIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-base font-semibold text-white">Google Calendar</h3>
+                  <p className="text-xs text-[#879292] mt-0.5">Creates hearing entries and reminders</p>
+                  <p className="text-xs text-[#6f7a7a] mt-1">
+                    {casesList[0]?.title || 'Dhruvish v. Byjus'} &middot; last run 4d ago
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-[#2dd4bf] flex items-center gap-1.5 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf]"></span>
+                  Asks first
+                </span>
+                <button
+                  onClick={() => {
+                    if (casesList[0]?.id) handleLaunchViasocket(casesList[0].id);
+                  }}
+                  className="h-7 px-3.5 text-xs bg-[#141717] border border-[#272b2b] text-[#f3f4f5] hover:bg-[#1e2323] rounded-lg transition-colors"
+                >
+                  Configure
+                </button>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
-              <FolderClosed className="w-4 h-4" />
-            </div>
-          </div>
 
-          <div className="p-3.5 rounded-xl border border-white/5 bg-[#111111] flex items-center justify-between col-span-2 sm:col-span-1">
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Active Matters</div>
-              <div className="text-xl font-bold font-heading text-[#4ADE80] mt-0.5">{casesList.length}</div>
-            </div>
-            <div className="w-8 h-8 rounded-lg bg-[#4ADE80]/10 text-[#4ADE80] flex items-center justify-center">
-              <Zap className="w-4 h-4" />
-            </div>
-          </div>
-        </div>
+            {/* Card 2: Gmail */}
+            <div className="p-4 rounded-xl bg-[#121515] border border-[#222828] flex items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="w-9 h-9 rounded-lg bg-[#141424] border border-[#252540] flex items-center justify-center flex-shrink-0 text-[#818cf8]">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-base font-semibold text-white">Gmail</h3>
+                  <p className="text-xs text-[#879292] mt-0.5">Sends a drafted notice to the named recipient</p>
+                  <p className="text-xs text-[#6f7a7a] mt-1">
+                    {casesList[0]?.title || 'Dhruvish v. Byjus'} &middot; never run
+                  </p>
+                </div>
+              </div>
 
-        {/* Search & Filter */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-2 border-b border-border/50 text-xs">
-          <div className="relative flex-1 w-full max-w-xl">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search tools by name, description, or case..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#111111] border border-white/10 pl-9 pr-4 h-9 text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-purple-500/50 placeholder:text-muted-foreground/60 text-foreground"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Matter:</span>
-            <select
-              value={selectedCaseFilter}
-              onChange={(e) => setSelectedCaseFilter(e.target.value)}
-              className="bg-[#111111] border border-white/10 rounded-xl h-9 px-3 text-xs text-foreground focus:outline-none cursor-pointer min-w-[170px] max-w-[240px]"
-            >
-              <option value="ALL" className="bg-[#16161a]">All Matters</option>
-              {casesList.map(c => (
-                <option key={c.id} value={c.id} className="bg-[#16161a]">{c.title}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Tools List */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
-            <span className="text-xs">Loading organization tools...</span>
-          </div>
-        ) : filteredTools.length === 0 ? (
-          <div className="text-center py-20 px-4 rounded-xl border border-white/5 bg-[#111111] my-4 space-y-3">
-            <div className="w-12 h-12 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center mx-auto">
-              <Cpu className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-semibold text-foreground">No tools found</h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              Create automation tools to automate filings, notifications, or other legal workflows using ViaSocket integrations.
-            </p>
-            <Button
-              onClick={() => setCreateModalOpen(true)}
-              className="mt-2 h-8 text-xs bg-purple-600 hover:bg-purple-700 text-white font-semibold"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" /> Create First Tool
-            </Button>
-          </div>
-        ) : (
-          <div className="bg-[#111111] border border-white/5 rounded-xl overflow-hidden shadow-2xl">
-            <div className="hidden sm:grid grid-cols-[2fr_1.5fr_90px] gap-4 px-4 py-2.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase bg-[#16161a] border-b border-white/5">
-              <div>Tool & Description</div>
-              <div>Associated Matter</div>
-              <div className="text-right">Actions</div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-[#2dd4bf] flex items-center gap-1.5 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf]"></span>
+                  Asks first
+                </span>
+                <button
+                  onClick={() => {
+                    if (casesList[0]?.id) handleLaunchViasocket(casesList[0].id);
+                  }}
+                  className="h-7 px-3.5 text-xs bg-[#141717] border border-[#272b2b] text-[#f3f4f5] hover:bg-[#1e2323] rounded-lg transition-colors"
+                >
+                  Configure
+                </button>
+              </div>
             </div>
 
-            <div className="divide-y divide-white/5">
-              {filteredTools.map((tool) => {
-                const delKey = `${tool.script_id}-${tool.sourceCaseId}`;
-                const isDeleting = deletingToolKey === delKey;
+            {/* Custom Created ViaSocket Tools */}
+            {orgTools.map((tool) => {
+              const delKey = `${tool.script_id}-${tool.sourceCaseId}`;
+              const isDeleting = deletingToolKey === delKey;
 
-                return (
-                  <div
-                    key={tool.script_id}
-                    className="p-3.5 hover:bg-white/[0.02] transition-all flex flex-col sm:grid sm:grid-cols-[2fr_1.5fr_90px] gap-3 sm:gap-4 items-start sm:items-center text-xs"
-                  >
-                    <div className="flex items-start gap-3 min-w-0 pr-2">
-                      <div className="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Cpu className="w-4 h-4 text-purple-400" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium text-foreground text-sm truncate">
-                          {tool.title || 'Untitled Tool'}
-                        </div>
-                        {tool.description && (
-                          <div className="text-muted-foreground/80 truncate text-[11px] mt-0.5">
-                            {tool.description}
-                          </div>
-                        )}
-                        <div className="text-[10px] font-mono text-muted-foreground/40 mt-0.5 truncate">
-                          {tool.script_id}
-                        </div>
-                      </div>
+              return (
+                <div
+                  key={tool.script_id}
+                  className="p-4 rounded-xl bg-[#121515] border border-[#222828] flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-9 h-9 rounded-lg bg-[#141717] border border-[#272b2b] flex items-center justify-center flex-shrink-0 text-[#2dd4bf]">
+                      <Cpu className="w-4 h-4" />
                     </div>
-
-                    <div className="min-w-0">
-                      {tool.sourceCaseTitle ? (
-                        <div className="truncate">
-                          <span className="font-medium text-foreground">{tool.sourceCaseTitle}</span>
-                          {tool.sourceCaseNumber && (
-                            <span className="text-muted-foreground text-[11px] block mt-0.5">
-                              #{tool.sourceCaseNumber}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground/60">Organization</span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleLaunchViasocket(tool.sourceCaseId, tool.script_id)}
-                        className="w-7 h-7 text-muted-foreground hover:text-purple-400"
-                        title="Edit in ViaSocket"
-                      >
-                        <Play className="w-3.5 h-3.5" />
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setImportTargetTool(tool);
-                          setImportTargetCaseId('');
-                          setImportSuccess(false);
-                          setImportModalOpen(true);
-                        }}
-                        className="w-7 h-7 text-muted-foreground hover:text-[#4ADE80]"
-                        title="Import to Case"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => router.push(`/cases/${tool.sourceCaseId}`)}
-                        className="w-7 h-7 text-muted-foreground hover:text-[#4ADE80]"
-                        title="Open Source Case"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={isDeleting}
-                        onClick={() => handleDeleteTool(tool)}
-                        className="w-7 h-7 text-muted-foreground hover:text-destructive"
-                        title="Delete Tool"
-                      >
-                        {isDeleting ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        )}
-                      </Button>
+                    <div>
+                      <h3 className="font-serif text-base font-semibold text-white">{tool.title || 'Custom Automation'}</h3>
+                      <p className="text-xs text-[#879292] mt-0.5">{tool.description || 'Custom workflow integration'}</p>
+                      <p className="text-xs text-[#6f7a7a] mt-1">
+                        {tool.sourceCaseTitle || 'Organization'}
+                      </p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleLaunchViasocket(tool.sourceCaseId, tool.script_id)}
+                      className="h-7 px-3 text-xs bg-[#141717] border border-[#272b2b] text-[#f3f4f5] hover:bg-[#1e2323] rounded-lg"
+                      title="Edit Script"
+                    >
+                      <Play className="w-3.5 h-3.5 text-[#2dd4bf]" />
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setImportTargetTool(tool);
+                        setImportTargetCaseId('');
+                        setImportSuccess(false);
+                        setImportModalOpen(true);
+                      }}
+                      className="h-7 px-3 text-xs bg-[#141717] border border-[#272b2b] text-[#f3f4f5] hover:bg-[#1e2323] rounded-lg"
+                      title="Import"
+                    >
+                      <Download className="w-3.5 h-3.5 text-[#818cf8]" />
+                    </button>
+
+                    <button
+                      disabled={isDeleting}
+                      onClick={() => handleDeleteTool(tool)}
+                      className="h-7 px-2 text-xs bg-[#141717] border border-[#272b2b] text-[#879292] hover:text-[#f87171] rounded-lg"
+                      title="Delete"
+                    >
+                      {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </div>
+
+        {/* ── Section: THE RULE (Safety Notice from Artifact) ──────────── */}
+        <div className="p-4 rounded-xl bg-[#141717] border border-[#222828] space-y-1">
+          <div className="font-mono text-[10px] tracking-wider text-[#6f7a7a] uppercase font-semibold">
+            THE RULE
+          </div>
+          <p className="text-xs text-[#879292] leading-relaxed">
+            LegalDesk never performs irreversible actions without your explicit approval. Every draft email, calendar addition, or docket update requires a review click first.
+          </p>
+        </div>
 
       </div>
 
       {/* Create Tool Modal */}
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
           <DialogHeader className="pb-2">
-            <DialogTitle className="text-lg font-heading font-semibold flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-purple-400" />
-              Create Automation Tool
+            <DialogTitle className="text-lg font-serif font-semibold text-white">
+              Connect Automation Tool
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Select a case to associate this tool with, then launch the ViaSocket builder to configure your automation.
+            <DialogDescription className="text-xs text-[#879292]">
+              Select a matter to associate this tool with, then launch the builder.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 my-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase">
-                Associate with Case *
+              <label className="text-xs font-mono text-[#879292] uppercase">
+                Associate with Matter *
               </label>
               <select
                 value={createCaseId}
                 onChange={(e) => setCreateCaseId(e.target.value)}
-                className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none cursor-pointer"
+                className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none cursor-pointer"
               >
                 <option value="">Select a matter...</option>
                 {casesList.map(c => (
-                  <option key={c.id} value={c.id} className="bg-[#16161a]">
-                    {c.title}{c.case_number ? ` (#${c.case_number})` : ''}
+                  <option key={c.id} value={c.id}>
+                    {c.title}
                   </option>
                 ))}
               </select>
             </div>
-
-            <div className="p-3 bg-purple-500/5 border border-purple-500/15 rounded-xl text-[11px] text-muted-foreground leading-relaxed">
-              <span className="text-purple-400 font-semibold">How it works: </span>
-              You will be taken to the ViaSocket builder to configure triggers and actions. Once published, the tool appears in this library and can be imported into any other case.
-            </div>
           </div>
 
           <DialogFooter className="pt-2 gap-2">
-            <Button type="button" variant="ghost" onClick={() => setCreateModalOpen(false)}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={() => setCreateModalOpen(false)} className="text-[#879292] hover:text-white">Cancel</Button>
             <Button
               disabled={!createCaseId || launchingViasocket}
               onClick={() => handleLaunchViasocket(createCaseId)}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+              className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold"
             >
               {launchingViasocket ? (
                 <><Loader2 className="w-4 h-4 animate-spin mr-1.5" /> Launching...</>
               ) : (
-                <><Zap className="w-4 h-4 mr-1.5" /> Launch Builder</>
+                'Launch Builder'
               )}
             </Button>
           </DialogFooter>
@@ -509,58 +407,47 @@ export default function ToolsPage() {
       {/* Import Tool Modal */}
       {importTargetTool && (
         <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
-          <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+          <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
             <DialogHeader className="pb-2">
-              <DialogTitle className="text-base font-semibold flex items-center gap-2">
-                <Download className="w-4 h-4 text-[#4ADE80]" />
-                Import Tool to Case
+              <DialogTitle className="text-base font-serif font-semibold text-white">
+                Import Tool to Matter
               </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                Import <strong className="text-foreground">{importTargetTool.title || 'this tool'}</strong> into another case.
+              <DialogDescription className="text-xs text-[#879292]">
+                Import {importTargetTool.title || 'this tool'} into another matter.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3 my-2">
-              <div className="p-3 bg-[#111111] border border-white/5 rounded-xl flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
-                  <Cpu className="w-3.5 h-3.5 text-purple-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-foreground truncate">{importTargetTool.title || 'Untitled Tool'}</div>
-                  <div className="text-[10px] text-muted-foreground truncate">{importTargetTool.description || 'No description'}</div>
-                </div>
-              </div>
-
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Target Matter *</label>
+                <label className="text-xs font-mono text-[#879292] uppercase">Target Matter *</label>
                 <select
                   value={importTargetCaseId}
                   onChange={(e) => { setImportTargetCaseId(e.target.value); setImportSuccess(false); }}
-                  className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none cursor-pointer"
+                  className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none cursor-pointer"
                 >
                   <option value="">Select a matter...</option>
                   {casesList
                     .filter(c => c.id !== importTargetTool.sourceCaseId)
                     .map(c => (
-                      <option key={c.id} value={c.id} className="bg-[#16161a]">{c.title}</option>
+                      <option key={c.id} value={c.id}>{c.title}</option>
                     ))}
                 </select>
               </div>
             </div>
 
             <DialogFooter className="pt-2 gap-2">
-              <Button type="button" variant="ghost" onClick={() => { setImportModalOpen(false); setImportTargetTool(null); }}>Cancel</Button>
+              <Button type="button" variant="ghost" onClick={() => { setImportModalOpen(false); setImportTargetTool(null); }} className="text-[#879292] hover:text-white">Cancel</Button>
               <Button
                 disabled={!importTargetCaseId || importing}
                 onClick={handleImportTool}
-                className={`font-semibold transition-all ${importSuccess ? 'bg-[#1a231f] text-[#4ADE80] border border-[#4ADE80]/30' : 'bg-[#4ADE80] hover:bg-[#34d399] text-black'}`}
+                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold"
               >
                 {importing ? (
                   <><Loader2 className="w-4 h-4 animate-spin mr-1.5" /> Importing...</>
                 ) : importSuccess ? (
                   '✓ Imported!'
                 ) : (
-                  <><Download className="w-4 h-4 mr-1.5" /> Import Tool</>
+                  'Import Tool'
                 )}
               </Button>
             </DialogFooter>

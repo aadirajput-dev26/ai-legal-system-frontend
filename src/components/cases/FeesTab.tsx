@@ -107,56 +107,56 @@ export function FeesTab({ caseId }: { caseId: string }) {
   const { summary, milestones, payments } = data;
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 max-w-4xl">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-heading font-semibold">Fee Tracker</h2>
-          <p className="text-xs text-muted-foreground mt-1">Manage billing, milestones, and track payments.</p>
+          <h2 className="font-serif text-xl font-normal text-white">Fee Tracker</h2>
+          <p className="text-xs text-[#879292] mt-0.5">Manage billing, milestones, and track payments.</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setScheduleModalOpen(true)} variant="outline" className="border-white/10 bg-[#111111] hover:bg-white/5 text-xs h-9">
+          <Button onClick={() => setScheduleModalOpen(true)} variant="outline" className="border-[#272b2b] bg-transparent hover:bg-[#1a1e1e] text-xs h-8 text-[#e5e7eb]">
             Update Total Fee
           </Button>
-          <Button onClick={() => setMilestoneModalOpen(true)} variant="outline" className="border-[#A855F7]/30 text-[#A855F7] hover:bg-[#A855F7]/10 text-xs h-9">
-            <Plus className="w-3.5 h-3.5 mr-1" /> Add Milestone
+          <Button onClick={() => setMilestoneModalOpen(true)} variant="outline" className="border-[#272b2b] bg-transparent hover:bg-[#1a1e1e] text-xs h-8 text-[#e5e7eb]">
+            <Plus className="w-3.5 h-3.5 mr-1 text-[#2dd4bf]" /> Add Milestone
           </Button>
-          <Button onClick={() => setPaymentModalOpen(true)} className="bg-[#4ADE80] text-black hover:bg-[#34d399] text-xs h-9 font-semibold">
+          <Button onClick={() => setPaymentModalOpen(true)} className="bg-[#2dd4bf] text-[#091b18] hover:bg-[#34d399] text-xs h-8 font-semibold">
             <CreditCard className="w-3.5 h-3.5 mr-1" /> Record Payment
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#14101e] border border-white/5 rounded-xl p-5">
-          <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Total Agreed Fee</div>
-          <div className="text-2xl font-mono font-medium text-foreground">₹{summary?.total_agreed_fee || 0}</div>
+        <div className="bg-[#141717] border border-[#272b2b] rounded-xl p-5">
+          <div className="text-[10px] font-mono text-[#879292] uppercase tracking-wider mb-1">Total Agreed Fee</div>
+          <div className="text-2xl font-mono font-medium text-white">₹{summary?.total_agreed_fee || 0}</div>
         </div>
-        <div className="bg-[#1a231f] border border-[#4ADE80]/30 rounded-xl p-5">
-          <div className="text-[10px] text-[#4ADE80]/80 uppercase tracking-widest font-bold mb-1">Total Received</div>
-          <div className="text-2xl font-mono font-medium text-[#4ADE80]">₹{summary?.total_received || 0}</div>
+        <div className="bg-[#141717] border border-[#2dd4bf]/30 rounded-xl p-5">
+          <div className="text-[10px] font-mono text-[#2dd4bf] uppercase tracking-wider mb-1">Total Received</div>
+          <div className="text-2xl font-mono font-medium text-[#2dd4bf]">₹{summary?.total_received || 0}</div>
         </div>
-        <div className="bg-[#241315] border border-red-500/30 rounded-xl p-5">
-          <div className="text-[10px] text-red-400/80 uppercase tracking-widest font-bold mb-1">Outstanding Balance</div>
+        <div className="bg-[#141717] border border-red-500/30 rounded-xl p-5">
+          <div className="text-[10px] font-mono text-red-400 uppercase tracking-wider mb-1">Outstanding Balance</div>
           <div className="text-2xl font-mono font-medium text-red-400">₹{summary?.outstanding_balance || 0}</div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Milestones</h3>
+        <div className="space-y-3">
+          <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#879292]">Milestones</h3>
           {milestones.length === 0 ? (
-            <div className="text-xs text-muted-foreground bg-[#111111] p-4 rounded-xl border border-white/5">No milestones set.</div>
+            <div className="text-xs text-[#879292] bg-[#141717] p-4 rounded-xl border border-[#272b2b]">No milestones set.</div>
           ) : (
             <div className="space-y-2">
               {milestones.map((m: any) => (
-                <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-white/10 bg-[#111111]">
+                <div key={m.id} className="flex items-center justify-between p-3.5 rounded-xl border border-[#272b2b] bg-[#141717]">
                   <div>
-                    <div className="text-sm font-medium">{m.stage_name}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Due: {m.due_date ? new Date(m.due_date).toLocaleDateString() : 'N/A'}</div>
+                    <div className="text-sm font-medium text-white">{m.stage_name}</div>
+                    <div className="text-xs text-[#879292] font-mono mt-0.5">Due: {m.due_date ? new Date(m.due_date).toLocaleDateString() : 'N/A'}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-mono text-sm">₹{m.amount}</div>
-                    <div className={`text-[10px] font-bold tracking-wider uppercase mt-1 ${m.status === 'PAID' ? 'text-[#4ADE80]' : 'text-orange-400'}`}>
+                    <div className="font-mono text-sm text-white font-medium">₹{m.amount}</div>
+                    <div className={`text-[10px] font-mono tracking-wider uppercase mt-0.5 ${m.status === 'PAID' ? 'text-[#2dd4bf]' : 'text-[#f59e0b]'}`}>
                       {m.status}
                     </div>
                   </div>
@@ -166,22 +166,22 @@ export function FeesTab({ caseId }: { caseId: string }) {
           )}
         </div>
 
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Recent Payments</h3>
+        <div className="space-y-3">
+          <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#879292]">Recent Payments</h3>
           {payments.length === 0 ? (
-            <div className="text-xs text-muted-foreground bg-[#111111] p-4 rounded-xl border border-white/5">No payments recorded.</div>
+            <div className="text-xs text-[#879292] bg-[#141717] p-4 rounded-xl border border-[#272b2b]">No payments recorded.</div>
           ) : (
             <div className="space-y-2">
               {payments.map((p: any) => (
-                <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-[#111111]">
-                  <div className="w-8 h-8 rounded-full bg-[#1a231f] flex items-center justify-center flex-shrink-0">
-                    <Receipt className="w-4 h-4 text-[#4ADE80]" />
+                <div key={p.id} className="flex items-center gap-3 p-3.5 rounded-xl border border-[#272b2b] bg-[#141717]">
+                  <div className="w-8 h-8 rounded-lg bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 flex items-center justify-center flex-shrink-0">
+                    <Receipt className="w-4 h-4 text-[#2dd4bf]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">₹{p.amount_paid} <span className="text-xs text-muted-foreground font-normal ml-1">via {p.payment_mode}</span></div>
-                    <div className="text-[10px] text-muted-foreground truncate">{p.receipt_number ? `Receipt: ${p.receipt_number}` : 'No receipt no.'}</div>
+                    <div className="text-sm font-medium text-white">₹{p.amount_paid} <span className="text-xs text-[#879292] font-normal ml-1">via {p.payment_mode}</span></div>
+                    <div className="text-[10px] font-mono text-[#879292] truncate">{p.receipt_number ? `Receipt: ${p.receipt_number}` : 'No receipt no.'}</div>
                   </div>
-                  <div className="text-[10px] text-muted-foreground text-right whitespace-nowrap">
+                  <div className="text-[10px] font-mono text-[#879292] text-right whitespace-nowrap">
                     {new Date(p.payment_date).toLocaleDateString()}
                   </div>
                 </div>
@@ -193,17 +193,17 @@ export function FeesTab({ caseId }: { caseId: string }) {
 
       {/* Schedule Modal */}
       <Dialog open={scheduleModalOpen} onOpenChange={setScheduleModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-sm">
+        <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Update Total Fee</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleUpdateSchedule} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Total Agreed Amount (₹)</Label>
-              <Input type="number" required value={totalAgreedFee} onChange={e => setTotalAgreedFee(e.target.value)} className="bg-[#111111] border-white/10" />
+              <Label className="text-xs text-[#879292] font-mono">Total Agreed Amount (₹)</Label>
+              <Input type="number" required value={totalAgreedFee} onChange={e => setTotalAgreedFee(e.target.value)} className="bg-[#101313] border-[#272b2b] text-white" />
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={submitting} className="bg-[#4ADE80] text-black w-full">Save</Button>
+              <Button type="submit" disabled={submitting} className="bg-[#2dd4bf] text-[#091b18] hover:bg-[#34d399] font-semibold w-full">Save</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -211,25 +211,25 @@ export function FeesTab({ caseId }: { caseId: string }) {
 
       {/* Milestone Modal */}
       <Dialog open={milestoneModalOpen} onOpenChange={setMilestoneModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-sm">
+        <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Add Milestone</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateMilestone} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Stage / Event Name</Label>
-              <Input required placeholder="e.g. Filing Fees" value={milestoneForm.stage_name} onChange={e => setMilestoneForm({...milestoneForm, stage_name: e.target.value})} className="bg-[#111111] border-white/10" />
+              <Label className="text-xs text-[#879292] font-mono">Stage / Event Name</Label>
+              <Input required placeholder="e.g. Filing Fees" value={milestoneForm.stage_name} onChange={e => setMilestoneForm({...milestoneForm, stage_name: e.target.value})} className="bg-[#101313] border-[#272b2b] text-white" />
             </div>
             <div className="space-y-1.5">
-              <Label>Amount (₹)</Label>
-              <Input type="number" required value={milestoneForm.amount} onChange={e => setMilestoneForm({...milestoneForm, amount: e.target.value})} className="bg-[#111111] border-white/10" />
+              <Label className="text-xs text-[#879292] font-mono">Amount (₹)</Label>
+              <Input type="number" required value={milestoneForm.amount} onChange={e => setMilestoneForm({...milestoneForm, amount: e.target.value})} className="bg-[#101313] border-[#272b2b] text-white" />
             </div>
             <div className="space-y-1.5">
-              <Label>Due Date (Optional)</Label>
-              <Input type="date" value={milestoneForm.due_date} onChange={e => setMilestoneForm({...milestoneForm, due_date: e.target.value})} className="bg-[#111111] border-white/10" />
+              <Label className="text-xs text-[#879292] font-mono">Due Date (Optional)</Label>
+              <Input type="date" value={milestoneForm.due_date} onChange={e => setMilestoneForm({...milestoneForm, due_date: e.target.value})} className="bg-[#101313] border-[#272b2b] text-white" />
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={submitting} className="bg-[#A855F7] text-white w-full">Create Milestone</Button>
+              <Button type="submit" disabled={submitting} className="bg-[#2dd4bf] text-[#091b18] hover:bg-[#34d399] font-semibold w-full">Create Milestone</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -237,19 +237,19 @@ export function FeesTab({ caseId }: { caseId: string }) {
 
       {/* Payment Modal */}
       <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleRecordPayment} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5 col-span-2">
-                <Label>Amount Paid (₹)</Label>
-                <Input type="number" required value={paymentForm.amount_paid} onChange={e => setPaymentForm({...paymentForm, amount_paid: e.target.value})} className="bg-[#111111] border-white/10" />
+                <Label className="text-xs text-[#879292] font-mono">Amount Paid (₹)</Label>
+                <Input type="number" required value={paymentForm.amount_paid} onChange={e => setPaymentForm({...paymentForm, amount_paid: e.target.value})} className="bg-[#101313] border-[#272b2b] text-white" />
               </div>
               <div className="space-y-1.5">
-                <Label>Payment Mode</Label>
-                <select value={paymentForm.payment_mode} onChange={e => setPaymentForm({...paymentForm, payment_mode: e.target.value})} className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none">
+                <Label className="text-xs text-[#879292] font-mono">Payment Mode</Label>
+                <select value={paymentForm.payment_mode} onChange={e => setPaymentForm({...paymentForm, payment_mode: e.target.value})} className="w-full bg-[#101313] border border-[#272b2b] rounded-lg h-8 px-3 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/60">
                   <option value="BANK_TRANSFER">Bank Transfer</option>
                   <option value="CASH">Cash</option>
                   <option value="CHEQUE">Cheque</option>
@@ -257,12 +257,12 @@ export function FeesTab({ caseId }: { caseId: string }) {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label>Receipt / Ref No.</Label>
-                <Input value={paymentForm.receipt_number} onChange={e => setPaymentForm({...paymentForm, receipt_number: e.target.value})} className="bg-[#111111] border-white/10" />
+                <Label className="text-xs text-[#879292] font-mono">Receipt / Ref No.</Label>
+                <Input value={paymentForm.receipt_number} onChange={e => setPaymentForm({...paymentForm, receipt_number: e.target.value})} className="bg-[#101313] border-[#272b2b] text-white" />
               </div>
               <div className="space-y-1.5 col-span-2">
-                <Label>Link to Milestone (Optional)</Label>
-                <select value={paymentForm.milestone_id} onChange={e => setPaymentForm({...paymentForm, milestone_id: e.target.value})} className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none">
+                <Label className="text-xs text-[#879292] font-mono">Link to Milestone (Optional)</Label>
+                <select value={paymentForm.milestone_id} onChange={e => setPaymentForm({...paymentForm, milestone_id: e.target.value})} className="w-full bg-[#101313] border border-[#272b2b] rounded-lg h-8 px-3 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/60">
                   <option value="">-- None --</option>
                   {milestones.filter((m: any) => m.status === 'PENDING').map((m: any) => (
                     <option key={m.id} value={m.id}>{m.stage_name} (₹{m.amount})</option>
@@ -271,7 +271,7 @@ export function FeesTab({ caseId }: { caseId: string }) {
               </div>
             </div>
             <DialogFooter className="pt-2">
-              <Button type="submit" disabled={submitting} className="bg-[#4ADE80] text-black w-full">Confirm Payment</Button>
+              <Button type="submit" disabled={submitting} className="bg-[#2dd4bf] text-[#091b18] hover:bg-[#34d399] font-semibold w-full">Confirm Payment</Button>
             </DialogFooter>
           </form>
         </DialogContent>

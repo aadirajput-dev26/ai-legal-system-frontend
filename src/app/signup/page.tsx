@@ -34,48 +34,49 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--background),_oklch(0.05_0.015_240))]">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/3 -right-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/3 -left-32 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000" />
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0d0f0f]">
+      {/* Ambient background glow */}
+      <div className="absolute inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-1/3 -right-32 w-96 h-96 bg-[#2dd4bf]/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 -left-32 w-96 h-96 bg-[#818cf8]/5 rounded-full blur-3xl" />
       </div>
 
-      <Card className="w-full max-w-md mx-4 border-white/[0.03] bg-card/60 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-xl shadow-primary/20">
-            <Scale className="w-7 h-7 text-white" />
+      <Card className="w-full max-w-md mx-4 border-[#272b2b] bg-[#141717] shadow-2xl rounded-2xl">
+        <CardHeader className="text-center space-y-3 pb-2">
+          <div className="mx-auto w-12 h-12 rounded-xl bg-[#1e2424] border border-[#272b2b] flex items-center justify-center text-[#2dd4bf] shadow-sm">
+            <Scale className="w-6 h-6 text-[#2dd4bf]" />
           </div>
-          <CardTitle className="text-3xl font-heading font-semibold tracking-tight text-white bg-clip-text">Create an account</CardTitle>
-          <CardDescription className="text-muted-foreground/90">
-            Get started with LegalDesk
+          <CardTitle className="text-2xl font-serif font-normal tracking-tight text-white">Create an account</CardTitle>
+          <CardDescription className="text-xs text-[#879292]">
+            Get started with LegalDesk workspace
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono">
                 {error}
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-muted-foreground font-medium text-xs tracking-wide uppercase">Full Name</Label>
-              <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} required className="bg-background/40 border-white/[0.04] focus:border-primary/50 transition-all duration-300" />
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-[#879292] font-mono text-[10px] tracking-wider uppercase">Full Name</Label>
+              <Input id="name" placeholder="Adv. Sarah Jenkins" value={name} onChange={(e) => setName(e.target.value)} required className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] focus:border-[#2dd4bf]/60 h-9" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-muted-foreground font-medium text-xs tracking-wide uppercase">Email</Label>
-              <Input id="email" type="email" placeholder="you@lawfirm.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-background/40 border-white/[0.04] focus:border-primary/50 transition-all duration-300" />
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[#879292] font-mono text-[10px] tracking-wider uppercase">Email Address</Label>
+              <Input id="email" type="email" placeholder="counsel@chambers.legal" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] focus:border-[#2dd4bf]/60 h-9" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-muted-foreground font-medium text-xs tracking-wide uppercase">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-background/40 border-white/[0.04] focus:border-primary/50 transition-all duration-300" />
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-[#879292] font-mono text-[10px] tracking-wider uppercase">Password</Label>
+              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] focus:border-[#2dd4bf]/60 h-9" />
             </div>
-            <Button type="submit" className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/95 hover:to-primary/85 text-white shadow-lg shadow-primary/10 transition-all duration-300 py-5 text-sm font-semibold rounded-xl" disabled={loading}>
+            <Button type="submit" className="w-full bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold h-10 text-sm rounded-lg mt-2 cursor-pointer" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Create Account
             </Button>
-            <p className="text-center text-sm text-muted-foreground pt-2">
+            <p className="text-center text-xs text-[#879292] pt-2">
               Already have an account?{' '}
-              <Link href="/login" className="text-primary hover:text-primary/90 font-semibold transition-colors">
+              <Link href="/login" className="text-[#2dd4bf] hover:underline font-medium">
                 Sign in
               </Link>
             </p>

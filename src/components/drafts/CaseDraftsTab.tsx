@@ -42,9 +42,9 @@ const DRAFT_TYPE_ICONS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  IN_REVIEW: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  APPROVED: 'bg-[#4ADE80]/10 text-[#4ADE80] border-[#4ADE80]/20',
+  DRAFT: 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/25',
+  IN_REVIEW: 'bg-[#818cf8]/10 text-[#818cf8] border-[#818cf8]/25',
+  APPROVED: 'bg-[#2dd4bf]/10 text-[#2dd4bf] border-[#2dd4bf]/25',
 };
 
 interface CaseDraftsTabProps {
@@ -102,12 +102,12 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold text-foreground">Drafts & Legal Notices</h3>
-            <Badge variant="outline" className="bg-[#1a231f] text-[#4ADE80] border-[#2D4537] text-[10px] font-normal py-0.5">
+            <h3 className="font-serif text-lg text-white">Drafts & Legal Notices</h3>
+            <Badge variant="outline" className="bg-[#1e2424] text-[#2dd4bf] border-[#2dd4bf]/20 text-[10px] font-mono py-0.5">
               {draftsList.length} {draftsList.length === 1 ? 'Draft' : 'Drafts'}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-[#879292] mt-0.5">
             Pleadings, notices, affidavits, and legal documents authored and maintained for this case.
           </p>
         </div>
@@ -116,7 +116,7 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
           <Button
             size="sm"
             onClick={handleCreateNew}
-            className="h-8 text-xs bg-[#2D4537] hover:bg-[#385945] text-[#4ADE80] font-medium border border-[#4ADE80]/30 shadow-none gap-1.5"
+            className="h-8 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             New Draft
@@ -126,26 +126,26 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
 
       {/* Loading State */}
       {loading ? (
-        <div className="p-16 rounded-xl border border-white/5 bg-[#111116] flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-[#4ADE80]" />
-          <span className="text-xs text-muted-foreground">Loading drafts for this matter...</span>
+        <div className="p-16 rounded-xl border border-[#272b2b] bg-[#141717] flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-[#2dd4bf]" />
+          <span className="text-xs text-[#879292]">Loading drafts for this matter...</span>
         </div>
       ) : draftsList.length === 0 ? (
         /* Empty State */
-        <div className="p-16 rounded-xl border border-dashed border-white/10 bg-[#111116] flex flex-col items-center justify-center gap-3 text-center">
-          <div className="w-12 h-12 rounded-xl bg-[#1a231f] text-[#4ADE80] border border-[#2D4537] flex items-center justify-center">
+        <div className="p-16 rounded-xl border border-dashed border-[#272b2b] bg-[#141717] flex flex-col items-center justify-center gap-3 text-center">
+          <div className="w-12 h-12 rounded-xl bg-[#1e2424] text-[#2dd4bf] border border-[#272b2b] flex items-center justify-center">
             <FileEdit className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">No drafts created yet</p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-sm leading-relaxed">
+            <p className="font-serif text-base text-white">No drafts created yet</p>
+            <p className="text-xs text-[#879292] mt-1 max-w-sm leading-relaxed">
               Draft civil compensation notices, bail applications, affidavits, or pleadings in the Draft Studio.
             </p>
           </div>
           <Button
             size="sm"
             onClick={handleCreateNew}
-            className="mt-2 h-8 text-xs bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold gap-1.5"
+            className="mt-2 h-8 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             Create First Draft
@@ -153,7 +153,7 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
         </div>
       ) : (
         /* Drafts List */
-        <div className="bg-[#111116] border border-white/5 rounded-xl overflow-hidden shadow-xl divide-y divide-white/5">
+        <div className="bg-[#141717] border border-[#272b2b] rounded-xl overflow-hidden shadow-xl divide-y divide-[#272b2b]">
           {draftsList.map(draft => (
             <div
               key={draft.id}
@@ -161,22 +161,22 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
               className="group flex items-center gap-4 p-4 hover:bg-white/[0.02] transition-all cursor-pointer"
             >
               {/* Draft Icon */}
-              <div className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/5 flex items-center justify-center text-lg flex-shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-[#1a1e1e] border border-[#272b2b] flex items-center justify-center text-lg flex-shrink-0">
                 {DRAFT_TYPE_ICONS[draft.draft_type] ?? '📄'}
               </div>
 
               {/* Draft Details */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <p className="text-sm font-medium text-foreground truncate group-hover:text-[#4ADE80] transition-colors">
+                  <p className="text-sm font-medium text-white truncate group-hover:text-[#2dd4bf] transition-colors">
                     {draft.title}
                   </p>
                   <Badge variant="outline" className={`text-[10px] font-mono h-4.5 ${STATUS_COLORS[draft.status] ?? ''}`}>
                     {draft.status.replace('_', ' ')}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span className="font-medium text-foreground/80">
+                <div className="flex items-center gap-2 text-[11px] text-[#879292]">
+                  <span className="font-medium text-white/80">
                     {DRAFT_TYPE_LABELS[draft.draft_type] ?? 'Document'}
                   </span>
                   {draft.description && (
@@ -190,7 +190,7 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
 
               {/* Timestamp & Actions */}
               <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="flex items-center gap-1 text-[11px] text-muted-foreground/60">
+                <div className="flex items-center gap-1 text-[11px] font-mono text-[#879292]">
                   <Clock className="w-3 h-3" />
                   {formatDistanceToNow(parseISO(draft.updated_at), { addSuffix: true })}
                 </div>
@@ -202,7 +202,7 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
                     e.stopPropagation();
                     handleOpenDraft(draft);
                   }}
-                  className="h-7 px-2 text-xs text-[#4ADE80] hover:bg-[#4ADE80]/10 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                  className="h-7 px-2 text-xs text-[#2dd4bf] hover:bg-[#2dd4bf]/10 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Open
@@ -213,13 +213,13 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
                     e.stopPropagation();
                     setDraftToDelete(draft);
                   }}
-                  className="text-muted-foreground hover:text-red-400 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  className="text-[#879292] hover:text-red-400 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   title="Delete Draft"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
 
-                <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+                <ChevronRight className="w-4 h-4 text-[#879292] group-hover:text-white transition-colors" />
               </div>
             </div>
           ))}
@@ -228,29 +228,29 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
 
       {/* ── Delete Confirmation Modal ────────────────────────────────────── */}
       <Dialog open={!!draftToDelete} onOpenChange={open => !open && !deleting && setDraftToDelete(null)}>
-        <DialogContent className="sm:max-w-md bg-[#16161a] border-white/10 text-foreground p-6 rounded-2xl shadow-2xl">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader className="gap-3">
             <div className="w-11 h-11 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
               <Trash2 className="w-5 h-5" />
             </div>
             <div>
-              <DialogTitle className="text-base font-semibold text-foreground">
+              <DialogTitle>
                 Delete Legal Draft
               </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                Are you sure you want to delete <span className="font-semibold text-foreground">"{draftToDelete?.title}"</span>? This action cannot be undone and all draft history will be permanently deleted.
+              <DialogDescription>
+                Are you sure you want to delete <span className="font-semibold text-white">"{draftToDelete?.title}"</span>? This action cannot be undone and all draft history will be permanently deleted.
               </DialogDescription>
             </div>
           </DialogHeader>
 
-          <DialogFooter className="mt-6 flex flex-row items-center justify-end gap-2.5 bg-transparent border-t border-white/5 pt-4 -mx-6 -mb-6 px-6">
+          <DialogFooter className="mt-6 flex flex-row items-center justify-end gap-2.5">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setDraftToDelete(null)}
               disabled={deleting}
-              className="h-9 px-4 text-xs border-white/10 hover:bg-white/5 text-foreground rounded-lg cursor-pointer"
+              className="h-9 px-4 text-xs border-[#272b2b] text-[#879292] hover:bg-[#1a1e1e] hover:text-white rounded-lg cursor-pointer"
             >
               Cancel
             </Button>

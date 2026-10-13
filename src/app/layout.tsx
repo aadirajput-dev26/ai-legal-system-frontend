@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
+import { Plus_Jakarta_Sans, Outfit, Newsreader } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { OrgProvider } from "@/lib/org-context";
@@ -16,12 +16,18 @@ const heading = Outfit({
   subsets: ["latin"],
 });
 
+const serif = Newsreader({
+  variable: "--font-serif",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+});
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0a0a0f",
+  themeColor: "#0d0f0f",
 };
 
 export const metadata: Metadata = {
@@ -33,9 +39,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${heading.variable} h-full antialiased dark`}
+      className={`${sans.variable} ${heading.variable} ${serif.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col font-sans">
+      <body className="min-h-full flex flex-col font-sans bg-[#0d0f0f] text-[#f3f4f5]">
         <AuthProvider>
           <OrgProvider>
             <BillingProvider>
