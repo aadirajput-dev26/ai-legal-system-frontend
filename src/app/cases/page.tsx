@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { 
   Search, 
   Plus, 
@@ -428,7 +429,7 @@ export default function CasesPage() {
   };
 
   return (
-    <AppShell>
+    <AppShell caseId={selectedCase?.id}>
       <div className="flex h-[calc(100vh-3.25rem)] overflow-hidden">
         
         {/* ── Main Left Pane: Matters List & Filters ──────────────────── */}
@@ -443,13 +444,29 @@ export default function CasesPage() {
               </p>
             </div>
 
-            {/* New Matter Button */}
-            <Button 
-              onClick={() => setNewCaseModalOpen(true)}
-              className="h-9 bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium rounded-lg shadow-none text-xs flex-shrink-0 self-start sm:self-auto px-4"
-            >
-              <Plus className="w-4 h-4 mr-1 stroke-[2.5]" /> New matter
-            </Button>
+            {/* Actions: AI Chatbot & New Matter */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <Button 
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('open-ai-chat', {
+                      detail: { caseId: selectedCase?.id, caseTitle: selectedCase?.title }
+                    }));
+                  }
+                }}
+                className="h-9 bg-teal-500/10 hover:bg-teal-500/20 text-[#0d9488] dark:text-[#2dd4bf] border border-teal-500/30 font-semibold rounded-lg text-xs flex items-center gap-1.5 px-3.5 cursor-pointer transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> AI Chatbot
+              </Button>
+
+              <Button 
+                onClick={() => setNewCaseModalOpen(true)}
+                className="h-9 bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold rounded-lg shadow-none text-xs flex-shrink-0 self-start sm:self-auto px-4 cursor-pointer"
+              >
+                <Plus className="w-4 h-4 mr-1 stroke-[2.5]" /> New matter
+              </Button>
+            </div>
           </div>
 
           {/* Filters Bar */}
@@ -528,17 +545,17 @@ export default function CasesPage() {
                     className={`
                       px-4 py-3.5 rounded-lg cursor-pointer transition-all text-xs border-l-2
                       ${isSelected 
-                        ? 'bg-[#151919] border-[#f59e0b]' 
-                        : 'border-transparent hover:bg-[#141717]/80 hover:border-[#2a3030]'}
+                        ? 'bg-amber-500/10 dark:bg-[#151919] border-[#f59e0b]' 
+                        : 'border-transparent hover:bg-black/5 dark:hover:bg-[#141717]/80 hover:border-slate-300 dark:hover:border-[#2a3030]'}
                     `}
                   >
                     <div className="flex items-center justify-between gap-4">
                       {/* Left: Title and Ref */}
                       <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-sm text-[#f3f4f5] truncate">
+                        <div className="font-semibold text-sm text-foreground truncate">
                           {c.title}
                         </div>
-                        <div className="text-xs text-[#879292] truncate mt-0.5">
+                        <div className="text-xs text-muted-foreground truncate mt-0.5">
                           {[c.case_number, c.court].filter(Boolean).join(' · ')}
                         </div>
                       </div>
@@ -554,13 +571,13 @@ export default function CasesPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="text-right text-[#6f7a7a] text-[11px] flex-shrink-0">
+                        <div className="text-right text-muted-foreground text-[11px] flex-shrink-0">
                           No date
                         </div>
                       )}
 
                       {/* Right: Stage */}
-                      <div className="text-right w-24 flex-shrink-0 text-xs text-[#879292] truncate">
+                      <div className="text-right w-24 flex-shrink-0 text-xs text-muted-foreground truncate">
                         {c.stage || 'Pleadings'}
                       </div>
                     </div>
@@ -573,59 +590,73 @@ export default function CasesPage() {
 
         {/* ── Desktop Right Pane: Selected Case Preview (Matches Artifact) ──────────────── */}
         {selectedCase ? (
-          <aside className="hidden lg:flex w-[400px] xl:w-[440px] flex-col bg-[#0f1212] border-l border-[#1a1e1e] h-full overflow-hidden flex-shrink-0">
+          <aside className="hidden lg:flex w-[400px] xl:w-[440px] flex-col bg-card dark:bg-[#0f1212] border-l border-border dark:border-[#1a1e1e] h-full overflow-hidden flex-shrink-0">
             <div className="p-7 flex-1 overflow-y-auto space-y-6">
               
               {/* Header Label */}
-              <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">
+              <div className="text-[11px] font-mono tracking-wider uppercase text-muted-foreground">
                 PREVIEW
               </div>
 
               {/* Title & Case Number */}
               <div>
-                <h2 className="text-2xl font-serif text-[#f3f4f5] tracking-tight leading-snug">
+                <h2 className="text-2xl font-serif text-foreground tracking-tight leading-snug">
                   {selectedCase.title}
                 </h2>
-                <div className="text-xs text-[#879292] font-mono mt-1">
+                <div className="text-xs text-muted-foreground font-mono mt-1">
                   {selectedCase.case_number || 'QA/CIV/2026/001'}
                 </div>
               </div>
 
               {/* AI Summary Card: Written by LegalDesk */}
-              <div className="bg-[#121422] border border-[#2b3360] rounded-xl p-4.5 space-y-2 relative">
-                <div className="text-[10px] font-mono tracking-wider uppercase text-[#818cf8] font-bold">
+              <div className="bg-indigo-50/90 dark:bg-[#121422] border border-indigo-200 dark:border-[#2b3360] rounded-xl p-4.5 space-y-2 relative shadow-sm">
+                <div className="text-[10px] font-mono tracking-wider uppercase text-indigo-700 dark:text-[#818cf8] font-bold">
                   SUMMARY — WRITTEN BY LEGALDESK
                 </div>
-                <p className="text-xs leading-relaxed text-[#c5c8e0]">
+                <p className="text-xs leading-relaxed text-indigo-950 dark:text-[#c5c8e0]">
                   {selectedCase.description || 'Commercial fit-out dispute. Pleadings registered, reconciliation in progress. All initial filings verified by LegalDesk.'}
                 </p>
               </div>
 
               {/* Metadata Table */}
-              <div className="border-t border-[#1e2323] pt-4">
+              <div className="border-t border-border dark:border-[#1e2323] pt-4">
                 <div className="grid grid-cols-[80px_1fr] gap-y-3 text-xs">
-                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">COURT</div>
-                  <div className="text-[#f3f4f5] font-medium">{selectedCase.court || 'Commercial Court'}</div>
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-muted-foreground">COURT</div>
+                  <div className="text-foreground font-medium">{selectedCase.court || 'Commercial Court'}</div>
                   
-                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">JUDGE</div>
-                  <div className="text-[#f3f4f5]">{selectedCase.judge || 'Judge Mira Sen'}</div>
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-muted-foreground">JUDGE</div>
+                  <div className="text-foreground">{selectedCase.judge || 'Judge Mira Sen'}</div>
                   
-                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">CLIENT</div>
-                  <div className="text-[#f3f4f5]">{selectedCase.client_name || 'Aster Textiles Pvt Ltd'}</div>
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-muted-foreground">CLIENT</div>
+                  <div className="text-foreground">{selectedCase.client_name || 'Aster Textiles Pvt Ltd'}</div>
                   
-                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">OPPOSING</div>
-                  <div className="text-[#f3f4f5]">{selectedCase.opposing_party || 'Cedar Retail LLP'}</div>
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-muted-foreground">OPPOSING</div>
+                  <div className="text-foreground">{selectedCase.opposing_party || 'Cedar Retail LLP'}</div>
                   
-                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">FILED</div>
-                  <div className="text-[#f3f4f5]">{formatDate(selectedCase.filing_date)}</div>
+                  <div className="text-[11px] font-mono tracking-wider uppercase text-muted-foreground">FILED</div>
+                  <div className="text-foreground">{formatDate(selectedCase.filing_date)}</div>
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="pt-2 space-y-2">
                 <Button 
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('open-ai-chat', {
+                        detail: { caseId: selectedCase.id, caseTitle: selectedCase.title }
+                      }));
+                    }
+                  }}
+                  className="w-full bg-gradient-to-r from-teal-500/15 via-emerald-500/15 to-teal-500/15 hover:from-teal-500/25 hover:to-emerald-500/25 border border-teal-500/30 text-teal-700 dark:text-[#2dd4bf] font-semibold h-10 rounded-lg text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all"
+                >
+                  <Sparkles className="w-4 h-4 text-[#0d9488] dark:text-[#2dd4bf]" />
+                  Chat with AI about this Matter
+                </Button>
+
+                <Button 
                   onClick={() => router.push(`/cases/${selectedCase.id}`)} 
-                  className="w-full bg-[#1b2020] hover:bg-[#232929] border border-[#2c3333] text-[#f3f4f5] font-medium h-10 rounded-lg text-xs flex items-center justify-center gap-2"
+                  className="w-full bg-card hover:bg-accent border border-border text-foreground font-medium h-10 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                 >
                   Open brief &rarr;
                 </Button>
@@ -1090,6 +1121,20 @@ export default function CasesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ── CONFIRM DELETE MATTER MODAL ─────────────────────────────── */}
+      <ConfirmModal
+        open={deleteConfirmModalOpen}
+        onOpenChange={setDeleteConfirmModalOpen}
+        title="Delete Matter?"
+        description={
+          <>
+            Are you sure you want to delete <span className="font-semibold text-foreground">{selectedCase?.title}</span>? This action will permanently remove all associated hearings, tasks, drafts, and records for this matter.
+          </>
+        }
+        confirmLabel="Delete Matter"
+        onConfirm={handleDeleteCase}
+      />
 
     </AppShell>
   );

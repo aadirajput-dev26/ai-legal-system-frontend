@@ -110,7 +110,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="max-w-6xl mx-auto px-6 sm:px-8 py-8 space-y-10">
+      <div className="w-full px-6 sm:px-8 py-8 space-y-10">
         
         {dataLoading ? (
           <div className="flex items-center justify-center py-32">

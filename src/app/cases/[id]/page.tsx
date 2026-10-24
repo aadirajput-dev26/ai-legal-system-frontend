@@ -39,6 +39,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { cases as casesApi, tasks as tasksApi, documents as docsApi, hearings as hearingsApi, tools as toolsApi } from '@/lib/api';
 import { CaseDraftsTab } from '@/components/drafts/CaseDraftsTab';
 import { CaseItem, TaskItem, HearingItem, DocumentItem } from '@/lib/types';
@@ -79,6 +80,14 @@ export default function CaseDetailPage() {
   const [hearingModalOpen, setHearingModalOpen] = useState(false);
   const [editCaseModalOpen, setEditCaseModalOpen] = useState(false);
   const [docModalOpen, setDocModalOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [deletingDoc, setDeletingDoc] = useState(false);
+  const [toolToDelete, setToolToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [deletingTool, setDeletingTool] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [deletingTask, setDeletingTask] = useState(false);
+  const [docToServe, setDocToServe] = useState<{ id: string; title: string } | null>(null);
+  const [servingDoc, setServingDoc] = useState(false);
 
   // New Task Form
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -231,13 +240,17 @@ export default function CaseDetailPage() {
     }
   };
 
-  const handleDeleteTool = async (scriptId: string) => {
-    if (!confirm('Are you sure you want to delete this tool?')) return;
+  const handleConfirmDeleteTool = async () => {
+    if (!toolToDelete) return;
     try {
-      await toolsApi.delete(caseId, scriptId);
+      setDeletingTool(true);
+      await toolsApi.delete(caseId, toolToDelete.id);
+      setToolToDelete(null);
       fetchToolsData();
     } catch (err) {
       console.error('Failed to delete tool:', err);
+    } finally {
+      setDeletingTool(false);
     }
   };
 
@@ -284,12 +297,17 @@ export default function CaseDetailPage() {
   };
 
   // Delete task
-  const handleDeleteTask = async (taskId: string) => {
+  const handleConfirmDeleteTask = async () => {
+    if (!taskToDelete) return;
     try {
-      await tasksApi.delete(caseId, taskId);
-      setTasks(prev => prev.filter(t => t.id !== taskId));
+      setDeletingTask(true);
+      await tasksApi.delete(caseId, taskToDelete.id);
+      setTasks(prev => prev.filter(t => t.id !== taskToDelete.id));
+      setTaskToDelete(null);
     } catch (err) {
       console.error('Failed to delete task:', err);
+    } finally {
+      setDeletingTask(false);
     }
   };
 
@@ -412,25 +430,32 @@ export default function CaseDetailPage() {
     }
   };
 
-  const handleDeleteDoc = async (resourceId: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
+  const handleConfirmDeleteDoc = async () => {
+    if (!docToDelete) return;
     try {
-      await docsApi.delete(caseId, resourceId);
+      setDeletingDoc(true);
+      await docsApi.delete(caseId, docToDelete.id);
+      setDocToDelete(null);
       fetchCaseData();
     } catch (err) {
       console.error('Failed to delete document:', err);
+    } finally {
+      setDeletingDoc(false);
     }
   };
 
-  const handleServeDoc = async (resourceId: string) => {
-    if (!confirm('Are you sure you want to serve this document to the opposing counsel? They will receive an email.')) return;
+  const handleConfirmServeDoc = async () => {
+    if (!docToServe) return;
     try {
-      // Show loading toast or state if we had one
-      await docsApi.serve(caseId, resourceId);
+      setServingDoc(true);
+      await docsApi.serve(caseId, docToServe.id);
+      setDocToServe(null);
       alert('Document has been successfully served to the opposing counsel.');
     } catch (err) {
       console.error('Failed to serve document:', err);
       alert('Failed to serve document. Ensure contact details are filled.');
+    } finally {
+      setServingDoc(false);
     }
   };
 
@@ -606,7 +631,7 @@ export default function CaseDetailPage() {
         { label: 'Hearing brief' },
       ]}
     >
-      <div className="flex flex-col h-full max-w-6xl mx-auto px-6 sm:px-8 py-8 space-y-6">
+      <div className="flex flex-col h-full w-full px-6 sm:px-8 py-8 space-y-6">
         
         {/* ── Top Header Section (Matches Hearing Brief in Artifact) ──── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
@@ -616,29 +641,43 @@ export default function CaseDetailPage() {
                 {format(hearingDate, 'EEE d MMM · HH:mm').toUpperCase()} · {daysLabel}
               </div>
             )}
-            <h1 className="text-3xl sm:text-4xl font-serif tracking-tight text-[#f3f4f5]">
+            <h1 className="text-3xl sm:text-4xl font-serif tracking-tight text-foreground">
               Hearing brief
             </h1>
-            <p className="text-xs text-[#879292]">
+            <p className="text-xs text-muted-foreground">
               {[caseData.court, caseData.stage || 'Pleadings', caseData.judge ? `before Judge ${caseData.judge}` : '']
                 .filter(Boolean)
                 .join(' · ')}
             </p>
           </div>
           
-          <div className="flex items-center gap-3 self-start md:self-auto">
+          <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
+            <Button 
+              size="sm"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('open-ai-chat', {
+                    detail: { caseId, caseTitle: caseData?.title }
+                  }));
+                }
+              }}
+              className="h-9 px-3.5 text-xs bg-teal-500/10 hover:bg-teal-500/20 text-[#0d9488] dark:text-[#2dd4bf] border border-teal-500/30 font-semibold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              AI Chatbot
+            </Button>
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => alert('Exporting hearing brief...')}
-              className="h-9 px-4 text-xs bg-[#151919] hover:bg-[#1f2424] border-[#272e2e] text-[#f3f4f5] rounded-lg"
+              className="h-9 px-4 text-xs bg-card hover:bg-accent border border-border text-foreground rounded-lg shadow-sm cursor-pointer"
             >
               Export
             </Button>
             <Button 
               size="sm"
               onClick={() => alert('Hearing brief approved for filing.')}
-              className="h-9 px-5 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium rounded-lg shadow-sm"
+              className="h-9 px-5 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium rounded-lg shadow-sm cursor-pointer"
             >
               Approve
             </Button>
@@ -922,7 +961,7 @@ export default function CaseDetailPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleServeDoc(d.id || d._id || '')}
+                        onClick={() => setDocToServe({ id: d.id || d._id || '', title: d.title || 'Document' })}
                         className="w-7 h-7 text-muted-foreground hover:text-green-400"
                         title="Serve to Opposing Counsel"
                       >
@@ -932,8 +971,8 @@ export default function CaseDetailPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDeleteDoc(d.id || d._id || '')}
-                        className="w-7 h-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => setDocToDelete({ id: d.id || d._id || '', title: d.title || 'Document' })}
+                        className="w-7 h-7 text-muted-foreground hover:text-destructive cursor-pointer"
                         title="Delete Document"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -994,8 +1033,9 @@ export default function CaseDetailPage() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => handleDeleteTask(t.id)}
-                        className="w-7 h-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => setTaskToDelete({ id: t.id, title: t.title })}
+                        className="w-7 h-7 text-muted-foreground hover:text-destructive cursor-pointer"
+                        title="Delete Task"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -1108,8 +1148,9 @@ export default function CaseDetailPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDeleteTool(tool.script_id)}
-                          className="w-7 h-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => setToolToDelete({ id: tool.script_id, title: tool.title || 'Automation Tool' })}
+                          className="w-7 h-7 text-muted-foreground hover:text-destructive cursor-pointer"
+                          title="Delete Tool"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -1540,6 +1581,67 @@ export default function CaseDetailPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ── CONFIRM DELETE DOCUMENT MODAL ──────────────────────────── */}
+      <ConfirmModal
+        open={!!docToDelete}
+        onOpenChange={(open) => !open && setDocToDelete(null)}
+        title="Delete Document?"
+        description={
+          <>
+            Are you sure you want to delete <span className="font-semibold text-foreground">{docToDelete?.title}</span>? This file will be permanently removed from this matter and will no longer be available for citing.
+          </>
+        }
+        confirmLabel="Delete Document"
+        loading={deletingDoc}
+        onConfirm={handleConfirmDeleteDoc}
+      />
+
+      {/* ── CONFIRM DELETE TOOL MODAL ──────────────────────────────── */}
+      <ConfirmModal
+        open={!!toolToDelete}
+        onOpenChange={(open) => !open && setToolToDelete(null)}
+        title="Delete Tool?"
+        description={
+          <>
+            Are you sure you want to delete <span className="font-semibold text-foreground">{toolToDelete?.title}</span>? This automation script will be permanently detached from this matter.
+          </>
+        }
+        confirmLabel="Delete Tool"
+        loading={deletingTool}
+        onConfirm={handleConfirmDeleteTool}
+      />
+
+      {/* ── CONFIRM DELETE TASK MODAL ──────────────────────────────── */}
+      <ConfirmModal
+        open={!!taskToDelete}
+        onOpenChange={(open) => !open && setTaskToDelete(null)}
+        title="Delete Task?"
+        description={
+          <>
+            Are you sure you want to delete <span className="font-semibold text-foreground">{taskToDelete?.title}</span>? This task will be permanently removed.
+          </>
+        }
+        confirmLabel="Delete Task"
+        loading={deletingTask}
+        onConfirm={handleConfirmDeleteTask}
+      />
+
+      {/* ── CONFIRM SERVE DOCUMENT MODAL ───────────────────────────── */}
+      <ConfirmModal
+        open={!!docToServe}
+        onOpenChange={(open) => !open && setDocToServe(null)}
+        title="Serve Document to Opposing Counsel?"
+        variant="default"
+        description={
+          <>
+            Are you sure you want to serve <span className="font-semibold text-foreground">{docToServe?.title}</span> to the opposing counsel? They will receive formal email notification.
+          </>
+        }
+        confirmLabel="Serve Document"
+        loading={servingDoc}
+        onConfirm={handleConfirmServeDoc}
+      />
 
     </AppShell>
   );

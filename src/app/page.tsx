@@ -31,7 +31,8 @@ import {
   Lock,
   Activity,
   Layers,
-  ArrowUpRight
+  ArrowUpRight,
+  Wallet
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -106,11 +107,11 @@ export default function HomePage() {
 
           {/* Navigation Anchors */}
           <nav className="hidden md:flex items-center gap-7 text-xs font-medium text-[#879292]">
-            <a href="#product" className="hover:text-white transition-colors">Product</a>
-            <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#roi" className="hover:text-white transition-colors">ROI Calculator</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+            <a href="#product" className="hover:text-[#2dd4bf] transition-colors">Product</a>
+            <a href="#features" className="hover:text-[#2dd4bf] transition-colors">Features</a>
+            <a href="#roi" className="hover:text-[#2dd4bf] transition-colors">ROI Calculator</a>
+            <a href="#pricing" className="hover:text-[#2dd4bf] transition-colors">Pricing</a>
+            <a href="#faq" className="hover:text-[#2dd4bf] transition-colors">FAQ</a>
           </nav>
 
           {/* User Auth Buttons */}
@@ -127,13 +128,13 @@ export default function HomePage() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="text-xs font-medium text-[#879292] hover:text-white px-3 py-2 rounded-lg hover:bg-[#141717] transition-all"
+                  className="text-xs font-medium text-[#a0abab] hover:text-white px-3.5 py-2 rounded-lg hover:bg-white/[0.08] transition-all cursor-pointer"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/signup"
-                  className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs px-4 py-2 rounded-lg transition-all shadow-[0_0_15px_rgba(45,212,191,0.2)] flex items-center gap-1.5 group"
+                  className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs px-4 py-2 rounded-lg transition-all shadow-[0_0_15px_rgba(45,212,191,0.2)] hover:shadow-[0_0_20px_rgba(45,212,191,0.35)] flex items-center gap-1.5 group cursor-pointer"
                 >
                   <span>Start Free Trial</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -208,234 +209,284 @@ export default function HomePage() {
 
       </section>
 
-      {/* ── REAL PRODUCT SCREEN SHOWCASE (Identical to Actual Product) ── */}
+      {/* ── REAL PRODUCT SCREEN SHOWCASE (Identical to Actual Internal Product) ── */}
       <section id="product" className="relative z-10 py-10 px-3 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           
-          <div className="text-center mb-6">
-            <span className="text-[10px] font-mono tracking-widest uppercase text-[#2dd4bf] bg-[#152321] px-2.5 py-1 rounded-full border border-[#2dd4bf]/20">
-              Inside the Product
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-serif text-white mt-2">
-              The real LegalDesk workstation.
-            </h2>
-            <p className="text-xs text-[#879292] mt-1">
-              Click the tabs below to explore the actual interfaces used by practicing counsel.
-            </p>
+          {/* Header & Screen Selector Tabs above the screen */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#2dd4bf] animate-pulse" />
+                <span className="text-[11px] font-mono tracking-widest uppercase text-[#2dd4bf] font-medium">
+                  Live Workstation Interface
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-serif text-white tracking-tight">
+                The actual LegalDesk workstation.
+              </h2>
+              <p className="text-xs text-[#879292] mt-1">
+                Explore the exact interface used internally by counsel — fully interactive.
+              </p>
+            </div>
+
+            {/* Screen Switcher Tabs */}
+            <div className="flex items-center gap-1 bg-[#121515] p-1 rounded-xl border border-[#222828] shadow-inner self-start md:self-auto">
+              {[
+                { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                { id: 'cases', label: 'Matters', icon: FolderClosed },
+                { id: 'drafts', label: 'Drafting Studio', icon: FileEdit },
+                { id: 'billing', label: 'Token Ledger', icon: CreditCard },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveScreen(tab.id as any)}
+                  className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                    activeScreen === tab.id
+                      ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30 shadow-[0_0_12px_rgba(45,212,191,0.15)] font-semibold'
+                      : 'text-[#879292] hover:text-white hover:bg-[#181c1c]'
+                  }`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Product Window Shell */}
-          <div className="rounded-2xl border border-[#232727] bg-[#0c0e0e] shadow-[0_20px_70px_rgba(0,0,0,0.85)] overflow-hidden">
+          {/* Product Workstation Shell (100% Identical to Internal AppShell) */}
+          <div className="rounded-2xl border border-[#232727] bg-[#0c0e0e] shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden">
             
-            {/* Window Chrome Header Bar */}
-            <div className="h-11 border-b border-[#1c2020] bg-[#090b0b] px-4 flex items-center justify-between">
-              
-              {/* Left traffic dots + breadcrumbs */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444]/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#eab308]/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#22c55e]/80" />
+            {/* ── Internal Top Header Bar (AppShell Header) ── */}
+            <div className="h-13 bg-[#0d0f0f]/95 border-b border-[#1a1e1e] flex items-center justify-between px-5 sm:px-7">
+              {/* Left: Breadcrumbs & AI Status Pill */}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-[#879292] font-normal truncate">
+                  <span className="truncate">Test Law Chambers</span>
+                  <span className="text-[#3a4242]">/</span>
+                  <span className="text-[#f3f4f5] font-medium capitalize">
+                    {activeScreen === 'cases' ? 'Matters' : activeScreen === 'drafts' ? 'Drafts' : activeScreen === 'billing' ? 'Billing' : 'Dashboard'}
+                  </span>
                 </div>
-                <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-mono text-[#6f7a7a] pl-2 border-l border-[#1a1e1e]">
-                  <span className="text-[#879292]">Test Law Chambers</span>
-                  <span>/</span>
-                  <span className="text-[#2dd4bf] capitalize">{activeScreen}</span>
+
+                {/* AI Status Badge */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#10241f] text-[#34d399] border-[#1d4438]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#34d399]" />
+                  <span>AI active</span>
                 </div>
               </div>
 
-              {/* Real Screen Switcher Tabs */}
-              <div className="flex items-center gap-1 bg-[#121515] p-0.5 rounded-lg border border-[#1e2222]">
-                <button
-                  onClick={() => setActiveScreen('dashboard')}
-                  className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeScreen === 'dashboard'
-                      ? 'bg-[#1a2321] text-[#2dd4bf] border border-[#2dd4bf]/20'
-                      : 'text-[#879292] hover:text-white'
-                  }`}
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Dashboard</span>
-                </button>
-                <button
-                  onClick={() => setActiveScreen('drafts')}
-                  className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeScreen === 'drafts'
-                      ? 'bg-[#1a2321] text-[#2dd4bf] border border-[#2dd4bf]/20'
-                      : 'text-[#879292] hover:text-white'
-                  }`}
-                >
-                  <FileEdit className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Drafting Studio</span>
-                </button>
-                <button
-                  onClick={() => setActiveScreen('cases')}
-                  className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeScreen === 'cases'
-                      ? 'bg-[#1a2321] text-[#2dd4bf] border border-[#2dd4bf]/20'
-                      : 'text-[#879292] hover:text-white'
-                  }`}
-                >
-                  <FolderClosed className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Matters</span>
-                </button>
+              {/* Right: Tokens Display & Add Tokens Button */}
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="tracking-wider uppercase text-[#6f7a7a] font-medium">TOKENS</span>
+                  <span className="font-semibold tabular-nums text-[#f3f4f5]">42,850</span>
+                </div>
+
                 <button
                   onClick={() => setActiveScreen('billing')}
-                  className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeScreen === 'billing'
-                      ? 'bg-[#1a2321] text-[#2dd4bf] border border-[#2dd4bf]/20'
-                      : 'text-[#879292] hover:text-white'
-                  }`}
+                  className="text-xs font-medium bg-[#151818] hover:bg-[#1d2222] border border-[#262c2c] text-[#f3f4f5] px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                 >
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Token Ledger</span>
+                  Add tokens
                 </button>
-              </div>
-
-              {/* Active Token Balance Badge */}
-              <div className="flex items-center gap-1.5 text-[10px] font-mono text-[#2dd4bf] bg-[#152321] px-2 py-0.5 rounded border border-[#2dd4bf]/30">
-                <Zap className="w-3 h-3 text-[#2dd4bf]" />
-                <span>42,850 TOKENS</span>
               </div>
             </div>
 
-            {/* Window Body: Real AppShell Layout */}
-            <div className="flex min-h-[480px]">
+            {/* ── Internal Workstation Body: Left Dock + Main Canvas ── */}
+            <div className="flex min-h-[580px]">
               
-              {/* Actual Left Icon Dock */}
-              <div className="w-12 sm:w-14 bg-[#0a0c0c] border-r border-[#1a1e1e] flex flex-col justify-between items-center py-3 shrink-0">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#2dd4bf] text-[#091b18] flex items-center justify-center shadow-sm">
-                    <Scale className="w-4 h-4 stroke-[2.2]" />
-                  </div>
-                  <div className="w-5 h-px bg-[#1e2323]" />
-                  <div className="flex flex-col gap-1.5">
-                    <button 
-                      onClick={() => setActiveScreen('dashboard')}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
-                        activeScreen === 'dashboard' ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30' : 'text-[#6f7a7a] hover:text-white'
-                      }`}
-                    >
-                      <LayoutDashboard className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => setActiveScreen('cases')}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
-                        activeScreen === 'cases' ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30' : 'text-[#6f7a7a] hover:text-white'
-                      }`}
-                    >
-                      <FolderClosed className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => setActiveScreen('drafts')}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
-                        activeScreen === 'drafts' ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30' : 'text-[#6f7a7a] hover:text-white'
-                      }`}
-                    >
-                      <FileEdit className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => setActiveScreen('billing')}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
-                        activeScreen === 'billing' ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30' : 'text-[#6f7a7a] hover:text-white'
-                      }`}
-                    >
-                      <CreditCard className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#1b2020] border border-[#2a3030] text-[#c0c8c8] text-[9px] font-semibold flex items-center justify-center">
-                    RS
-                  </div>
-                </div>
-              </div>
-
-              {/* Main Content Area: Exact UI Screen Representations */}
-              <div className="flex-1 bg-[#0d0f0f] p-4 sm:p-6 overflow-hidden">
+              {/* Left Icon Dock (100% Identical to AppShell Left Sidebar) */}
+              <aside className="w-14 sm:w-16 bg-[#0c0e0e] border-r border-[#1a1e1e] flex flex-col justify-between items-center py-3.5 shrink-0">
                 
-                {/* 1. ACTUAL DASHBOARD VIEW */}
+                {/* Top: Brand Squircle & Main Nav */}
+                <div className="flex flex-col items-center gap-3.5 w-full">
+                  {/* Mint Scales Squircle */}
+                  <div
+                    onClick={() => setActiveScreen('dashboard')}
+                    className="w-10 h-10 rounded-xl bg-[#2dd4bf] text-[#091b18] flex items-center justify-center shadow-[0_0_15px_rgba(45,212,191,0.2)] hover:opacity-95 transition-all cursor-pointer"
+                    title="Dashboard"
+                  >
+                    <Scale className="w-5 h-5 stroke-[2.2]" />
+                  </div>
+
+                  <div className="w-8 h-px bg-[#1e2323] my-0.5" />
+
+                  {/* Nav Icons */}
+                  <nav className="flex flex-col items-center gap-1.5 w-full px-2">
+                    {[
+                      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+                      { id: 'cases', icon: FolderClosed, label: 'Matters' },
+                      { id: 'calendar', icon: Calendar, label: 'Calendar' },
+                      { id: 'documents', icon: FileText, label: 'Documents' },
+                      { id: 'drafts', icon: FileEdit, label: 'Drafts' },
+                      { id: 'tools', icon: Cpu, label: 'Tools' },
+                    ].map((item) => {
+                      const isActive = 
+                        (item.id === 'dashboard' && activeScreen === 'dashboard') ||
+                        (item.id === 'cases' && activeScreen === 'cases') ||
+                        (item.id === 'drafts' && activeScreen === 'drafts');
+
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            if (item.id === 'dashboard' || item.id === 'cases' || item.id === 'drafts') {
+                              setActiveScreen(item.id as any);
+                            }
+                          }}
+                          title={item.label}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer ${
+                            isActive
+                              ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30 shadow-[0_0_12px_rgba(45,212,191,0.1)]'
+                              : 'text-[#6f7a7a] hover:text-[#e2e8e8] hover:bg-[#151818]'
+                          }`}
+                        >
+                          <item.icon className="w-[18px] h-[18px]" />
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+
+                {/* Bottom Cluster: Notifications, Billing, Settings, Profile */}
+                <div className="flex flex-col items-center gap-2 w-full px-2">
+                  {/* Notifications with Badge */}
+                  <div
+                    title="Notifications"
+                    className="relative w-10 h-10 rounded-xl flex items-center justify-center text-[#6f7a7a] hover:text-[#e2e8e8] hover:bg-[#151818] transition-all cursor-pointer"
+                  >
+                    <Bell className="w-[18px] h-[18px]" />
+                    <span className="absolute top-1.5 right-1.5 px-1 min-w-[14px] h-[14px] bg-[#2dd4bf] text-[#091b18] text-[9px] font-bold rounded-full flex items-center justify-center">
+                      3
+                    </span>
+                  </div>
+
+                  {/* Billing */}
+                  <button
+                    onClick={() => setActiveScreen('billing')}
+                    title="Billing & Tokens"
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                      activeScreen === 'billing'
+                        ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30 shadow-[0_0_12px_rgba(45,212,191,0.1)]'
+                        : 'text-[#6f7a7a] hover:text-[#e2e8e8] hover:bg-[#151818]'
+                    }`}
+                  >
+                    <CreditCard className="w-[18px] h-[18px]" />
+                  </button>
+
+                  {/* Settings */}
+                  <div
+                    title="Settings"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-[#6f7a7a] hover:text-[#e2e8e8] hover:bg-[#151818] transition-all cursor-pointer"
+                  >
+                    <Settings className="w-[18px] h-[18px]" />
+                  </div>
+
+                  {/* User Profile Avatar with Initials DS */}
+                  <div
+                    className="w-8 h-8 rounded-full bg-[#1b2020] border border-[#2a3030] text-[#c0c8c8] text-xs font-semibold flex items-center justify-center hover:border-[#2dd4bf]/50 transition-colors mt-1 cursor-pointer"
+                    title="Senior Advocate"
+                  >
+                    DS
+                  </div>
+                </div>
+
+              </aside>
+
+              {/* ── Internal Main Content Area ── */}
+              <div className="flex-1 bg-[#0d0f0f] p-5 sm:p-7 overflow-y-auto max-h-[720px]">
+                
+                {/* 1. ACTUAL INTERNAL DASHBOARD SCREEN */}
                 {activeScreen === 'dashboard' && (
-                  <div className="space-y-6">
-                    {/* Header */}
-                    <div className="flex items-end justify-between border-b border-[#1c2020] pb-3">
+                  <div className="space-y-8">
+                    
+                    {/* Top Header Section */}
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-1">
                       <div>
-                        <p className="text-[10px] font-mono tracking-widest uppercase text-[#6f7a7a]">
+                        <p className="text-[11px] font-medium tracking-[0.16em] uppercase text-[#6f7a7a] mb-2">
                           FRIDAY, 16 OCTOBER 2026
                         </p>
-                        <h3 className="text-xl sm:text-2xl font-serif text-white mt-1">
-                          Four matters. <span className="text-[#646e6e]">One listed today.</span>
-                        </h3>
+                        <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-[#f3f4f5]">
+                          <span>Four matters. </span>
+                          <span className="text-[#646e6e] font-serif">One listed today.</span>
+                        </h1>
                       </div>
-                      <div className="bg-[#2dd4bf] text-[#091b18] text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">
-                        <Plus className="w-3.5 h-3.5" />
+
+                      <button
+                        onClick={() => setActiveScreen('cases')}
+                        className="self-start md:self-auto bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium text-xs sm:text-sm px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
                         <span>New matter</span>
-                      </div>
+                      </button>
                     </div>
 
-                    {/* Exact NEXT IN COURT Hero Card */}
-                    <div className="rounded-xl bg-[#141818] border border-[#222828] p-5 relative overflow-hidden">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                        <div className="space-y-1">
-                          <div className="text-[11px] font-mono uppercase text-[#2dd4bf] font-medium tracking-wide">
+                    {/* NEXT IN COURT Hero Card */}
+                    <div className="rounded-2xl bg-[#141818] border border-[#222828] p-5 sm:p-6 relative overflow-hidden">
+                      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+                        <div className="space-y-1.5 flex-1">
+                          <div className="text-xs font-mono tracking-wider uppercase text-[#2dd4bf] font-medium">
                             NEXT IN COURT · Fri 16 Oct · 10:30 · today
                           </div>
-                          <h4 className="text-lg sm:text-xl font-serif text-white">
+
+                          <h2 className="text-xl sm:text-2xl font-serif text-[#f3f4f5] tracking-tight">
                             SLP (C) No. 18420/2025 — Union of India v. Apex Mega Infrastructure
-                          </h4>
-                          <p className="text-xs text-[#879292]">
+                          </h2>
+
+                          <p className="text-xs sm:text-sm text-[#879292]">
                             Supreme Court of India (Court 2, Item 14) · Final Arguments · before CJI & Justice Sundaram
                           </p>
                         </div>
-                        <div className="bg-[#1a1f1f] text-xs text-[#f3f4f5] px-3 py-1.5 rounded-lg border border-[#2b3333] self-start flex items-center gap-1.5 shrink-0">
+
+                        <button
+                          onClick={() => setActiveScreen('cases')}
+                          className="self-start lg:self-center bg-[#1a1f1f] hover:bg-[#222828] border border-[#2b3333] text-[#f3f4f5] text-xs font-medium px-3.5 py-2 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer"
+                        >
                           <span>Open brief</span>
                           <ArrowRight className="w-3.5 h-3.5 text-[#879292]" />
-                        </div>
+                        </button>
                       </div>
 
-                      {/* Interactive Readiness checklist */}
-                      <div className="mt-5 pt-4 border-t border-[#1e2323]">
-                        <div className="text-[10px] font-mono uppercase text-[#6f7a7a] tracking-wider mb-2.5">
-                          READINESS — 2 OF 4 COMPLETED
+                      {/* Readiness Checklist */}
+                      <div className="mt-6 pt-5 border-t border-[#1e2323]">
+                        <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a] mb-3">
+                          READINESS — {2 + (tasks.seniorNotes ? 1 : 0) + (tasks.invoices ? 1 : 0)} OF 4
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                          <div 
-                            onClick={() => toggleTask('pleadings')}
-                            className="flex items-center gap-2 text-[#c5cccc] cursor-pointer hover:text-white"
-                          >
-                            <div className="w-4 h-4 rounded bg-[#2dd4bf] text-[#091b18] flex items-center justify-center">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+                          <div className="flex items-center gap-2.5 text-xs sm:text-sm text-[#c5cccc]">
+                            <Check className="w-4 h-4 text-[#2dd4bf] stroke-[2.5]" />
                             <span>Pleadings filed on record</span>
                           </div>
-                          <div 
-                            onClick={() => toggleTask('counsel')}
-                            className="flex items-center gap-2 text-[#c5cccc] cursor-pointer hover:text-white"
-                          >
-                            <div className="w-4 h-4 rounded bg-[#2dd4bf] text-[#091b18] flex items-center justify-center">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </div>
+                          <div className="flex items-center gap-2.5 text-xs sm:text-sm text-[#c5cccc]">
+                            <Check className="w-4 h-4 text-[#2dd4bf] stroke-[2.5]" />
                             <span>Senior Counsel briefing finalized</span>
                           </div>
+
                           <div 
                             onClick={() => toggleTask('seniorNotes')}
-                            className="flex items-center gap-2 text-[#f3f4f5] cursor-pointer group"
+                            className="flex items-center gap-2.5 text-xs sm:text-sm text-[#f3f4f5] cursor-pointer group"
                           >
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${tasks.seniorNotes ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#091b18]' : 'border-[#f59e0b]'}`}>
-                              {tasks.seniorNotes && <Check className="w-3 h-3 stroke-[3]" />}
-                            </div>
-                            <span className="underline decoration-[#3a4242] underline-offset-4 group-hover:text-[#2dd4bf]">
+                            {tasks.seniorNotes ? (
+                              <Check className="w-4 h-4 text-[#2dd4bf] stroke-[2.5]" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border border-[#f59e0b] group-hover:border-[#2dd4bf] flex items-center justify-center" />
+                            )}
+                            <span className="underline decoration-[#3a4242] underline-offset-4 group-hover:text-[#2dd4bf] transition-colors truncate">
                               Senior Advocate conference notes verified
                             </span>
                           </div>
+
                           <div 
                             onClick={() => toggleTask('invoices')}
-                            className="flex items-center gap-2 text-[#f3f4f5] cursor-pointer group"
+                            className="flex items-center gap-2.5 text-xs sm:text-sm text-[#f3f4f5] cursor-pointer group"
                           >
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${tasks.invoices ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#091b18]' : 'border-[#f59e0b]'}`}>
-                              {tasks.invoices && <Check className="w-3 h-3 stroke-[3]" />}
-                            </div>
-                            <span className="underline decoration-[#3a4242] underline-offset-4 group-hover:text-[#2dd4bf]">
+                            {tasks.invoices ? (
+                              <Check className="w-4 h-4 text-[#2dd4bf] stroke-[2.5]" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border border-[#f59e0b] group-hover:border-[#2dd4bf] flex items-center justify-center" />
+                            )}
+                            <span className="underline decoration-[#3a4242] underline-offset-4 group-hover:text-[#2dd4bf] transition-colors truncate">
                               Reconcile invoices against inspection report
                             </span>
                           </div>
@@ -443,205 +494,484 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* Diary timeline */}
+                    {/* THE DIARY next 14 days Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">
+                          THE DIARY <span className="text-[#879292] lowercase">next 14 days</span>
+                        </div>
+                        <button 
+                          onClick={() => setActiveScreen('cases')} 
+                          className="text-xs text-[#2dd4bf] hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                        >
+                          All matters &rarr;
+                        </button>
+                      </div>
+
+                      <div className="relative pl-6 space-y-5 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-[#202626]">
+                        {/* 1. Today Supreme Court */}
+                        <div className="relative group">
+                          <div className="absolute -left-[27px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#f59e0b] ring-4 ring-[#0d0f0f]" />
+                          <div className="space-y-1">
+                            <div className="text-[11px] font-mono tracking-wider uppercase font-semibold text-[#f59e0b]">
+                              TODAY · 10:30 · SUPREME COURT COURTROOM 2
+                            </div>
+                            <div className="text-base font-serif text-[#f3f4f5] group-hover:text-[#2dd4bf] transition-colors cursor-pointer">
+                              Union of India v. Apex Mega Infrastructure Ltd.
+                            </div>
+                            <div className="text-xs text-[#6f7a7a]">
+                              Final Arguments · Item 14 · 1 task outstanding
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 2. Tue Delhi HC */}
+                        <div className="relative group">
+                          <div className="absolute -left-[27px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#2dd4bf] ring-4 ring-[#0d0f0f]" />
+                          <div className="space-y-1">
+                            <div className="text-[11px] font-mono tracking-wider uppercase font-semibold text-[#2dd4bf]">
+                              TUE 20 OCT · 14:00 · DELHI HIGH COURT
+                            </div>
+                            <div className="text-base font-serif text-[#f3f4f5] group-hover:text-[#2dd4bf] transition-colors cursor-pointer">
+                              Sharma BioTech v. Drug Controller General
+                            </div>
+                            <div className="text-xs text-[#6f7a7a]">
+                              Admission & Interim Stay · Court 18 · 2 tasks outstanding
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 3. Mon Bombay HC */}
+                        <div className="relative group">
+                          <div className="absolute -left-[27px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#4b5555] ring-4 ring-[#0d0f0f]" />
+                          <div className="space-y-1">
+                            <div className="text-[11px] font-mono tracking-wider uppercase font-semibold text-[#879292]">
+                              MON 26 OCT · 11:00 · BOMBAY HIGH COURT
+                            </div>
+                            <div className="text-base font-serif text-[#f3f4f5] group-hover:text-[#2dd4bf] transition-colors cursor-pointer">
+                              Mira Vale v. Orion Housing Infrastructure
+                            </div>
+                            <div className="text-xs text-[#6f7a7a]">
+                              Preliminary Hearing · Arbitration Petition · 1 task outstanding
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Split: Outstanding Tasks & Lately Stream */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-6 border-t border-[#1a1e1e]">
+                      
+                      {/* Outstanding Tasks */}
+                      <div className="space-y-3.5">
+                        <div className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">
+                          OUTSTANDING <span className="text-[#879292] font-sans">2 of 4</span>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          <div className="flex items-start gap-3 p-2 rounded-lg bg-[#141717]/60 border border-[#1e2222]">
+                            <div className="mt-0.5 w-4 h-4 rounded bg-[#2dd4bf] border border-[#2dd4bf] text-[#091b18] flex items-center justify-center">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs line-through text-[#6f7a7a]">Pleadings filed on record</p>
+                              <p className="text-[11px] text-[#525e5e]">Union of India v. Apex Mega Infrastructure · filed 14 Oct</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3 p-2 rounded-lg bg-[#141717]/60 border border-[#1e2222]">
+                            <div className="mt-0.5 w-4 h-4 rounded bg-[#2dd4bf] border border-[#2dd4bf] text-[#091b18] flex items-center justify-center">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs line-through text-[#6f7a7a]">Senior Counsel conference brief delivered</p>
+                              <p className="text-[11px] text-[#525e5e]">Union of India v. Apex Mega Infrastructure · completed</p>
+                            </div>
+                          </div>
+
+                          <div 
+                            onClick={() => toggleTask('seniorNotes')}
+                            className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#141717] cursor-pointer transition-colors border border-transparent hover:border-[#222828] group"
+                          >
+                            <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                              tasks.seniorNotes ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#091b18]' : 'border-[#424d4d] group-hover:border-[#2dd4bf]'
+                            }`}>
+                              {tasks.seniorNotes && <Check className="w-3 h-3 stroke-[3]" />}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className={`text-xs ${tasks.seniorNotes ? 'line-through text-[#6f7a7a]' : 'text-[#f3f4f5]'}`}>
+                                Senior Advocate conference notes verified
+                              </p>
+                              <p className="text-[11px] text-[#6f7a7a]">Union of India v. Apex Mega Infrastructure · due today</p>
+                            </div>
+                          </div>
+
+                          <div 
+                            onClick={() => toggleTask('invoices')}
+                            className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#141717] cursor-pointer transition-colors border border-transparent hover:border-[#222828] group"
+                          >
+                            <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                              tasks.invoices ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#091b18]' : 'border-[#424d4d] group-hover:border-[#2dd4bf]'
+                            }`}>
+                              {tasks.invoices && <Check className="w-3 h-3 stroke-[3]" />}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className={`text-xs ${tasks.invoices ? 'line-through text-[#6f7a7a]' : 'text-[#f3f4f5]'}`}>
+                                Reconcile invoices against inspection report
+                              </p>
+                              <p className="text-[11px] text-[#6f7a7a]">Sharma BioTech v. Drug Controller General · due tomorrow</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Lately Activity Stream */}
+                      <div className="space-y-3.5">
+                        <div className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">
+                          LATELY
+                        </div>
+
+                        <div className="space-y-3.5 text-xs">
+                          <div className="flex items-start gap-3.5">
+                            <span className="text-[#6f7a7a] font-mono w-6 text-right shrink-0">2h</span>
+                            <div className="space-y-0.5">
+                              <p className="text-[#f3f4f5] font-medium">Progressed to Preliminary hearing</p>
+                              <p className="text-[#6f7a7a]">Mira Vale v. Orion Housing · you</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3.5 border-l-2 border-[#818cf8] pl-2.5 -ml-2.5">
+                            <span className="text-[#818cf8] font-mono w-6 text-right shrink-0">3h</span>
+                            <div className="space-y-0.5">
+                              <p className="text-[#f3f4f5] font-medium">Task proposed — reconcile invoices</p>
+                              <p className="text-[#818cf8]">Suggested by LegalDesk · awaiting you</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3.5">
+                            <span className="text-[#6f7a7a] font-mono w-6 text-right shrink-0">5h</span>
+                            <div className="space-y-0.5">
+                              <p className="text-[#f3f4f5] font-medium">Progressed to Pleadings</p>
+                              <p className="text-[#6f7a7a]">Aster Textiles · A. Shah</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3.5">
+                            <span className="text-[#6f7a7a] font-mono w-6 text-right shrink-0">Fri</span>
+                            <div className="space-y-0.5">
+                              <p className="text-[#f3f4f5] font-medium">Exhibit C added — arbitration chronology</p>
+                              <p className="text-[#6f7a7a]">Mira Vale · you</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                  </div>
+                )}
+
+                {/* 2. ACTUAL INTERNAL MATTERS SCREEN */}
+                {activeScreen === 'cases' && (
+                  <div className="space-y-6">
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between pb-2 gap-4">
+                      <div>
+                        <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-[#f3f4f5]">Matters</h1>
+                        <p className="text-xs text-[#879292] mt-1">
+                          4 active · 2 listed in the next 14 days
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => setActiveScreen('drafts')}
+                        className="h-9 bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium rounded-lg text-xs flex-shrink-0 self-start sm:self-auto px-3.5 flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>New matter</span>
+                      </button>
+                    </div>
+
+                    {/* Filter Tabs */}
+                    <div className="flex items-center gap-2 border-b border-[#1e2323] pb-3 text-xs">
+                      <span className="px-3 py-1 rounded-md bg-[#1a2321] text-[#2dd4bf] border border-[#2dd4bf]/20 font-medium">
+                        Active (4)
+                      </span>
+                      <span className="px-3 py-1 rounded-md text-[#879292] hover:text-white cursor-pointer">
+                        Listed this week (2)
+                      </span>
+                      <span className="px-3 py-1 rounded-md text-[#879292] hover:text-white cursor-pointer">
+                        Needs attention (1)
+                      </span>
+                      <span className="px-3 py-1 rounded-md text-[#879292] hover:text-white cursor-pointer">
+                        All (6)
+                      </span>
+                    </div>
+
+                    {/* Matters List Cards */}
                     <div className="space-y-3">
-                      <div className="text-[10px] font-mono uppercase text-[#6f7a7a] tracking-wider">
-                        THE DIARY — NEXT 14 DAYS
-                      </div>
-                      <div className="relative pl-5 space-y-3.5 before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-px before:bg-[#202626]">
-                        <div className="relative">
-                          <div className="absolute -left-[23px] top-1.5 w-2 h-2 rounded-full bg-[#f59e0b] ring-4 ring-[#0d0f0f]" />
-                          <div className="text-[10px] font-mono text-[#f59e0b] font-semibold uppercase">
-                            TODAY · 10:30 · SUPREME COURT COURTROOM 2
+                      {[
+                        {
+                          num: 'SLP (C) 18420/2025',
+                          title: 'Union of India v. Apex Mega Infrastructure',
+                          court: 'Supreme Court of India',
+                          bench: 'Court 2 · CJI & Justice Sundaram',
+                          stage: 'Final Arguments',
+                          date: 'Today · 10:30',
+                          badgeColor: 'text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20'
+                        },
+                        {
+                          num: 'WP (C) 4120/2026',
+                          title: 'Sharma BioTech v. Drug Controller General',
+                          court: 'Delhi High Court',
+                          bench: 'Court 18 · Single Bench',
+                          stage: 'Admission & Interim Stay',
+                          date: 'Tue 20 Oct · 14:00',
+                          badgeColor: 'text-[#2dd4bf] bg-[#2dd4bf]/10 border-[#2dd4bf]/20'
+                        },
+                        {
+                          num: 'ARB/PET/104/2026',
+                          title: 'Mira Vale v. Orion Housing Infrastructure',
+                          court: 'Bombay High Court',
+                          bench: 'Commercial Division · Justice R. Kulkarni',
+                          stage: 'Preliminary Hearing',
+                          date: 'Mon 26 Oct · 11:00',
+                          badgeColor: 'text-[#879292] bg-[#1a1f1f] border-[#2a3030]'
+                        },
+                        {
+                          num: 'BA/1482/2026',
+                          title: 'State of Maharashtra v. K. Singhania',
+                          court: 'Bombay High Court',
+                          bench: 'Criminal Appellate · Justice Deshmukh',
+                          stage: 'Urgent Bail u/s 439 CrPC',
+                          date: 'Fri 24 Oct · 10:30',
+                          badgeColor: 'text-[#879292] bg-[#1a1f1f] border-[#2a3030]'
+                        },
+                      ].map((item, i) => (
+                        <div 
+                          key={i} 
+                          className="p-4 rounded-xl bg-[#141818] border border-[#222828] hover:border-[#2dd4bf]/40 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3 group"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[10px] text-[#2dd4bf] bg-[#152321] px-2 py-0.5 rounded border border-[#2dd4bf]/20">
+                                {item.num}
+                              </span>
+                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${item.badgeColor}`}>
+                                {item.stage}
+                              </span>
+                            </div>
+                            <h3 className="text-base font-serif text-[#f3f4f5] group-hover:text-[#2dd4bf] transition-colors">
+                              {item.title}
+                            </h3>
+                            <p className="text-xs text-[#879292]">
+                              {item.court} · {item.bench}
+                            </p>
                           </div>
-                          <div className="text-sm font-serif text-white">Union of India v. Apex Mega Infrastructure Ltd.</div>
-                          <div className="text-[11px] text-[#6f7a7a]">Final Arguments · Item 14</div>
-                        </div>
-                        <div className="relative">
-                          <div className="absolute -left-[23px] top-1.5 w-2 h-2 rounded-full bg-[#2dd4bf] ring-4 ring-[#0d0f0f]" />
-                          <div className="text-[10px] font-mono text-[#2dd4bf] font-semibold uppercase">
-                            TUE 20 OCT · 14:00 · DELHI HIGH COURT
+
+                          <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#1c2020]">
+                            <div className="text-right">
+                              <div className="text-xs font-mono text-[#f3f4f5] font-semibold">{item.date}</div>
+                              <div className="text-[10px] text-[#6f7a7a]">Listed Listing</div>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-[#879292] group-hover:text-[#2dd4bf] transition-colors" />
                           </div>
-                          <div className="text-sm font-serif text-white">Sharma BioTech v. Drug Controller General</div>
-                          <div className="text-[11px] text-[#6f7a7a]">Admission & Interim Stay · Court 18</div>
                         </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* 2. ACTUAL AI DRAFTING STUDIO VIEW */}
+                {/* 3. ACTUAL INTERNAL AI DRAFTING STUDIO */}
                 {activeScreen === 'drafts' && (
                   <div className="space-y-4">
+                    {/* Studio Top Bar */}
                     <div className="flex items-center justify-between border-b border-[#1c2020] pb-3">
-                      <div>
-                        <div className="text-[10px] font-mono text-[#2dd4bf] uppercase">AI Drafting Studio</div>
-                        <h3 className="text-lg font-serif text-white">Urgent Criminal Bail Application u/s 439 CrPC</h3>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setActiveScreen('cases')}
+                          className="text-xs text-[#879292] hover:text-white flex items-center gap-1 cursor-pointer"
+                        >
+                          &larr; Back
+                        </button>
+                        <div className="h-4 w-px bg-[#222828]" />
+                        <div>
+                          <div className="text-[10px] font-mono text-[#2dd4bf] uppercase">AI Drafting Studio</div>
+                          <h3 className="text-sm sm:text-base font-serif text-white truncate max-w-sm">
+                            Urgent Criminal Bail Application u/s 439 CrPC
+                          </h3>
+                        </div>
+                        <span className="text-[10px] font-mono text-[#2dd4bf] bg-[#1e2323] px-2 py-0.5 rounded border border-[#272b2b]">
+                          IN REVIEW
+                        </span>
                       </div>
+
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleCopy('IN THE HIGH COURT OF JUDICATURE AT BOMBAY...')}
                           className="text-xs px-2.5 py-1 rounded bg-[#161919] hover:bg-[#1f2424] text-[#879292] hover:text-white border border-[#272b2b] flex items-center gap-1 cursor-pointer"
                         >
-                          {copied ? <Check className="w-3 h-3 text-[#2dd4bf]" /> : <Copy className="w-3 h-3" />}
+                          {copied ? <Check className="w-3 h-3 text-[#2dd4bf]" /> : <Copy className="w-3 h-3 text-[#879292]" />}
                           <span>{copied ? 'Copied' : 'Copy'}</span>
                         </button>
                         <button
                           onClick={() => window.print()}
                           className="text-xs px-2.5 py-1 rounded bg-[#161919] hover:bg-[#1f2424] text-[#879292] hover:text-white border border-[#272b2b] flex items-center gap-1 cursor-pointer"
                         >
-                          <Printer className="w-3 h-3" />
+                          <Printer className="w-3 h-3 text-[#879292]" />
                           <span>Print A4</span>
                         </button>
                       </div>
                     </div>
 
                     {/* Dual Pane Studio */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-                      {/* Left: AI Prompt & Grounding */}
-                      <div className="lg:col-span-4 rounded-xl bg-[#141717] border border-[#232727] p-3.5 space-y-3">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                      {/* Left: AI Prompt & Legal Grounding */}
+                      <div className="lg:col-span-4 rounded-xl bg-[#141717] border border-[#232727] p-4 space-y-3">
                         <div className="flex items-center gap-2">
                           <Bot className="w-4 h-4 text-[#2dd4bf]" />
                           <span className="text-xs font-semibold text-white">Associate AI</span>
                         </div>
-                        <div className="p-2.5 rounded-lg bg-[#0d0f0f] border border-[#1e2222] text-[11px] text-[#879292]">
+                        <div className="p-3 rounded-lg bg-[#0d0f0f] border border-[#1e2222] text-[11px] text-[#879292] leading-relaxed">
                           <span className="text-[#2dd4bf] font-medium">Prompt:</span> Draft regular bail petition for K. Singhania in Crime 412/2025 citing parity and absence of criminal antecedent under Satender Kumar Antil ruling.
                         </div>
-                        <div className="text-[11px] text-[#b2ded8] bg-[#152321] p-2.5 rounded-lg border border-[#2dd4bf]/20">
-                          <span className="text-[#2dd4bf] font-semibold">✓ Grounding Verified:</span> Cross-checked with Bombay High Court Criminal Manual rules.
+                        <div className="text-[11px] text-[#b2ded8] bg-[#152321] p-3 rounded-lg border border-[#2dd4bf]/20 leading-relaxed">
+                          <span className="text-[#2dd4bf] font-semibold">✓ Grounding Verified:</span> Cross-checked with Bombay High Court Criminal Manual rules & Bharatiya Nagarik Suraksha Sanhita (BNSS) parity matrix.
                         </div>
-                        <div className="text-[10px] font-mono text-[#6f7a7a] pt-2 border-t border-[#1e2222]">
+                        <div className="p-2.5 rounded-lg bg-[#0d0f0f] border border-[#1e2222] text-[10px] font-mono text-[#879292] space-y-1">
+                          <div className="text-white font-semibold">Statutory Authorities Cited:</div>
+                          <div>• Satender Kumar Antil v. CBI (2022) 10 SCC 51</div>
+                          <div>• Arnesh Kumar v. State of Bihar (2014) 8 SCC 273</div>
+                        </div>
+                        <div className="text-[10px] font-mono text-[#6f7a7a] pt-1">
                           Compute: 1,420 Tokens (~₹0.28)
                         </div>
                       </div>
 
                       {/* Right: Exact Court Document Preview */}
-                      <div className="lg:col-span-8 rounded-xl bg-[#090b0b] border border-[#232727] p-4 text-[11px] font-mono text-[#c0c8c8] leading-relaxed max-h-[300px] overflow-y-auto">
+                      <div className="lg:col-span-8 rounded-xl bg-[#090b0b] border border-[#232727] p-5 text-[11px] font-mono text-[#c0c8c8] leading-relaxed max-h-[360px] overflow-y-auto">
                         <div className="text-center font-bold text-white mb-2">
                           IN THE HIGH COURT OF JUDICATURE AT BOMBAY<br />
                           CRIMINAL APPELLATE JURISDICTION<br />
                           BAIL APPLICATION NO. 1482 OF 2026
                         </div>
                         <div className="my-2 border-b border-[#1e2222]" />
-                        <p className="mb-2"><strong>Mr. K. Singhania</strong> ...Applicant</p>
-                        <p className="mb-2 text-center text-[#6f7a7a]">VERSUS</p>
+                        <p className="mb-1"><strong>Mr. K. Singhania</strong> ...Applicant</p>
+                        <p className="mb-1 text-center text-[#6f7a7a]">VERSUS</p>
                         <p className="mb-3"><strong>The State of Maharashtra</strong> ...Respondent</p>
                         <p className="font-semibold text-[#2dd4bf] mb-2">
-                          APPLICATION UNDER SECTION 439 CR.P.C. FOR GRANT OF REGULAR BAIL
+                          APPLICATION UNDER SECTION 439 OF THE CODE OF CRIMINAL PROCEDURE, 1973 FOR GRANT OF REGULAR BAIL
                         </p>
                         <p className="mb-2">
-                          1. That the Applicant has been falsely implicated in Crime No. 412/2025; all documentary records stand in custody of the investigation agency.
+                          1. That the Applicant has been falsely implicated in Crime No. 412/2025; all documentary records and device logs stand in complete custody of the investigation agency.
                         </p>
                         <p className="mb-2">
-                          2. That the Applicant satisfies all principles of law laid down by the Hon&apos;ble Supreme Court in <em>Satender Kumar Antil v. CBI (2022) 10 SCC 51</em>.
+                          2. That the co-accused on identical evidentiary footing has already been admitted to bail by this Hon&apos;ble Court vide Order dated 08.09.2026.
+                        </p>
+                        <p className="mb-2">
+                          3. That the Applicant satisfies all principles of law laid down by the Hon&apos;ble Supreme Court in <em>Satender Kumar Antil v. CBI (2022) 10 SCC 51</em>.
                         </p>
                         <p className="text-[#879292]">
-                          PRAYER: Wherefore, it is prayed this Hon&apos;ble Court enlarge the applicant on bail.
+                          PRAYER: Wherefore, it is prayed this Hon&apos;ble Court enlarge the applicant on regular bail on such terms and conditions as deemed just and proper.
                         </p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* 3. ACTUAL MATTERS VIEW */}
-                {activeScreen === 'cases' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-[#1c2020] pb-3">
-                      <div>
-                        <div className="text-[10px] font-mono text-[#2dd4bf] uppercase">Matters Dossier</div>
-                        <h3 className="text-lg font-serif text-white">Active Chambers Cases</h3>
-                      </div>
-                      <div className="text-xs text-[#879292] bg-[#141717] px-3 py-1.5 rounded-lg border border-[#232727] flex items-center gap-2">
-                        <Search className="w-3 h-3 text-[#2dd4bf]" />
-                        <span>Filter: All Courts</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      {[
-                        { num: 'SLP 18420/2025', title: 'Union of India v. Apex Mega Infrastructure', court: 'Supreme Court', bench: 'CJI Bench (Court 2)', stage: 'Final Hearing', date: 'Today · 10:30' },
-                        { num: 'TC-2026-08', title: 'Sharma BioTech v. Drug Controller General', court: 'Delhi High Court', bench: 'Court 18', stage: 'Interim Stay', date: '20 Oct 2026' },
-                        { num: 'BA-2026-11', title: 'State of Maharashtra v. K. Singhania', court: 'Bombay High Court', bench: 'Criminal Bench', stage: 'Urgent Bail', date: '24 Oct 2026' },
-                        { num: 'ARB-2026-14', title: 'Apex Logistics Ltd. v. Global Freight Corp', court: 'DIAC Arbitration', bench: 'Sole Arbitrator', stage: 'Evidence', date: '04 Nov 2026' },
-                      ].map((c, i) => (
-                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-[#141717] border border-[#1e2222] text-xs">
-                          <div className="flex items-center gap-2.5">
-                            <span className="font-mono text-[10px] text-[#2dd4bf] bg-[#152321] px-2 py-0.5 rounded">
-                              {c.num}
-                            </span>
-                            <span className="text-white font-medium">{c.title}</span>
-                          </div>
-                          <div className="flex items-center gap-4 text-[#879292] text-[11px] font-mono mt-1 sm:mt-0">
-                            <span>{c.court}</span>
-                            <span className="text-[#646e6e]">•</span>
-                            <span className="text-[#2dd4bf]">{c.stage}</span>
-                            <span className="text-[#646e6e]">•</span>
-                            <span>{c.date}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 4. ACTUAL TOKEN LEDGER VIEW */}
+                {/* 4. ACTUAL INTERNAL TOKEN LEDGER / BILLING SCREEN */}
                 {activeScreen === 'billing' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-[#1c2020] pb-3">
+                  <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                       <div>
-                        <div className="text-[10px] font-mono text-[#2dd4bf] uppercase">Token Ledger</div>
-                        <h3 className="text-lg font-serif text-white">Chambers Usage & Subscriptions</h3>
+                        <h1 className="text-2xl sm:text-3xl font-serif text-[#f3f4f5] tracking-tight">Usage & Billing</h1>
+                        <p className="text-xs sm:text-sm text-[#879292] mt-1">
+                          Manage AI token allowances, subscriptions, and ledger balance.
+                        </p>
                       </div>
-                      <span className="text-xs font-mono text-[#2dd4bf] bg-[#152321] px-2.5 py-1 rounded border border-[#2dd4bf]/20">
-                        LegalDesk Professional
-                      </span>
-                    </div>
 
-                    <div className="p-4 rounded-xl bg-[#141717] border border-[#232727] flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="space-y-1.5 w-full sm:w-2/3">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-[#879292]">Monthly Balance</span>
-                          <span className="font-mono text-white font-bold">42,850 / 50,000 Tokens (85%)</span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-[#1e2323] overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-[#2dd4bf] to-[#34d399] w-[85%]" />
-                        </div>
-                      </div>
-                      <div className="text-center sm:text-right shrink-0">
-                        <div className="text-sm font-serif font-bold text-white">₹1,799 / mo</div>
-                        <div className="text-[10px] text-[#6f7a7a]">Next renewal 14 days</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs uppercase tracking-wider text-[#6f7a7a]">
+                          Test Law Chambers
+                        </span>
+                        <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#2dd4bf]/10 text-[#2dd4bf] border border-[#2dd4bf]/20">
+                          Professional Plan Active
+                        </span>
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <div className="text-[10px] font-mono uppercase text-[#6f7a7a]">Recent Live Usage Entries</div>
+                    {/* Balance Card */}
+                    <div className="p-6 rounded-xl bg-[#121515] border border-[#222828] space-y-5">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="text-xs font-mono uppercase tracking-wider text-[#6f7a7a] flex items-center gap-1.5">
+                            <Wallet className="w-3.5 h-3.5 text-[#2dd4bf]" />
+                            Available Tokens
+                          </div>
+                          <div className="text-xs text-[#879292] mt-1">
+                            Professional Tier Chambers Allowance
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-serif font-bold text-white">₹1,799 / mo</div>
+                          <div className="text-[10px] text-[#6f7a7a]">Next renewal 14 days</div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-baseline gap-3">
+                          <span className="text-4xl sm:text-5xl font-mono font-bold text-white">
+                            42,850
+                          </span>
+                          <span className="text-xs text-[#879292] font-mono">
+                            tokens available
+                          </span>
+                        </div>
+
+                        <div className="space-y-2 mt-4">
+                          <div className="h-2 w-full bg-[#1c2020] rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-[#2dd4bf] to-[#34d399] w-[85%] rounded-full" />
+                          </div>
+                          <div className="flex justify-between text-[11px] font-mono text-[#6f7a7a]">
+                            <span>7,150 consumed this cycle (14%)</span>
+                            <span className="text-[#2dd4bf]">50,000 monthly allowance</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live Usage Entries Table */}
+                    <div className="space-y-2.5">
+                      <div className="text-xs font-mono uppercase tracking-wider text-[#6f7a7a]">
+                        Recent Live Usage Entries
+                      </div>
+
                       {[
-                        { op: 'AI Legal Drafting (Bail Application)', matter: 'BA-2026-11', tokens: '-1,420 Tokens', time: '12m ago' },
-                        { op: 'OCR Exhibit Analysis (18 pages)', matter: 'SLP 18420/2025', tokens: '-650 Tokens', time: '1h ago' },
-                        { op: 'Monthly Credit Subscription Allocation', matter: 'Chambers Ledger', tokens: '+50,000 Tokens', time: '16 Oct' },
+                        { op: 'AI Legal Drafting (Urgent Bail Application)', matter: 'BA-2026-11', tokens: '-1,420 Tokens', time: '12m ago' },
+                        { op: 'OCR Exhibit Analysis & Chronology Extraction (18 pages)', matter: 'SLP 18420/2025', tokens: '-650 Tokens', time: '1h ago' },
+                        { op: 'Statutory Citations Verification (Supreme Court Digest)', matter: 'WP 4120/2026', tokens: '-380 Tokens', time: '3h ago' },
+                        { op: 'Monthly Chambers Subscription Allocation', matter: 'Chambers Ledger', tokens: '+50,000 Tokens', time: '16 Oct 2026' },
                       ].map((item, i) => (
-                        <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-[#0e1010] border border-[#1e2222] text-xs font-mono">
-                          <div className="flex items-center gap-2">
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-[#141818] border border-[#1e2222] text-xs font-mono">
+                          <div className="flex items-center gap-2.5">
                             <Activity className="w-3.5 h-3.5 text-[#2dd4bf]" />
-                            <span className="text-white">{item.op}</span>
+                            <span className="text-white font-sans text-xs">{item.op}</span>
                           </div>
                           <div className="flex items-center gap-4 text-[11px]">
-                            <span className={item.tokens.startsWith('+') ? 'text-[#34d399]' : 'text-[#f87171]'}>{item.tokens}</span>
+                            <span className="text-[#879292] hidden sm:inline">{item.matter}</span>
+                            <span className={item.tokens.startsWith('+') ? 'text-[#34d399] font-semibold' : 'text-[#f87171]'}>
+                              {item.tokens}
+                            </span>
                             <span className="text-[#646e6e]">{item.time}</span>
                           </div>
                         </div>
                       ))}
                     </div>
+
                   </div>
                 )}
 
               </div>
-            </div>
-
-            {/* Window Footer Status */}
-            <div className="h-8 border-t border-[#1c2020] bg-[#090b0b] px-4 flex items-center justify-between text-[10px] text-[#6f7a7a]">
-              <span>AES-256 Vault Encryption</span>
-              <span className="text-[#2dd4bf]">Zero Training Policy Active</span>
             </div>
 
           </div>
@@ -731,13 +1061,13 @@ export default function HomePage() {
 
       {/* ── Interactive Chambers ROI Calculator ──────────────────────── */}
       <section id="roi" className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 border-t border-[#1e2323] bg-[#0c0e0e]/50">
-        <div className="max-w-4xl mx-auto rounded-2xl bg-[#111313] border border-[#232727] p-6 sm:p-8">
+        <div className="max-w-4xl mx-auto rounded-2xl bg-[#141717] border border-[#272b2b] p-6 sm:p-8 shadow-xl">
           
           <div className="mb-6">
             <span className="text-[10px] font-mono tracking-widest uppercase text-[#2dd4bf] bg-[#152321] px-2.5 py-1 rounded-full border border-[#2dd4bf]/20">
               Capacity Calculator
             </span>
-            <h2 className="text-2xl font-serif text-white mt-2">
+            <h2 className="text-2xl font-serif text-[#f3f4f5] mt-2">
               Quantify billable hours saved in your chambers.
             </h2>
           </div>
@@ -757,7 +1087,7 @@ export default function HomePage() {
                   max="60"
                   value={mattersCount}
                   onChange={(e) => setMattersCount(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#1a1e1e] rounded-lg appearance-none cursor-pointer accent-[#2dd4bf]"
+                  className="w-full h-1.5 bg-[#1e2424] rounded-lg appearance-none cursor-pointer accent-[#2dd4bf]"
                 />
               </div>
 
@@ -772,7 +1102,7 @@ export default function HomePage() {
                   max="12"
                   value={hoursPerMatter}
                   onChange={(e) => setHoursPerMatter(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#1a1e1e] rounded-lg appearance-none cursor-pointer accent-[#2dd4bf]"
+                  className="w-full h-1.5 bg-[#1e2424] rounded-lg appearance-none cursor-pointer accent-[#2dd4bf]"
                 />
               </div>
             </div>
@@ -781,7 +1111,7 @@ export default function HomePage() {
             <div className="lg:col-span-5 p-5 rounded-xl bg-gradient-to-br from-[#152321] to-[#141717] border border-[#2dd4bf]/30 text-center space-y-4">
               <div>
                 <div className="text-[10px] font-mono uppercase text-[#2dd4bf] tracking-widest">Monthly Hours Saved</div>
-                <div className="text-3xl sm:text-4xl font-serif font-bold text-white mt-1">
+                <div className="text-3xl sm:text-4xl font-serif font-bold text-[#f3f4f5] mt-1">
                   {hoursSaved} <span className="text-sm font-sans font-normal text-[#879292]">hrs</span>
                 </div>
               </div>
@@ -958,7 +1288,7 @@ export default function HomePage() {
       <section className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 border-t border-[#1e2323]">
         <div className="max-w-4xl mx-auto rounded-2xl bg-gradient-to-br from-[#141d1b] via-[#141717] to-[#0c0e0e] border border-[#2dd4bf]/40 p-8 sm:p-10 text-center relative overflow-hidden shadow-[0_0_40px_rgba(45,212,191,0.12)]">
           <div className="max-w-xl mx-auto space-y-4">
-            <h2 className="text-2xl sm:text-4xl font-serif text-white leading-tight">
+            <h2 className="text-2xl sm:text-4xl font-serif text-[#f3f4f5] leading-tight">
               Modernize your litigation practice today.
             </h2>
             <p className="text-xs sm:text-sm text-[#879292]">
@@ -967,14 +1297,14 @@ export default function HomePage() {
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/signup"
-                className="w-full sm:w-auto px-6 py-3 bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs rounded-xl shadow-[0_0_20px_rgba(45,212,191,0.25)] flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs rounded-xl shadow-[0_0_20px_rgba(45,212,191,0.25)] flex items-center justify-center gap-2 cursor-pointer transition-all"
               >
                 <span>Initialize Workspace Free</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
               <Link
                 href="/login"
-                className="w-full sm:w-auto px-5 py-3 bg-[#1e2424] hover:bg-[#252c2c] text-white border border-[#272b2b] text-xs font-medium rounded-xl"
+                className="w-full sm:w-auto px-5 py-3 bg-[#1e2424] hover:bg-[#283232] text-[#f3f4f5] hover:text-[#2dd4bf] border border-[#2a3030] hover:border-[#2dd4bf]/40 text-xs font-medium rounded-xl transition-all cursor-pointer"
               >
                 Counsel Sign In
               </Link>
@@ -996,12 +1326,12 @@ export default function HomePage() {
                 All Chambers Systems Operational
               </span>
             </div>
-            <div className="flex items-center gap-6 text-[11px]">
-              <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
-              <Link href="/cases" className="hover:text-white transition-colors">Matters</Link>
-              <Link href="/drafts" className="hover:text-white transition-colors">Drafts</Link>
-              <Link href="/billing" className="hover:text-white transition-colors">Billing</Link>
-              <Link href="/login" className="hover:text-white transition-colors">Sign In</Link>
+            <div className="flex items-center gap-6 text-[11px] text-[#879292]">
+              <Link href="/dashboard" className="hover:text-[#2dd4bf] transition-colors">Dashboard</Link>
+              <Link href="/cases" className="hover:text-[#2dd4bf] transition-colors">Matters</Link>
+              <Link href="/drafts" className="hover:text-[#2dd4bf] transition-colors">Drafts</Link>
+              <Link href="/billing" className="hover:text-[#2dd4bf] transition-colors">Billing</Link>
+              <Link href="/login" className="hover:text-[#2dd4bf] transition-colors">Sign In</Link>
             </div>
           </div>
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px]">

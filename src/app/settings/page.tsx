@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useOrg } from '@/lib/org-context';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { 
   Building, 
   Users, 
@@ -17,6 +19,7 @@ import {
   Check, 
   Loader2, 
   LogOut,
+  Palette
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -28,12 +31,21 @@ import {
 } from '@/components/ui/dialog';
 import { organisations as orgsApi } from '@/lib/api';
 
-export default function SettingsPage() {
+function SettingsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, logout, loading: authLoading } = useAuth();
   const { currentOrg, orgs, switchOrg, refreshOrgs } = useOrg();
 
   const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'user'>('profile');
+
+  // Sync tab with URL search parameter (?tab=user)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'user' || tabParam === 'team' || tabParam === 'profile') {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   // Firm Profile state
   const [orgName, setOrgName] = useState('');
@@ -49,6 +61,24 @@ export default function SettingsPage() {
   const [inviteRole, setInviteRole] = useState<'ADMIN' | 'EDITOR' | 'VIEWER'>('EDITOR');
   const [submittingInvite, setSubmittingInvite] = useState(false);
   const [inviteError, setInviteError] = useState('');
+
+  // Confirmation modal state for member deletion
+  const [memberToDelete, setMemberToDelete] = useState<any | null>(null);
+  const [removingMember, setRemovingMember] = useState(false);
+
+  const handleConfirmRemoveMember = async () => {
+    if (!currentOrg?.id || !memberToDelete) return;
+    try {
+      setRemovingMember(true);
+      await orgsApi.members.remove(currentOrg.id, memberToDelete.user_id || memberToDelete.id);
+      setMemberToDelete(null);
+      await fetchMembers();
+    } catch (err) {
+      console.error('Failed to remove member:', err);
+    } finally {
+      setRemovingMember(false);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
@@ -132,16 +162,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleRemoveMember = async (memberUserId: string) => {
-    if (!currentOrg?.id) return;
-    try {
-      await orgsApi.members.remove(currentOrg.id, memberUserId);
-      await fetchMembers();
-    } catch (err) {
-      console.error('Failed to remove member:', err);
-    }
-  };
-
   if (authLoading || !user) {
     return (
       <AppShell>
@@ -154,7 +174,7 @@ export default function SettingsPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-full max-w-[1100px] mx-auto px-6 sm:px-8 py-8 pb-16 space-y-7">
+      <div className="flex flex-col h-full w-full px-6 sm:px-8 py-8 pb-16 space-y-7">
         
         {/* Top Header */}
         <div>
@@ -329,8 +349,8 @@ export default function SettingsPage() {
 
                         {!isCurrentUser && (
                           <button
-                            onClick={() => handleRemoveMember(m.user_id || m.id)}
-                            className="p-1.5 text-[#879292] hover:text-[#f87171] transition-colors"
+                            onClick={() => setMemberToDelete(m)}
+                            className="p-1.5 text-[#879292] hover:text-[#f87171] transition-colors cursor-pointer"
                             title="Remove Member"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -350,7 +370,7 @@ export default function SettingsPage() {
           <div className="bg-[#121515] border border-[#222828] rounded-xl p-6 space-y-6">
             <div>
               <h2 className="text-lg font-serif font-semibold text-white">Account Details</h2>
-              <p className="text-xs text-[#879292]">Your credentials and workspace role.</p>
+              <p className="text-xs text-[#879292]">Your credentials, workspace role, and interface preferences.</p>
             </div>
 
             <div className="max-w-md space-y-4">
@@ -369,10 +389,26 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+              {/* Theme Preference Setting */}
+              <div className="p-4 bg-[#141717] border border-[#272b2b] rounded-xl space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="font-semibold text-white text-xs flex items-center gap-1.5">
+                      <Palette className="w-3.5 h-3.5 text-[#2dd4bf]" />
+                      <span>Interface Theme</span>
+                    </div>
+                    <div className="text-[11px] text-[#879292] mt-0.5">
+                      Choose between light, dark, or system preference
+                    </div>
+                  </div>
+                  <ThemeToggle variant="segmented" />
+                </div>
+              </div>
+
               <div className="pt-2">
                 <button
                   onClick={logout}
-                  className="h-8 text-xs text-[#f87171] border border-[#f87171]/20 hover:bg-[#f87171]/10 px-3.5 rounded-lg flex items-center gap-1.5 transition-colors"
+                  className="h-8 text-xs text-[#f87171] border border-[#f87171]/20 hover:bg-[#f87171]/10 px-3.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" /> Sign Out
                 </button>
@@ -434,6 +470,35 @@ export default function SettingsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* ── CONFIRM REMOVE MEMBER MODAL ────────────────────────────── */}
+      <ConfirmModal
+        open={!!memberToDelete}
+        onOpenChange={(open) => !open && setMemberToDelete(null)}
+        title="Remove Team Member?"
+        description={
+          <>
+            Are you sure you want to remove <span className="font-semibold text-foreground">{memberToDelete?.name || memberToDelete?.email}</span> from <span className="font-semibold text-foreground">{currentOrg?.name}</span>? They will lose access to all chambers matters and documents immediately.
+          </>
+        }
+        confirmLabel="Remove Member"
+        loading={removingMember}
+        onConfirm={handleConfirmRemoveMember}
+      />
+
     </AppShell>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen w-full flex items-center justify-center bg-background">
+          <Loader2 className="w-8 h-8 animate-spin text-[#2dd4bf]" />
+        </div>
+      }
+    >
+      <SettingsContent />
+    </Suspense>
   );
 }

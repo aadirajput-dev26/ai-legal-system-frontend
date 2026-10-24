@@ -8,6 +8,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { 
   FileText, 
   Plus, 
@@ -56,6 +57,8 @@ export default function DocumentsPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<OrgDocumentItem | null>(null);
+  const [docToDelete, setDocToDelete] = useState<OrgDocumentItem | null>(null);
+  const [deletingDoc, setDeletingDoc] = useState(false);
 
   // Upload Form state
   const [uploadForm, setUploadForm] = useState({
@@ -240,17 +243,24 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleDeleteDoc = async (doc: OrgDocumentItem) => {
-    const docId = doc.id || doc._id;
-    if (!doc.case_id || !docId) return;
+  const handleConfirmDeleteDoc = async () => {
+    if (!docToDelete) return;
+    const docId = docToDelete.id || (docToDelete as any)._id;
+    if (!docToDelete.case_id || !docId) return;
 
     try {
-      await docsApi.delete(doc.case_id, docId);
-      setPreviewModalOpen(false);
-      setSelectedDoc(null);
+      setDeletingDoc(true);
+      await docsApi.delete(docToDelete.case_id, docId);
+      if (selectedDoc && (selectedDoc.id === docId || (selectedDoc as any)._id === docId)) {
+        setPreviewModalOpen(false);
+        setSelectedDoc(null);
+      }
+      setDocToDelete(null);
       await fetchOrgDocuments();
     } catch (err) {
       console.error('Failed to delete document:', err);
+    } finally {
+      setDeletingDoc(false);
     }
   };
 
@@ -310,7 +320,7 @@ export default function DocumentsPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-full max-w-[1300px] mx-auto px-6 sm:px-8 py-8 pb-16 space-y-7">
+      <div className="flex flex-col h-full w-full px-6 sm:px-8 py-8 pb-16 space-y-7">
         
         {/* ── Top Header & Upload Action ──────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -449,13 +459,13 @@ export default function DocumentsPage() {
                     className="grid grid-cols-[2.2fr_1.8fr_1.2fr_80px_80px_100px_100px] gap-4 py-4 items-center hover:bg-white/[0.01] cursor-pointer transition-colors"
                   >
                     {/* Document column */}
-                    <div className="flex items-baseline gap-2.5 min-w-0 pr-3">
-                      <span className="font-mono text-xs font-bold text-[#2dd4bf] flex-shrink-0">
+                    <div className="flex items-start gap-3 min-w-0 pr-3">
+                      <span className="w-5 h-5 rounded bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 flex items-center justify-center font-mono text-xs font-bold text-[#0d9488] dark:text-[#2dd4bf] flex-shrink-0 mt-0.5">
                         {letter}
                       </span>
-                      <div className="min-w-0">
-                        <div className="font-medium text-white text-sm truncate">{doc.title}</div>
-                        <div className="text-xs text-[#879292] truncate mt-0.5">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-foreground text-sm truncate leading-snug">{doc.title}</div>
+                        <div className="text-xs text-muted-foreground truncate mt-0.5">
                           {doc.type || 'PDF'} &middot; {doc.description || 'from the client'}
                         </div>
                       </div>
@@ -533,9 +543,9 @@ export default function DocumentsPage() {
                       </button>
 
                       <button
-                        onClick={() => handleDeleteDoc(doc)}
-                        className="p-1 text-[#6f7a7a] hover:text-[#f87171]"
-                        title="Delete"
+                        onClick={() => setDocToDelete(doc)}
+                        className="p-1 text-[#6f7a7a] hover:text-[#f87171] cursor-pointer"
+                        title="Delete Document"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -715,8 +725,12 @@ export default function DocumentsPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleDeleteDoc(selectedDoc)}
-                className="text-[#f87171] hover:bg-[#f87171]/10 text-xs mr-auto"
+                onClick={() => {
+                  const toDelete = selectedDoc;
+                  setPreviewModalOpen(false);
+                  setTimeout(() => setDocToDelete(toDelete), 100);
+                }}
+                className="text-[#f87171] hover:bg-[#f87171]/10 text-xs mr-auto cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
               </Button>
@@ -826,6 +840,21 @@ export default function DocumentsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ── CONFIRM DELETE DOCUMENT MODAL ──────────────────────────── */}
+      <ConfirmModal
+        open={!!docToDelete}
+        onOpenChange={(open) => !open && setDocToDelete(null)}
+        title="Delete Document?"
+        description={
+          <>
+            Are you sure you want to delete <span className="font-semibold text-foreground">{docToDelete?.title}</span>? This file will be permanently removed from this matter and will no longer be available for citing.
+          </>
+        }
+        confirmLabel="Delete Document"
+        loading={deletingDoc}
+        onConfirm={handleConfirmDeleteDoc}
+      />
 
     </AppShell>
   );

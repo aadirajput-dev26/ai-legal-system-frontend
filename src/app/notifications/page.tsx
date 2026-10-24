@@ -213,7 +213,7 @@ export default function NotificationsPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-full max-w-[1100px] mx-auto px-6 sm:px-8 py-8 pb-16 space-y-7">
+      <div className="flex flex-col h-full w-full px-6 sm:px-8 py-8 pb-16 space-y-7">
         
         {/* Top Header & Global Actions */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">

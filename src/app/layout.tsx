@@ -6,6 +6,8 @@ import { OrgProvider } from "@/lib/org-context";
 import { BillingProvider } from "@/lib/billing-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { ThemeProvider } from "@/components/theme-provider";
+
 const sans = Plus_Jakarta_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
@@ -27,7 +29,6 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0d0f0f",
 };
 
 export const metadata: Metadata = {
@@ -39,16 +40,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${heading.variable} ${serif.variable} h-full antialiased dark`}
+      suppressHydrationWarning
+      className={`${sans.variable} ${heading.variable} ${serif.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-[#0d0f0f] text-[#f3f4f5]">
-        <AuthProvider>
-          <OrgProvider>
-            <BillingProvider>
-              <TooltipProvider>{children}</TooltipProvider>
-            </BillingProvider>
-          </OrgProvider>
-        </AuthProvider>
+      <body className="min-h-full flex flex-col font-sans bg-background text-foreground transition-colors duration-200">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <AuthProvider>
+            <OrgProvider>
+              <BillingProvider>
+                <TooltipProvider>{children}</TooltipProvider>
+              </BillingProvider>
+            </OrgProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

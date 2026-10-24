@@ -20,12 +20,14 @@ import {
   Zap
 } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 
 export default function BillingPage() {
     const { state, loading: contextLoading, refreshBilling, error: contextError } = useBilling();
     const [entries, setEntries] = useState<LedgerEntry[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState<string | null>(null);
+    const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
     const loadStatement = useCallback(async () => {
         if (!state?.organisation?.id) return;
@@ -102,13 +104,18 @@ export default function BillingPage() {
     };
 
     // ── Cancel ───────────────────────────────────────────────────────
-    const cancel = async () => {
+    const cancel = () => {
         if (!state) return;
-        if (!window.confirm('Cancel this plan at the end of the current billing period? AI stays available until then.')) return;
+        setCancelConfirmOpen(true);
+    };
+
+    const handleConfirmCancel = async () => {
+        if (!state) return;
         setBusy('cancel'); setError(null);
         try {
             await billingApi.cancel(state.organisation.id);
             await refreshBilling();
+            setCancelConfirmOpen(false);
         } catch (e: any) {
             setError(e.message);
         } finally { setBusy(null); }
@@ -137,7 +144,7 @@ export default function BillingPage() {
 
     return (
         <AppShell>
-            <div className="flex flex-col h-full max-w-[1300px] mx-auto px-6 sm:px-8 py-8 pb-16 space-y-7">
+            <div className="flex flex-col h-full w-full px-6 sm:px-8 py-8 pb-16 space-y-7">
                 {/* Header section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
@@ -335,6 +342,17 @@ export default function BillingPage() {
                     </div>
                 )}
             </div>
+
+            {/* Confirm Cancel Plan Modal */}
+            <ConfirmModal
+                open={cancelConfirmOpen}
+                onOpenChange={setCancelConfirmOpen}
+                title="Cancel Plan?"
+                description="Are you sure you want to cancel this plan at the end of the current billing period? AI intelligence stays active until then."
+                confirmLabel="Cancel Plan"
+                loading={busy === 'cancel'}
+                onConfirm={handleConfirmCancel}
+            />
         </AppShell>
     );
 }

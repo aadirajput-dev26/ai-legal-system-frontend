@@ -66,7 +66,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] focus:border-[#2dd4bf]/60 h-9"
+                className="bg-[#0f1212] border-[#272b2b] hover:border-[#384040] text-[#f3f4f5] placeholder:text-[#6f7a7a] focus:border-[#2dd4bf]/70 focus:ring-1 focus:ring-[#2dd4bf]/30 h-10 text-sm transition-all rounded-lg"
               />
             </div>
             <div className="space-y-1.5">
@@ -78,16 +78,16 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] focus:border-[#2dd4bf]/60 h-9"
+                className="bg-[#0f1212] border-[#272b2b] hover:border-[#384040] text-[#f3f4f5] placeholder:text-[#6f7a7a] focus:border-[#2dd4bf]/70 focus:ring-1 focus:ring-[#2dd4bf]/30 h-10 text-sm transition-all rounded-lg"
               />
             </div>
-            <Button type="submit" className="w-full bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold h-10 text-sm rounded-lg mt-2 cursor-pointer" disabled={loading}>
+            <Button type="submit" className="w-full bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold h-10 text-sm rounded-lg mt-3 cursor-pointer shadow-[0_0_15px_rgba(45,212,191,0.15)] hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Sign In
             </Button>
             <p className="text-center text-xs text-[#879292] pt-2">
               Don&apos;t have an account?{' '}
-              <Link href="/signup" className="text-[#2dd4bf] hover:underline font-medium">
+              <Link href="/signup" className="text-[#2dd4bf] hover:text-[#5eead4] hover:underline font-medium transition-colors">
                 Sign up
               </Link>
             </p>

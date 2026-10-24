@@ -60,23 +60,46 @@ export default function SignupPage() {
             )}
             <div className="space-y-1.5">
               <Label htmlFor="name" className="text-[#879292] font-mono text-[10px] tracking-wider uppercase">Full Name</Label>
-              <Input id="name" placeholder="Adv. Sarah Jenkins" value={name} onChange={(e) => setName(e.target.value)} required className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] focus:border-[#2dd4bf]/60 h-9" />
+              <Input
+                id="name"
+                placeholder="Adv. Sarah Jenkins"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="bg-[#0f1212] border-[#272b2b] hover:border-[#384040] text-[#f3f4f5] placeholder:text-[#6f7a7a] focus:border-[#2dd4bf]/70 focus:ring-1 focus:ring-[#2dd4bf]/30 h-10 text-sm transition-all rounded-lg"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-[#879292] font-mono text-[10px] tracking-wider uppercase">Email Address</Label>
-              <Input id="email" type="email" placeholder="counsel@chambers.legal" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] focus:border-[#2dd4bf]/60 h-9" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="counsel@chambers.legal"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-[#0f1212] border-[#272b2b] hover:border-[#384040] text-[#f3f4f5] placeholder:text-[#6f7a7a] focus:border-[#2dd4bf]/70 focus:ring-1 focus:ring-[#2dd4bf]/30 h-10 text-sm transition-all rounded-lg"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-[#879292] font-mono text-[10px] tracking-wider uppercase">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] focus:border-[#2dd4bf]/60 h-9" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="bg-[#0f1212] border-[#272b2b] hover:border-[#384040] text-[#f3f4f5] placeholder:text-[#6f7a7a] focus:border-[#2dd4bf]/70 focus:ring-1 focus:ring-[#2dd4bf]/30 h-10 text-sm transition-all rounded-lg"
+              />
             </div>
-            <Button type="submit" className="w-full bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold h-10 text-sm rounded-lg mt-2 cursor-pointer" disabled={loading}>
+            <Button type="submit" className="w-full bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold h-10 text-sm rounded-lg mt-3 cursor-pointer shadow-[0_0_15px_rgba(45,212,191,0.15)] hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Create Account
             </Button>
             <p className="text-center text-xs text-[#879292] pt-2">
               Already have an account?{' '}
-              <Link href="/login" className="text-[#2dd4bf] hover:underline font-medium">
+              <Link href="/login" className="text-[#2dd4bf] hover:text-[#5eead4] hover:underline font-medium transition-colors">
                 Sign in
               </Link>
             </p>
