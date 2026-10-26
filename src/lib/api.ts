@@ -68,8 +68,17 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 // ── Auth ──────────────────────────────────────────────────────────
 export const auth = {
-  signup: (body: { name: string; email: string; password: string }) =>
-    request<any>('/auth/signup', { method: 'POST', body: JSON.stringify(body) }),
+  signup: (body: {
+    name: string;
+    email: string;
+    password: string;
+    accountType?: string;
+    mobile?: string;
+    state?: string;
+    city?: string;
+    firmName?: string;
+    gstin?: string;
+  }) => request<any>('/auth/signup', { method: 'POST', body: JSON.stringify(body) }),
   login: (body: { email: string; password: string }) =>
     request<any>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   refresh: () =>
@@ -78,7 +87,16 @@ export const auth = {
     request<any>('/auth/logout', { method: 'POST' }),
   me: () =>
     request<any>('/auth/me'),
+  googleAuth: (params: string | { accessToken?: string; credential?: string; accountType?: string; firmName?: string }) => {
+    const body = typeof params === 'string' ? { accessToken: params } : params;
+    return request<any>('/auth/google', { method: 'POST', body: JSON.stringify(body) });
+  },
+  sendVerificationEmail: (body: { email: string; name?: string }) =>
+    request<any>('/auth/send-verification-email', { method: 'POST', body: JSON.stringify(body) }),
+  verifyEmail: (body: { email?: string; token?: string }) =>
+    request<any>('/auth/verify-email', { method: 'POST', body: JSON.stringify(body) }),
 };
+
 
 // ── Organisations ──────────────────────────────────────────────────
 export const organisations = {

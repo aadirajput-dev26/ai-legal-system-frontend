@@ -17,11 +17,14 @@ import {
   FileEdit,
   CreditCard,
   Plus,
-  ChevronRight
+  ChevronRight,
+  User as UserIcon
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useOrg } from '@/lib/org-context';
 import { useBilling } from '@/lib/billing-context';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +40,7 @@ interface AppShellProps {
   customBreadcrumbs?: Array<{ label: string; href?: string }>;
 }
 
-export function AppShell({ children, customBreadcrumbs }: AppShellProps) {
+export function AppShell({ children, caseId, customBreadcrumbs }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -122,7 +125,7 @@ export function AppShell({ children, customBreadcrumbs }: AppShellProps) {
   const tokenCredits = billingState?.balance?.balanceCredits ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#0d0f0f] text-[#f3f4f5] font-sans selection:bg-[#2dd4bf]/20 selection:text-[#2dd4bf]">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-[#2dd4bf]/20 selection:text-[#2dd4bf]">
       
       {/* ── Left Vertical Icon Dock ────────────────────────── */}
       <aside className="fixed left-0 top-0 bottom-0 w-14 sm:w-16 bg-[#0c0e0e] border-r border-[#1a1e1e] flex flex-col justify-between items-center py-3.5 z-40">
@@ -130,17 +133,26 @@ export function AppShell({ children, customBreadcrumbs }: AppShellProps) {
         {/* Top: Logo & Main Navigation */}
         <div className="flex flex-col items-center gap-4 w-full">
           {/* Logo - Mint green justice scales */}
-          <Link 
-            href="/dashboard" 
-            className="w-10 h-10 rounded-xl bg-[#2dd4bf] text-[#091b18] flex items-center justify-center shadow-[0_0_15px_rgba(45,212,191,0.2)] hover:opacity-95 transition-all"
-            title="LegalDesk Home"
-          >
-            <Scale className="w-5 h-5 stroke-[2.2]" />
-          </Link>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Link 
+                  href="/dashboard" 
+                  title="LegalDesk Home"
+                  className="w-10 h-10 rounded-xl bg-[#2dd4bf] text-[#091b18] flex items-center justify-center shadow-[0_0_15px_rgba(45,212,191,0.2)] hover:opacity-95 transition-all"
+                />
+              }
+            >
+              <Scale className="w-5 h-5 stroke-[2.2]" />
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={12}>
+              LegalDesk Home
+            </TooltipContent>
+          </Tooltip>
 
           <div className="w-8 h-px bg-[#1e2323] my-0.5" />
 
-          {/* Navigation icons */}
+          {/* Navigation icons with Tooltips */}
           <nav className="flex flex-col items-center gap-1.5 w-full px-2">
             {navItems.map((item) => {
               const isActive = 
@@ -148,114 +160,131 @@ export function AppShell({ children, customBreadcrumbs }: AppShellProps) {
                 (item.href !== '/dashboard' && pathname?.startsWith(item.href));
 
               return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  title={item.label}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 ${
-                    isActive
-                      ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30 shadow-[0_0_12px_rgba(45,212,191,0.1)]'
-                      : 'text-[#6f7a7a] hover:text-[#e2e8e8] hover:bg-[#151818]'
-                  }`}
-                >
-                  <item.icon className="w-[18px] h-[18px]" />
-                </Link>
+                <Tooltip key={item.label}>
+                  <TooltipTrigger
+                    render={
+                      <Link
+                        href={item.href}
+                        title={item.label}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 ${
+                          isActive
+                            ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/40 shadow-[0_0_12px_rgba(45,212,191,0.15)]'
+                            : 'text-[#879292] hover:text-foreground hover:bg-black/5 dark:hover:bg-white/[0.08]'
+                        }`}
+                      />
+                    }
+                  >
+                    <item.icon className="w-[18px] h-[18px]" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={12}>
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
               );
             })}
           </nav>
         </div>
 
-        {/* Bottom: Secondary icons & Profile */}
+        {/* Bottom: Secondary icons, Theme, & Profile */}
         <div className="flex flex-col items-center gap-2 w-full px-2">
           {/* Notifications */}
-          <Link
-            href="/notifications"
-            title="Notifications"
-            className="relative w-10 h-10 rounded-xl flex items-center justify-center text-[#6f7a7a] hover:text-[#e2e8e8] hover:bg-[#151818] transition-all"
-          >
-            <Bell className="w-[18px] h-[18px]" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 px-1 min-w-[14px] h-[14px] bg-[#2dd4bf] text-[#091b18] text-[9px] font-bold rounded-full flex items-center justify-center">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </Link>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Link
+                  href="/notifications"
+                  title="Notifications"
+                  className="relative w-10 h-10 rounded-xl flex items-center justify-center text-[#879292] hover:text-foreground hover:bg-black/5 dark:hover:bg-white/[0.08] transition-all"
+                />
+              }
+            >
+              <Bell className="w-[18px] h-[18px]" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 px-1 min-w-[14px] h-[14px] bg-[#2dd4bf] text-[#091b18] text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={12}>
+              Notifications {unreadCount > 0 ? `(${unreadCount} unread)` : ''}
+            </TooltipContent>
+          </Tooltip>
 
           {/* Billing / Tokens */}
-          <Link
-            href="/billing"
-            title="Billing & Tokens"
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-              pathname?.startsWith('/billing')
-                ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30'
-                : 'text-[#6f7a7a] hover:text-[#e2e8e8] hover:bg-[#151818]'
-            }`}
-          >
-            <CreditCard className="w-[18px] h-[18px]" />
-          </Link>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Link
+                  href="/billing"
+                  title="Billing & Tokens"
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                    pathname?.startsWith('/billing')
+                      ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/40'
+                      : 'text-[#879292] hover:text-foreground hover:bg-black/5 dark:hover:bg-white/[0.08]'
+                  }`}
+                />
+              }
+            >
+              <CreditCard className="w-[18px] h-[18px]" />
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={12}>
+              Billing & Tokens
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Theme Toggle Button */}
+          <Tooltip>
+            <TooltipTrigger render={<div />}>
+              <ThemeToggle />
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={12}>
+              Theme Mode
+            </TooltipContent>
+          </Tooltip>
 
           {/* Settings */}
-          <Link
-            href="/settings"
-            title="Settings"
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-              pathname?.startsWith('/settings')
-                ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30'
-                : 'text-[#6f7a7a] hover:text-[#e2e8e8] hover:bg-[#151818]'
-            }`}
-          >
-            <Settings className="w-[18px] h-[18px]" />
-          </Link>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Link
+                  href="/settings"
+                  title="Settings & Administration"
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                    pathname?.startsWith('/settings')
+                      ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/40'
+                      : 'text-[#879292] hover:text-foreground hover:bg-black/5 dark:hover:bg-white/[0.08]'
+                  }`}
+                />
+              }
+            >
+              <Settings className="w-[18px] h-[18px]" />
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={12}>
+              Settings & Administration
+            </TooltipContent>
+          </Tooltip>
 
-          {/* User Profile Avatar with Org Switcher */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className="focus:outline-none cursor-pointer mt-1">
-              <div 
-                className="w-8 h-8 rounded-full bg-[#1b2020] border border-[#2a3030] text-[#c0c8c8] text-xs font-semibold flex items-center justify-center hover:border-[#2dd4bf]/50 transition-colors"
-                title={user?.name || 'Account'}
-              >
-                {initials}
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" side="right" className="w-64 bg-[#141717] border border-[#232727] text-[#f3f4f5] shadow-2xl rounded-xl p-2 z-[60] ml-2">
-              <DropdownMenuLabel className="px-2 py-2">
-                <div className="font-semibold text-[#f3f4f5]">{user?.name || 'Account'}</div>
-                <div className="text-xs text-[#879292] truncate">{user?.email}</div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-[#232727] my-1" />
-              
-              {orgs.length > 1 && (
-                <>
-                  <DropdownMenuLabel className="px-2 py-1.5 text-[10px] uppercase font-bold text-[#2dd4bf] tracking-wider">
-                    Workspaces
-                  </DropdownMenuLabel>
-                  {orgs.map(org => (
-                    <DropdownMenuItem
-                      key={org.id}
-                      onClick={() => switchOrg(org.id)}
-                      className={`text-sm px-2 py-2 rounded-lg cursor-pointer flex items-center justify-between transition-colors ${
-                        currentOrg?.id === org.id 
-                          ? 'bg-[#192422] text-[#2dd4bf]' 
-                          : 'text-[#c0c8c8] hover:bg-[#1a1e1e] hover:text-[#f3f4f5]'
-                      }`}
-                    >
-                      <span className="truncate">{org.name}</span>
-                      {currentOrg?.id === org.id && <div className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf]" />}
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator className="bg-[#232727] my-1" />
-                </>
-              )}
-
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="text-sm px-2 py-2 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg cursor-pointer flex items-center gap-2 font-medium transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* User Profile Avatar - Navigates directly to Settings Profile Tab */}
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Link
+                  href="/settings?tab=user"
+                  title={`Profile & Account: ${user?.name || user?.email || 'User'}`}
+                  className={`w-8 h-8 rounded-full border text-xs font-semibold flex items-center justify-center transition-all cursor-pointer mt-1 ${
+                    pathname?.startsWith('/settings') && (typeof window !== 'undefined' && window.location.search.includes('tab=user'))
+                      ? 'bg-[#152321] text-[#2dd4bf] border-[#2dd4bf]/60 shadow-[0_0_10px_rgba(45,212,191,0.2)]'
+                      : 'bg-[#1b2020] border-[#2a3030] text-[#c0c8c8] hover:border-[#2dd4bf]/50 hover:text-foreground'
+                  }`}
+                >
+                  {initials}
+                </Link>
+              }
+            />
+            <TooltipContent side="right" sideOffset={12}>
+              Profile & Account ({user?.name || 'User'})
+            </TooltipContent>
+          </Tooltip>
         </div>
       </aside>
 

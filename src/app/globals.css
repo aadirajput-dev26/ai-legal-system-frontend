@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where([data-theme="dark"], .dark, .dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -50,32 +50,32 @@
 }
 
 :root {
-  --background: #0d0f0f;
-  --foreground: #f3f4f5;
-  --card: #141717;
-  --card-foreground: #f3f4f5;
-  --popover: #161919;
-  --popover-foreground: #f3f4f5;
-  --primary: #2dd4bf;
-  --primary-foreground: #091b18;
-  --secondary: #1a1e1e;
-  --secondary-foreground: #e5e7eb;
-  --muted: #161919;
-  --muted-foreground: #879292;
-  --accent: #1e2424;
-  --accent-foreground: #2dd4bf;
+  --background: #f8fafc;
+  --foreground: #090d0d;
+  --card: #ffffff;
+  --card-foreground: #090d0d;
+  --popover: #ffffff;
+  --popover-foreground: #090d0d;
+  --primary: #0d9488;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f0fdfa;
+  --accent-foreground: #0d9488;
   --destructive: #ef4444;
-  --border: #232727;
-  --input: #1a1e1e;
-  --ring: #2dd4bf;
-  --sidebar: #0e1010;
-  --sidebar-foreground: #f3f4f5;
-  --sidebar-primary: #2dd4bf;
-  --sidebar-primary-foreground: #091b18;
-  --sidebar-accent: #191d1d;
-  --sidebar-accent-foreground: #2dd4bf;
-  --sidebar-border: #1e2222;
-  --sidebar-ring: #2dd4bf;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0d9488;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0d9488;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0fdfa;
+  --sidebar-accent-foreground: #0d9488;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #0d9488;
   --radius: 0.5rem;
 }
 
@@ -98,19 +98,142 @@
   --border: #232727;
   --input: #1a1e1e;
   --ring: #2dd4bf;
-  --sidebar: #0e1010;
+  --sidebar: #0c0e0e;
   --sidebar-foreground: #f3f4f5;
   --sidebar-primary: #2dd4bf;
   --sidebar-primary-foreground: #091b18;
-  --sidebar-accent: #191d1d;
+  --sidebar-accent: #152321;
   --sidebar-accent-foreground: #2dd4bf;
-  --sidebar-border: #1e2222;
+  --sidebar-border: #1a1e1e;
   --sidebar-ring: #2dd4bf;
+}
+
+/* ── Light Mode Harmonious Utility Mappings ───────────────────────── */
+html:not(.dark) {
+  color-scheme: light;
+}
+
+/* Main background surfaces */
+html:not(.dark) .bg-\[\#0d0f0f\] {
+  background-color: #f8fafc !important;
+}
+html:not(.dark) .bg-\[\#0d0f0f\]\/95 {
+  background-color: rgba(248, 250, 252, 0.95) !important;
+}
+html:not(.dark) .bg-\[\#0d0f0f\]\/80 {
+  background-color: rgba(248, 250, 252, 0.8) !important;
+}
+html:not(.dark) .bg-\[\#0c0e0e\] {
+  background-color: #ffffff !important;
+}
+html:not(.dark) .bg-\[\#141717\] {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+}
+html:not(.dark) .bg-\[\#161919\],
+html:not(.dark) .bg-\[\#121515\],
+html:not(.dark) .bg-\[\#0f1212\],
+html:not(.dark) .bg-\[\#101414\] {
+  background-color: #f8fafc !important;
+}
+html:not(.dark) .bg-\[\#141818\],
+html:not(.dark) .bg-\[\#151818\],
+html:not(.dark) .bg-\[\#151919\],
+html:not(.dark) .bg-\[\#1a1e1e\],
+html:not(.dark) .bg-\[\#1b2020\],
+html:not(.dark) .bg-\[\#1e2323\],
+html:not(.dark) .bg-\[\#1e2424\],
+html:not(.dark) .bg-\[\#232929\] {
+  background-color: #f1f5f9 !important;
+}
+html:not(.dark) .bg-\[\#111111\],
+html:not(.dark) .bg-\[\#16161a\] {
+  background-color: #ffffff !important;
+}
+html:not(.dark) .bg-\[\#152321\] {
+  background-color: #f0fdfa !important;
+  color: #0d9488 !important;
+  border-color: rgba(13, 148, 136, 0.3) !important;
+}
+html:not(.dark) .bg-\[\#121422\] {
+  background-color: #eef2ff !important;
+  border-color: #c7d2fe !important;
+}
+html:not(.dark) .text-\[\#c5c8e0\] {
+  color: #312e81 !important;
+}
+html:not(.dark) .text-\[\#818cf8\] {
+  color: #4f46e5 !important;
+}
+
+/* Borders in light mode */
+html:not(.dark) .border-\[\#1a1e1e\],
+html:not(.dark) .border-\[\#1e2323\],
+html:not(.dark) .border-\[\#222828\],
+html:not(.dark) .border-\[\#232727\],
+html:not(.dark) .border-\[\#272b2b\],
+html:not(.dark) .border-\[\#262c2c\],
+html:not(.dark) .border-\[\#272e2e\],
+html:not(.dark) .border-\[\#2c3333\],
+html:not(.dark) .border-\[\#2a3030\],
+html:not(.dark) .border-white\/5,
+html:not(.dark) .border-white\/10 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Text colors in light mode */
+html:not(.dark) .text-\[\#f3f4f5\],
+html:not(.dark) .text-white:not([class*="bg-\[\#2dd4bf\]"]):not([class*="bg-primary"]):not([class*="bg-destructive"]),
+html:not(.dark) div.text-white,
+html:not(.dark) span.text-white,
+html:not(.dark) p.text-white,
+html:not(.dark) h1.text-white,
+html:not(.dark) h2.text-white,
+html:not(.dark) h3.text-white,
+html:not(.dark) h4.text-white {
+  color: #0f172a !important;
+}
+html:not(.dark) .text-\[\#879292\],
+html:not(.dark) .text-\[\#6f7a7a\] {
+  color: #64748b !important;
+}
+html:not(.dark) .text-\[\#c0c8c8\],
+html:not(.dark) .text-\[\#9aa5a5\] {
+  color: #334155 !important;
+}
+
+/* Hover effects in light mode */
+html:not(.dark) .hover\:bg-white\/\[0\.08\]:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+html:not(.dark) .hover\:bg-white\/5:hover,
+html:not(.dark) .hover\:bg-white\/10:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+html:not(.dark) .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+html:not(.dark) .hover\:bg-\[\#1a1e1e\]:hover,
+html:not(.dark) .hover\:bg-\[\#1d2222\]:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Inputs in light mode */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]),
+html:not(.dark) textarea,
+html:not(.dark) select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #94a3b8 !important;
 }
 
 @layer base {
   * {
-    @apply border-border/80 outline-ring/50 transition-colors duration-200;
+    @apply border-border/80 outline-ring/50 transition-colors duration-150;
   }
   body {
     @apply bg-background text-foreground tracking-normal leading-relaxed antialiased selection:bg-primary/20 selection:text-primary;
@@ -120,7 +243,7 @@
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-serif), Georgia, ui-serif, serif;
-    @apply tracking-tight font-normal text-balance text-[#f3f4f5];
+    @apply tracking-tight font-normal text-balance text-foreground;
   }
 }
 

@@ -14,20 +14,31 @@
  * silently discards what the user typed: the collected payload is assembled
  * in full and the unsupported fields are dropped only at the final call,
  * with a console warning, so the gap is visible in development.
+ *
+ * GOOGLE OAUTH:
+ *   When a user signs up with Google, the flow jumps to Step 2 (details)
+ *   with name/email pre-filled, then goes straight to Step 5 (done),
+ *   bypassing email verification (already verified by Google) and the
+ *   password step (Google users don't need a LegalDesk password).
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { auth as authApi } from '@/lib/api';
+import { useGoogleLogin } from '@react-oauth/google';
 import './signup.css';
 
 const STATES = ['Andhra Pradesh','Assam','Bihar','Chhattisgarh','Delhi','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Odisha','Punjab','Rajasthan','Tamil Nadu','Telangana','Uttar Pradesh','Uttarakhand','West Bengal'];
 const GST_STATE: Record<string, string> = { Delhi:'07', Gujarat:'24', Karnataka:'29', Maharashtra:'27', Rajasthan:'08', 'Tamil Nadu':'33', Telangana:'36', 'Uttar Pradesh':'09', 'West Bengal':'19' };
 const DOMAINS = ['gmail.com','yahoo.com','outlook.com','hotmail.com','icloud.com','rediffmail.com'];
-const STRENGTH = ['Too short','Getting there','Good','Strong'];
+const STRENGTH_LABELS = ['Too weak','Getting there','Good','Strong'];
 const LINK_SECONDS = 30 * 60;
 const RESEND_COOLDOWN = 30;
+
+// Email verification webhook
+const VERIFY_WEBHOOK = 'https://flow.sokt.io/func/scriV6mk16qc';
 
 type Kind = 'individual' | 'firm';
 type Errors = Record<string, string>;
@@ -50,9 +61,97 @@ function maskEmail(value: string) {
   return `${local[0]}***${local[local.length - 1]}@${domain}`;
 }
 
+/** Password rule checkers */
+const pwRules = [
+  { id: 'len',     label: 'At least 8 characters',          test: (p: string) => p.length >= 8 },
+  { id: 'upper',   label: 'One uppercase letter (A-Z)',      test: (p: string) => /[A-Z]/.test(p) },
+  { id: 'lower',   label: 'One lowercase letter (a-z)',      test: (p: string) => /[a-z]/.test(p) },
+  { id: 'digit',   label: 'One number (0-9)',                test: (p: string) => /[0-9]/.test(p) },
+  { id: 'special', label: 'One special character (!@#$…)',   test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
+
+/** Send verification email via webhook */
+async function sendVerificationEmail(email: string, name: string) {
+  const verifyUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://legaldesk.co.in'}/verify?email=${encodeURIComponent(email)}`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verify your LegalDesk email</title>
+</head>
+<body style="margin:0;padding:0;background:#F8F9FA;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F8F9FA;padding:40px 16px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:12px;border:1px solid #E5E7EB;overflow:hidden;max-width:560px;width:100%;">
+      <!-- Header -->
+      <tr>
+        <td style="background:#111111;padding:32px 40px;text-align:center;">
+          <p style="margin:0;font-size:22px;font-weight:bold;color:#FFFFFF;letter-spacing:-0.02em;">Legal<span style="color:#2dd4bf;">Desk</span></p>
+          <p style="margin:8px 0 0;font-size:13px;color:#A1A1AA;">AI Legal Case Management</p>
+        </td>
+      </tr>
+      <!-- Body -->
+      <tr>
+        <td style="padding:40px 40px 32px;">
+          <h1 style="margin:0 0 8px;font-size:24px;font-weight:bold;color:#111111;letter-spacing:-0.02em;">Verify your email address</h1>
+          <p style="margin:0 0 24px;font-size:15px;color:#666666;line-height:1.6;">Hi ${name || 'there'},</p>
+          <p style="margin:0 0 24px;font-size:15px;color:#666666;line-height:1.6;">
+            Welcome to LegalDesk! Click the button below to verify your email address and complete your account setup.
+          </p>
+          <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
+            <tr>
+              <td style="background:#111111;border-radius:10px;">
+                <a href="${verifyUrl}" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:bold;color:#FFFFFF;text-decoration:none;letter-spacing:-0.01em;">
+                  Verify Email Address →
+                </a>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:0 0 8px;font-size:13px;color:#999999;">Or copy and paste this link into your browser:</p>
+          <p style="margin:0 0 24px;font-size:12px;color:#111111;word-break:break-all;background:#F8F9FA;padding:12px;border-radius:8px;border:1px solid #E5E7EB;">${verifyUrl}</p>
+          <p style="margin:0;font-size:13px;color:#999999;line-height:1.6;">
+            This link expires in <strong style="color:#111111;">30 minutes</strong> and can only be used once.<br />
+            If you didn't create a LegalDesk account, you can safely ignore this email.
+          </p>
+        </td>
+      </tr>
+      <!-- Footer -->
+      <tr>
+        <td style="padding:24px 40px;border-top:1px solid #E5E7EB;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#999999;">© ${new Date().getFullYear()} LegalDesk. All rights reserved.</p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+
+  try {
+    await authApi.sendVerificationEmail({ email: email.trim(), name: name.trim() });
+  } catch (backendErr) {
+    // Fallback directly to webhook if backend endpoint fails
+    try {
+      await fetch(VERIFY_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email.trim(),
+          subject: 'Verify your LegalDesk email address',
+          html,
+        }),
+      });
+    } catch (err) {
+      console.warn('[signup] Verification email delivery failed:', err);
+    }
+  }
+}
+
 export default function SignupPage() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { signup, googleLogin } = useAuth();
 
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [step, setStep] = useState(1);
@@ -78,6 +177,10 @@ export default function SignupPage() {
   const [typo, setTypo] = useState('');
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [focus, setFocus] = useState('');
+
+  // Google OAuth state — tracks if user signed up via Google (skip email verify + password)
+  const [isGoogleSignup, setIsGoogleSignup] = useState(false);
+  const [googleAccessToken, setGoogleAccessToken] = useState('');
 
   const [secondsLeft, setSecondsLeft] = useState(LINK_SECONDS);
   const [resentAt, setResentAt] = useState<number | null>(null);
@@ -140,6 +243,19 @@ export default function SignupPage() {
     setTypo(hit ? `${v.slice(0, at + 1)}${hit}` : '');
   }
 
+  /* ── password strength (new 5-rule system) ──────── */
+  const pwChecks = pwRules.map(r => ({ ...r, passed: r.test(pw1) }));
+  const passedCount = pwChecks.filter(r => r.passed).length;
+
+  // Strength score 0-3: map 5 rules → 4 bars
+  const strength = passedCount === 0 ? 0
+    : passedCount <= 2 ? 1
+    : passedCount <= 3 ? 2
+    : passedCount === 4 ? 3
+    : 4; // all 5 passed
+
+  const passwordValid = pwChecks.every(r => r.passed);
+
   /* ── navigation ─────────────────────────────────── */
   function go(to: number) {
     setDir(to > step ? 'fwd' : 'back');
@@ -148,23 +264,48 @@ export default function SignupPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function onDetailsContinue() {
+  async function onDetailsContinue() {
     const next = validateDetails();
     setErrors(next);
     setNudge(n => n + 1);
     if (Object.keys(next).length) return;
+
     setBusy(true);
-    // TODO(api): POST /auth/signup/start — create the pending signup and send
-    // the verification link. No such endpoint exists yet, so this is a delay.
-    setTimeout(() => { setBusy(false); go(3); }, 650);
+    try {
+      // Send verification email via webhook (non-blocking)
+      await sendVerificationEmail(email, name);
+    } finally {
+      setBusy(false);
+    }
+
+    if (isGoogleSignup) {
+      // Google users: skip email verify + password → create account via backend Google OAuth
+      setBusy(true);
+      setServerError('');
+      try {
+        await googleLogin({
+          accessToken: googleAccessToken,
+          accountType: kind || 'individual',
+          firmName: isFirm ? firmName.trim() : undefined,
+        });
+        go(5);
+      } catch (err) {
+        setServerError(err instanceof Error ? err.message : 'We could not create your account. Please try again.');
+      } finally {
+        setBusy(false);
+      }
+    } else {
+      go(3);
+    }
   }
 
-  function resend() {
+  async function resend() {
     if (cooldown > 0) return;
-    // TODO(api): POST /auth/signup/resend — must be rate limited per email AND per IP.
     setResentAt(Date.now());
     setCooldown(RESEND_COOLDOWN);
     setSecondsLeft(LINK_SECONDS);
+    // TODO(api): POST /auth/signup/resend — must be rate limited per email AND per IP.
+    await sendVerificationEmail(email, name);
   }
 
   /**
@@ -175,32 +316,22 @@ export default function SignupPage() {
    */
   async function submitSignup() {
     const payload = {
-      accountType: kind,
+      accountType: kind || 'individual',
       name: name.trim(),
       email: email.trim(),
       mobile: `${cc}${mobile.replace(/\D/g, '')}`,
       state,
       city,
-      ...(isFirm ? { firmName: firmName.trim(), gstin: gstin.trim().toUpperCase() || null } : {}),
+      ...(isFirm ? { firmName: firmName.trim(), gstin: gstin.trim().toUpperCase() || undefined } : {}),
       password: pw1,
     };
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(
-        '[signup] Backend accepts { name, email, password } only. Dropped for now:',
-        { accountType: payload.accountType, mobile: payload.mobile, state, city,
-          firmName: isFirm ? payload.firmName : undefined, gstin: isFirm ? payload.gstin : undefined }
-      );
-    }
-
-    // TODO(api): replace with POST /auth/signup/activate carrying the full payload
-    // and the verification token, so the organisation is created server-side.
-    await signup(payload.name, payload.email, payload.password);
+    await signup(payload);
   }
 
   async function onCreateAccount() {
     const next: Errors = {};
-    if (pw1.length < 12) next.pw1 = 'Use at least 12 characters.';
+    if (!passwordValid) next.pw1 = 'Password must be at least 8 characters with uppercase, lowercase, number, and special character.';
     if (!pw2 || pw2 !== pw1) next.pw2 = "Passwords don't match.";
     setErrors(next);
     setNudge(n => n + 1);
@@ -217,6 +348,31 @@ export default function SignupPage() {
       setBusy(false);
     }
   }
+
+  /* ── Google sign-up handler ─────────────────────── */
+  const handleGoogleSignup = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsGoogleSignup(true);
+      setGoogleAccessToken(tokenResponse.access_token);
+
+      // Try to pre-fill name/email from Google userinfo
+      try {
+        const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        if (userInfoRes.ok) {
+          const info = await userInfoRes.json();
+          if (info.name) setName(info.name);
+          if (info.email) setEmail(info.email);
+        }
+      } catch { /* non-critical */ }
+
+      go(2);
+    },
+    onError: () => {
+      setServerError('Google sign-in was cancelled or failed.');
+    },
+  });
 
   /* ── theme, with a circular sweep from the button ── */
   function toggleTheme() {
@@ -239,15 +395,6 @@ export default function SignupPage() {
   }
 
   /* ── small render helpers ───────────────────────── */
-  const strength = (() => {
-    let s = 0;
-    if (pw1.length >= 12) s++;
-    if (pw1.length >= 16) s++;
-    if (/[^A-Za-z0-9]/.test(pw1) || /\s/.test(pw1)) s++;
-    if (/\d/.test(pw1) && /[A-Za-z]/.test(pw1)) s++;
-    return s;
-  })();
-
   function field(id: string, label: React.ReactNode, node: React.ReactNode, extra?: React.ReactNode) {
     return (
       <div className={`au-f${errors[id] ? ' bad' : ''}${focus === id ? ' focus' : ''}`} key={`${id}-${nudge}`}>
@@ -275,8 +422,14 @@ export default function SignupPage() {
     );
   }
 
-  const stepLabels = ['Account type', 'Your details', 'Verify email', 'Password'];
-  const activeStep = Math.min(step, 4);
+  // Required asterisk helper
+  const Req = () => <span className="au-req">*</span>;
+
+  const stepLabels = isGoogleSignup
+    ? ['Account type', 'Your details']
+    : ['Account type', 'Your details', 'Verify email', 'Password'];
+  const totalSteps = stepLabels.length;
+  const activeStep = Math.min(step, totalSteps);
   const mm = Math.floor(secondsLeft / 60);
   const ss = String(secondsLeft % 60).padStart(2, '0');
 
@@ -294,7 +447,7 @@ export default function SignupPage() {
       </div>
 
       <div className="au-card">
-        {step < 5 && (
+        {step < (isGoogleSignup ? 5 : 5) && step <= totalSteps && (
           <div className="au-steps">
             {stepLabels.map((label, i) => (
               <div key={label} className={`au-step${i === activeStep - 1 ? ' on' : ''}${i < activeStep - 1 ? ' done' : ''}`}>
@@ -331,12 +484,44 @@ export default function SignupPage() {
                 </button>
               ))}
             </div>
+
             <div className="au-acts">
               <span />
               <button type="button" className="au-btn au-primary" disabled={!kind} onClick={() => go(2)}>
                 <span className="lbl">Continue</span><span className="au-spin" />
               </button>
             </div>
+
+            {/* Google sign up option */}
+            <div className="au-divider">
+              <span>or</span>
+            </div>
+
+            <div className="au-google-wrap">
+              <button
+                type="button"
+                className="au-google-btn"
+                onClick={() => {
+                  if (!kind) { setErrors({ kind: 'Please select an account type first.' }); return; }
+                  if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID.startsWith('placeholder')) {
+                    setErrors({ kind: 'Google Sign-In is not configured yet. Please configure NEXT_PUBLIC_GOOGLE_CLIENT_ID in your frontend .env' });
+                    return;
+                  }
+                  setErrors({});
+                  handleGoogleSignup();
+                }}
+              >
+                <svg viewBox="0 0 24 24" className="au-google-ico">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Sign up with Google
+              </button>
+              {errors.kind && <div className="au-flag live" style={{ textAlign: 'center', marginTop: 8 }}>{errors.kind}</div>}
+            </div>
+
             <p className="au-tiny">
               Already have an account? <Link href="/login" className="au-link">Sign in</Link>
             </p>
@@ -347,16 +532,20 @@ export default function SignupPage() {
         {step === 2 && (
           <section className={`au-screen ${dir}`}>
             <h1>{isFirm ? "Set up your firm's workspace." : 'Tell us about yourself.'}</h1>
-            <p className="au-sub">{isFirm ? "You'll be the owner of this workspace." : "We'll use this to set up your practice."}</p>
+            <p className="au-sub">
+              {isGoogleSignup
+                ? 'We pre-filled your Google details. Confirm and continue.'
+                : isFirm ? "You'll be the owner of this workspace." : "We'll use this to set up your practice."}
+            </p>
 
             <div className="au-stag">
               <h2>{isFirm ? 'Administrator details' : 'Your details'}</h2>
 
-              {field('name', 'Full name', input('name', name, setName, { autoComplete: 'name', placeholder: 'Adv. Priya Mehta' }))}
+              {field('name', <><span>Full name</span><Req /></>, input('name', name, setName, { autoComplete: 'name', placeholder: 'Adv. Priya Mehta' }))}
 
               <div className="au-row">
-                {field('email', 'Email address',
-                  input('email', email, setEmail, { type: 'email', autoComplete: 'email', placeholder: 'priya@example.com' }),
+                {field('email', <><span>Email address</span><Req /></>,
+                  input('email', email, setEmail, { type: 'email', autoComplete: 'email', placeholder: 'priya@example.com', readOnly: isGoogleSignup }),
                   typo ? (
                     <div className="au-flag live">
                       Did you mean{' '}
@@ -365,7 +554,7 @@ export default function SignupPage() {
                   ) : null
                 )}
 
-                {field('mobile', 'Mobile number', (
+                {field('mobile', <><span>Mobile number</span><Req /></>, (
                   <div className="au-phone">
                     <select aria-label="Country code" value={cc} onChange={e => setCc(e.target.value)}>
                       {['+91','+1','+44','+971'].map(c => <option key={c}>{c}</option>)}
@@ -382,7 +571,7 @@ export default function SignupPage() {
               {isFirm && (
                 <div className="au-reveal">
                   <h2 style={{ marginTop: 32 }}>Firm details</h2>
-                  {field('firmName', 'Law firm name', input('firmName', firmName, setFirmName, { autoComplete: 'organization', placeholder: 'Mehta & Associates' }))}
+                  {field('firmName', <><span>Law firm name</span><Req /></>, input('firmName', firmName, setFirmName, { autoComplete: 'organization', placeholder: 'Mehta & Associates' }))}
                   {field('gstin', <>GST number <span className="au-opt">— optional</span></>,
                     input('gstin', gstin, v => setGstin(v.toUpperCase()), { maxLength: 15, placeholder: '24AAACM1234F1Z5' }),
                     <div className="au-hint">
@@ -394,28 +583,32 @@ export default function SignupPage() {
               )}
 
               <div className="au-row" style={{ marginTop: 8 }}>
-                {field('state', 'State', (
+                {field('state', <><span>State</span><Req /></>, (
                   <select id="state" value={state} onChange={e => setState(e.target.value)}
                           onFocus={() => setFocus('state')} onBlur={() => setFocus('')}>
                     <option value="">Select state</option>
                     {STATES.map(s => <option key={s}>{s}</option>)}
                   </select>
                 ))}
-                {field('city', 'City', input('city', city, setCity, { autoComplete: 'address-level2', placeholder: 'Ahmedabad' }))}
+                {field('city', <><span>City</span><Req /></>, input('city', city, setCity, { autoComplete: 'address-level2', placeholder: 'Ahmedabad' }))}
               </div>
             </div>
 
+            {serverError && (
+              <div className="au-flag live" style={{ color: 'var(--err)', marginBottom: 16 }}>{serverError}</div>
+            )}
+
             <div className="au-acts">
-              <button type="button" className="au-btn au-ghost" onClick={() => go(1)}>Back</button>
+              <button type="button" className="au-btn au-ghost" onClick={() => { setIsGoogleSignup(false); go(1); }}>Back</button>
               <button type="button" className={`au-btn au-primary${busy ? ' busy' : ''}`} disabled={busy} onClick={onDetailsContinue}>
-                <span className="lbl">Continue</span><span className="au-spin" />
+                <span className="lbl">{isGoogleSignup ? 'Create Account' : 'Continue'}</span><span className="au-spin" />
               </button>
             </div>
           </section>
         )}
 
-        {/* 3 — verify */}
-        {step === 3 && (
+        {/* 3 — verify (email/password flow only) */}
+        {step === 3 && !isGoogleSignup && (
           <section className={`au-screen ${dir}`}>
             <div className="au-mid">
               <div className="au-badge">
@@ -428,7 +621,7 @@ export default function SignupPage() {
               <p className="au-sub" style={{ marginBottom: 16 }}>We&apos;ve sent a secure link to</p>
               <div className="au-mail">{maskEmail(email.trim())}</div>
               <p className={`au-timer${secondsLeft <= 120 ? ' low' : ''}`}>
-                {secondsLeft > 0 ? <>Expires in <b>{mm}:{ss}</b> · can be used once</> : <b>This link has expired.</b>}
+                {secondsLeft > 0 ? <><b>{mm}:{ss}</b> · expires · one use only</> : <b>This link has expired.</b>}
               </p>
             </div>
 
@@ -466,8 +659,8 @@ export default function SignupPage() {
           </section>
         )}
 
-        {/* 4 — password */}
-        {step === 4 && (
+        {/* 4 — password (email/password flow only) */}
+        {step === 4 && !isGoogleSignup && (
           <section className={`au-screen ${dir}`}>
             <h1>Secure your account.</h1>
             <p className="au-sub">Choose a password you don&apos;t use anywhere else.</p>
@@ -477,11 +670,11 @@ export default function SignupPage() {
             )}
 
             <div className={`au-f${errors.pw1 ? ' bad' : ''}`} key={`pw1-${nudge}`}>
-              <label htmlFor="pw1">Create password</label>
+              <label htmlFor="pw1">Create password <Req /></label>
               <div className="au-ctl au-pw">
                 <input
                   id="pw1" type={showPw.pw1 ? 'text' : 'password'} value={pw1} autoComplete="new-password"
-                  placeholder="At least 12 characters"
+                  placeholder="At least 8 characters"
                   onChange={e => setPw1(e.target.value)}
                   onKeyUp={e => setCaps(e.getModifierState?.('CapsLock') ?? false)}
                   onBlur={() => setCaps(false)}
@@ -490,19 +683,39 @@ export default function SignupPage() {
                   {showPw.pw1 ? 'Hide' : 'Show'}
                 </button>
               </div>
+
+              {/* Strength meter */}
               <div className="au-meter">
-                {[0,1,2,3].map(i => <i key={i} className={i < strength ? 'on' : ''} />)}
+                {[0,1,2,3].map(i => <i key={i} className={i < Math.min(strength, 4) ? 'on' : ''} />)}
               </div>
               <div className="au-hint">
-                <span>{pw1 ? STRENGTH[Math.max(0, strength - 1)] : "A short phrase you'll remember works better than a complicated word."}</span>
+                <span>{pw1 ? STRENGTH_LABELS[Math.max(0, Math.min(strength - 1, 3))] : 'Minimum 8 characters with mixed case, numbers and symbols.'}</span>
               </div>
+
+              {/* Password checklist — shows only when user has started typing */}
+              {pw1.length > 0 && (
+                <div className="au-pw-checklist">
+                  {pwChecks.map(r => (
+                    <div key={r.id} className={`au-pw-check${r.passed ? ' pass' : ''}`}>
+                      <svg viewBox="0 0 16 16">
+                        {r.passed
+                          ? <path d="m3 8 3.5 3.5L13 5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                          : <circle cx="8" cy="8" r="3" />
+                        }
+                      </svg>
+                      {r.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className={`au-flag${caps ? ' live' : ''}`}>Caps Lock is on.</div>
               <div className="au-err">{errors.pw1}</div>
             </div>
 
             <div className={`au-f${errors.pw2 ? ' bad' : ''}`} key={`pw2-${nudge}`}>
-              <label htmlFor="pw2">Confirm password</label>
-              <div className={`au-ctl au-pw${pw2 && pw2 === pw1 && pw1.length >= 12 ? ' ok' : ''}`}>
+              <label htmlFor="pw2">Confirm password <Req /></label>
+              <div className={`au-ctl au-pw${pw2 && pw2 === pw1 && passwordValid ? ' ok' : ''}`}>
                 <input
                   id="pw2" type={showPw.pw2 ? 'text' : 'password'} value={pw2} autoComplete="new-password"
                   placeholder="Re-enter password"
