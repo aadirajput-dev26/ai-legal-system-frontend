@@ -82,7 +82,13 @@ export default function LoginPage() {
             {/* Google Sign In Button */}
             <button
               type="button"
-              onClick={() => handleGoogleLogin()}
+              onClick={() => {
+                if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID.startsWith('placeholder')) {
+                  setError('Google Sign-In is not configured yet. Please configure NEXT_PUBLIC_GOOGLE_CLIENT_ID in your frontend .env');
+                  return;
+                }
+                handleGoogleLogin();
+              }}
               disabled={googleLoading || loading}
               className="w-full h-10 flex items-center justify-center gap-3 rounded-lg border border-[#272b2b] bg-[#1a1d1d] hover:bg-[#1e2424] hover:border-[#384040] text-[#c9d1d1] text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >

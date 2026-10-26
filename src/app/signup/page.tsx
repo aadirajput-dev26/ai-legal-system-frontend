@@ -503,6 +503,10 @@ export default function SignupPage() {
                 className="au-google-btn"
                 onClick={() => {
                   if (!kind) { setErrors({ kind: 'Please select an account type first.' }); return; }
+                  if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID.startsWith('placeholder')) {
+                    setErrors({ kind: 'Google Sign-In is not configured yet. Please configure NEXT_PUBLIC_GOOGLE_CLIENT_ID in your frontend .env' });
+                    return;
+                  }
                   setErrors({});
                   handleGoogleSignup();
                 }}
