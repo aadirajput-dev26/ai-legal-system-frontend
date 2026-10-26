@@ -136,6 +136,7 @@ html:not(.dark) .bg-\[\#0f1212\],
 html:not(.dark) .bg-\[\#101414\] {
   background-color: #f8fafc !important;
 }
+html:not(.dark) .bg-\[\#141818\],
 html:not(.dark) .bg-\[\#151818\],
 html:not(.dark) .bg-\[\#151919\],
 html:not(.dark) .bg-\[\#1a1e1e\],

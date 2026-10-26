@@ -121,12 +121,12 @@ export default function DashboardPage() {
             {/* ── Top Header Section ────────────────────────────── */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-2">
               <div>
-                <p className="text-[11px] font-medium tracking-[0.16em] uppercase text-[#6f7a7a] mb-3">
+                <p className="text-[11px] font-medium tracking-[0.16em] uppercase text-muted-foreground mb-3">
                   {currentDateHeader}
                 </p>
-                <h1 className="text-3xl sm:text-4xl font-serif tracking-tight text-[#f3f4f5]">
+                <h1 className="text-3xl sm:text-4xl font-serif tracking-tight text-foreground">
                   <span>{countToWord(cases.length)} matters. </span>
-                  <span className="text-[#646e6e] font-serif">
+                  <span className="text-muted-foreground font-serif">
                     {hearingsToday.length === 0 ? 'Nothing listed today.' : `${countToWord(hearingsToday.length)} listed today.`}
                   </span>
                 </h1>
@@ -134,7 +134,7 @@ export default function DashboardPage() {
 
               <Link
                 href="/cases"
-                className="self-start md:self-auto bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium text-sm px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                className="self-start md:self-auto bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-sm px-4 py-2 rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 New matter
@@ -157,18 +157,18 @@ export default function DashboardPage() {
               const caseTasksTotal = Math.max(nextCaseTasks.length, 4);
 
               return (
-                <div className="rounded-2xl bg-[#141818] border border-[#222828] p-6 sm:p-7 relative overflow-hidden">
+                <div className="rounded-2xl bg-card border border-border p-6 sm:p-7 relative overflow-hidden shadow-sm">
                   <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
                     <div className="space-y-2 flex-1">
-                      <div className="text-xs font-mono tracking-wider uppercase text-[#2dd4bf] font-medium">
+                      <div className="text-xs font-mono tracking-wider uppercase text-[#0d9488] dark:text-[#2dd4bf] font-semibold">
                         NEXT IN COURT {hearingDate ? `· ${format(hearingDate, 'EEE d MMM · HH:mm')} ${daysLabel ? `· ${daysLabel}` : ''}` : ''}
                       </div>
 
-                      <h2 className="text-2xl sm:text-3xl font-serif text-[#f3f4f5] tracking-tight">
+                      <h2 className="text-2xl sm:text-3xl font-serif text-foreground tracking-tight">
                         {nextCase.title}
                       </h2>
 
-                      <p className="text-sm text-[#879292]">
+                      <p className="text-sm text-muted-foreground">
                         {[nextCase.court, nextCase.stage || 'Pleadings', nextCase.judge ? `before Judge ${nextCase.judge}` : '']
                           .filter(Boolean)
                           .join(' · ')}
@@ -177,27 +177,27 @@ export default function DashboardPage() {
 
                     <Link
                       href={`/cases/${nextCase.id}`}
-                      className="self-start lg:self-center bg-[#1a1f1f] hover:bg-[#222828] border border-[#2b3333] text-[#f3f4f5] text-sm font-medium px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+                      className="self-start lg:self-center bg-card hover:bg-accent border border-border text-foreground text-sm font-medium px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap shadow-sm"
                     >
                       Open brief
-                      <ArrowRight className="w-4 h-4 text-[#879292]" />
+                      <ArrowRight className="w-4 h-4 text-muted-foreground" />
                     </Link>
                   </div>
 
                   {/* Readiness Checklist */}
-                  <div className="mt-8 pt-6 border-t border-[#1e2323]">
-                    <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a] mb-4">
+                  <div className="mt-8 pt-6 border-t border-border">
+                    <div className="text-[11px] font-mono tracking-wider uppercase text-muted-foreground mb-4">
                       READINESS — {caseTasksDone} OF {caseTasksTotal}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
                       {/* Fixed status badges reflecting briefing progress */}
-                      <div className="flex items-center gap-2.5 text-sm text-[#c5cccc]">
-                        <Check className="w-4 h-4 text-[#2dd4bf] stroke-[2.5]" />
+                      <div className="flex items-center gap-2.5 text-sm text-foreground">
+                        <Check className="w-4 h-4 text-[#0d9488] dark:text-[#2dd4bf] stroke-[2.5]" />
                         <span>Pleadings filed</span>
                       </div>
-                      <div className="flex items-center gap-2.5 text-sm text-[#c5cccc]">
-                        <Check className="w-4 h-4 text-[#2dd4bf] stroke-[2.5]" />
+                      <div className="flex items-center gap-2.5 text-sm text-foreground">
+                        <Check className="w-4 h-4 text-[#0d9488] dark:text-[#2dd4bf] stroke-[2.5]" />
                         <span>Counsel briefed</span>
                       </div>
 
@@ -206,29 +206,29 @@ export default function DashboardPage() {
                           <div 
                             key={task.id}
                             onClick={() => handleToggleTaskStatus(task)}
-                            className="flex items-center gap-2.5 text-sm text-[#f3f4f5] cursor-pointer group"
+                            className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer group"
                           >
                             {task.status === 'COMPLETED' ? (
-                              <Check className="w-4 h-4 text-[#2dd4bf] stroke-[2.5]" />
+                              <Check className="w-4 h-4 text-[#0d9488] dark:text-[#2dd4bf] stroke-[2.5]" />
                             ) : (
-                              <div className="w-4 h-4 rounded-full border border-[#f59e0b] group-hover:border-[#2dd4bf] flex items-center justify-center" />
+                              <div className="w-4 h-4 rounded-full border border-amber-500 group-hover:border-[#2dd4bf] flex items-center justify-center" />
                             )}
-                            <span className="underline decoration-[#3a4242] underline-offset-4 group-hover:text-[#2dd4bf] transition-colors truncate">
+                            <span className="underline decoration-muted-foreground/30 underline-offset-4 group-hover:text-[#0d9488] dark:group-hover:text-[#2dd4bf] transition-colors truncate">
                               {task.title}
                             </span>
                           </div>
                         ))
                       ) : (
                         <>
-                          <div className="flex items-center gap-2.5 text-sm text-[#f3f4f5] group">
-                            <div className="w-4 h-4 rounded-full border border-[#f59e0b] flex items-center justify-center" />
-                            <span className="underline decoration-[#3a4242] underline-offset-4 truncate">
+                          <div className="flex items-center gap-2.5 text-sm text-foreground group">
+                            <div className="w-4 h-4 rounded-full border border-amber-500 flex items-center justify-center flex-shrink-0" />
+                            <span className="underline decoration-muted-foreground/30 underline-offset-4 truncate">
                               Reconcile invoices against inspection
                             </span>
                           </div>
-                          <div className="flex items-center gap-2.5 text-sm text-[#f3f4f5] group">
-                            <div className="w-4 h-4 rounded-full border border-[#f59e0b] flex items-center justify-center" />
-                            <span className="underline decoration-[#3a4242] underline-offset-4 truncate">
+                          <div className="flex items-center gap-2.5 text-sm text-foreground group">
+                            <div className="w-4 h-4 rounded-full border border-amber-500 flex items-center justify-center flex-shrink-0" />
+                            <span className="underline decoration-muted-foreground/30 underline-offset-4 truncate">
                               2 statements lack evidence
                             </span>
                           </div>
@@ -254,15 +254,15 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              <div className="relative pl-6 space-y-7 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-[#202626]">
+              <div className="relative pl-6 space-y-7 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-border">
                 {casesWithHearing.slice(0, 4).map((c, idx) => {
                   const hDate = parseISO(c.next_hearing_date!);
-                  const colorDot = idx === 0 ? 'bg-[#f59e0b]' : idx === 1 ? 'bg-[#2dd4bf]' : 'bg-[#4b5555]';
-                  const textColor = idx === 0 ? 'text-[#f59e0b]' : idx === 1 ? 'text-[#2dd4bf]' : 'text-[#879292]';
+                  const colorDot = idx === 0 ? 'bg-amber-500' : idx === 1 ? 'bg-[#0d9488] dark:bg-[#2dd4bf]' : 'bg-muted-foreground/40';
+                  const textColor = idx === 0 ? 'text-amber-600 dark:text-amber-400' : idx === 1 ? 'text-[#0d9488] dark:text-[#2dd4bf]' : 'text-muted-foreground';
 
                   return (
                     <div key={c.id} className="relative group">
-                      <div className={`absolute -left-[27px] top-1.5 w-2.5 h-2.5 rounded-full ${colorDot} ring-4 ring-[#0d0f0f]`} />
+                      <div className={`absolute -left-[27px] top-1.5 w-2.5 h-2.5 rounded-full ${colorDot} ring-4 ring-background`} />
                       
                       <div className="space-y-1">
                         <div className={`text-[11px] font-mono tracking-wider uppercase font-semibold ${textColor}`}>
@@ -271,12 +271,12 @@ export default function DashboardPage() {
 
                         <Link 
                           href={`/cases/${c.id}`}
-                          className="block text-lg font-serif text-[#f3f4f5] hover:text-[#2dd4bf] transition-colors"
+                          className="block text-lg font-serif text-foreground hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors"
                         >
                           {c.title}
                         </Link>
 
-                        <div className="text-xs text-[#6f7a7a]">
+                        <div className="text-xs text-muted-foreground">
                           {[c.stage || 'Pleadings', c.case_number || 'QA/CIV/2026/001', '1 task outstanding']
                             .filter(Boolean)
                             .join(' · ')}
@@ -287,18 +287,18 @@ export default function DashboardPage() {
                 })}
 
                 {casesWithHearing.length === 0 && (
-                  <p className="text-sm text-[#6f7a7a] py-4">No scheduled hearings in the next 14 days.</p>
+                  <p className="text-sm text-muted-foreground py-4">No scheduled hearings in the next 14 days.</p>
                 )}
               </div>
             </div>
 
             {/* ── Bottom Split: Outstanding Tasks & Lately Stream ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pt-4 border-t border-[#1a1e1e]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pt-4 border-t border-border">
               
               {/* Outstanding Tasks */}
               <div className="space-y-4">
-                <div className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">
-                  OUTSTANDING <span className="text-[#879292] font-sans">{completedTasks.length} of {tasks.length}</span>
+                <div className="text-xs font-mono tracking-wider uppercase text-muted-foreground">
+                  OUTSTANDING <span className="text-muted-foreground font-sans">{completedTasks.length} of {tasks.length}</span>
                 </div>
 
                 <div className="space-y-3">
@@ -310,21 +310,21 @@ export default function DashboardPage() {
                       <div 
                         key={task.id}
                         onClick={() => handleToggleTaskStatus(task)}
-                        className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-[#141717] cursor-pointer transition-colors group"
+                        className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
                       >
                         <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
                           isDone 
                             ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#091b18]' 
-                            : 'border-[#424d4d] group-hover:border-[#2dd4bf]'
+                            : 'border-muted-foreground/40 group-hover:border-[#2dd4bf]'
                         }`}>
                           {isDone && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <p className={`text-sm ${isDone ? 'line-through text-[#6f7a7a]' : 'text-[#f3f4f5]'}`}>
+                          <p className={`text-sm ${isDone ? 'line-through text-muted-foreground' : 'text-foreground font-medium'}`}>
                             {task.title}
                           </p>
-                          <p className="text-xs text-[#6f7a7a]">
+                          <p className="text-xs text-muted-foreground">
                             {parentCase ? parentCase.title : 'General matter'} · {task.due_date ? `due ${format(new Date(task.due_date), 'EEE d MMM')}` : 'no due date'}
                           </p>
                         </div>
@@ -333,47 +333,47 @@ export default function DashboardPage() {
                   })}
 
                   {tasks.length === 0 && (
-                    <p className="text-xs text-[#6f7a7a] py-3">All tasks are up to date.</p>
+                    <p className="text-xs text-muted-foreground py-3">All tasks are up to date.</p>
                   )}
                 </div>
               </div>
 
               {/* Lately Activity Stream */}
               <div className="space-y-4">
-                <div className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">
+                <div className="text-xs font-mono tracking-wider uppercase text-muted-foreground">
                   LATELY
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-start gap-4">
-                    <span className="text-xs text-[#6f7a7a] font-mono w-6 text-right">2h</span>
+                    <span className="text-xs text-muted-foreground font-mono w-6 text-right">2h</span>
                     <div className="text-xs space-y-0.5">
-                      <p className="text-[#f3f4f5] font-medium">Progressed to Preliminary hearing</p>
-                      <p className="text-[#6f7a7a]">Mira Vale v. Orion Housing · you</p>
+                      <p className="text-foreground font-medium">Progressed to Preliminary hearing</p>
+                      <p className="text-muted-foreground">Mira Vale v. Orion Housing · you</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4 border-l-2 border-[#818cf8] pl-2 -ml-2">
-                    <span className="text-xs text-[#818cf8] font-mono w-6 text-right">3h</span>
+                  <div className="flex items-start gap-4 border-l-2 border-indigo-400 pl-2 -ml-2">
+                    <span className="text-xs text-indigo-500 font-mono w-6 text-right">3h</span>
                     <div className="text-xs space-y-0.5">
-                      <p className="text-[#f3f4f5] font-medium">Task proposed — reconcile invoices</p>
-                      <p className="text-[#818cf8]">Suggested by LegalDesk · awaiting you</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <span className="text-xs text-[#6f7a7a] font-mono w-6 text-right">5h</span>
-                    <div className="text-xs space-y-0.5">
-                      <p className="text-[#f3f4f5] font-medium">Progressed to Pleadings</p>
-                      <p className="text-[#6f7a7a]">Aster Textiles · A. Shah</p>
+                      <p className="text-foreground font-medium">Task proposed — reconcile invoices</p>
+                      <p className="text-indigo-600 dark:text-indigo-400 font-medium">Suggested by LegalDesk · awaiting you</p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <span className="text-xs text-[#6f7a7a] font-mono w-6 text-right">Fri</span>
+                    <span className="text-xs text-muted-foreground font-mono w-6 text-right">5h</span>
                     <div className="text-xs space-y-0.5">
-                      <p className="text-[#f3f4f5] font-medium">Exhibit C added — arbitration chronology</p>
-                      <p className="text-[#6f7a7a]">Mira Vale · you</p>
+                      <p className="text-foreground font-medium">Progressed to Pleadings</p>
+                      <p className="text-muted-foreground">Aster Textiles · A. Shah</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <span className="text-xs text-muted-foreground font-mono w-6 text-right">Fri</span>
+                    <div className="text-xs space-y-0.5">
+                      <p className="text-foreground font-medium">Exhibit C added — arbitration chronology</p>
+                      <p className="text-muted-foreground">Mira Vale · you</p>
                     </div>
                   </div>
                 </div>
