@@ -444,22 +444,8 @@ export default function CasesPage() {
               </p>
             </div>
 
-            {/* Actions: AI Chatbot & New Matter */}
+            {/* Actions: New Matter */}
             <div className="flex items-center gap-2.5 flex-wrap">
-              <Button 
-                type="button"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.dispatchEvent(new CustomEvent('open-ai-chat', {
-                      detail: { caseId: selectedCase?.id, caseTitle: selectedCase?.title }
-                    }));
-                  }
-                }}
-                className="h-9 bg-teal-500/10 hover:bg-teal-500/20 text-[#0d9488] dark:text-[#2dd4bf] border border-teal-500/30 font-semibold rounded-lg text-xs flex items-center gap-1.5 px-3.5 cursor-pointer transition-all"
-              >
-                <Sparkles className="w-3.5 h-3.5" /> AI Chatbot
-              </Button>
-
               <Button 
                 onClick={() => setNewCaseModalOpen(true)}
                 className="h-9 bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold rounded-lg shadow-none text-xs flex-shrink-0 self-start sm:self-auto px-4 cursor-pointer"
@@ -641,13 +627,7 @@ export default function CasesPage() {
               {/* Action Buttons */}
               <div className="pt-2 space-y-2">
                 <Button 
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('open-ai-chat', {
-                        detail: { caseId: selectedCase.id, caseTitle: selectedCase.title }
-                      }));
-                    }
-                  }}
+                  onClick={() => router.push(`/cases/${selectedCase.id}?chat=true`)}
                   className="w-full bg-gradient-to-r from-teal-500/15 via-emerald-500/15 to-teal-500/15 hover:from-teal-500/25 hover:to-emerald-500/25 border border-teal-500/30 text-teal-700 dark:text-[#2dd4bf] font-semibold h-10 rounded-lg text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all"
                 >
                   <Sparkles className="w-4 h-4 text-[#0d9488] dark:text-[#2dd4bf]" />

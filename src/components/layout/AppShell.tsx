@@ -25,7 +25,6 @@ import { useOrg } from '@/lib/org-context';
 import { useBilling } from '@/lib/billing-context';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { MatterChatDoodle } from '@/components/chat/MatterChatDoodle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -183,33 +182,6 @@ export function AppShell({ children, caseId, customBreadcrumbs }: AppShellProps)
                 </Tooltip>
               );
             })}
-
-            {/* AI Assistant Navigation Dock Button */}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new CustomEvent('open-ai-chat'));
-                      }
-                    }}
-                    title="AI Legal Assistant"
-                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 text-[#2dd4bf] hover:bg-[#2dd4bf]/20 hover:scale-105 active:scale-95 cursor-pointer relative group border border-[#2dd4bf]/30 bg-[#2dd4bf]/10 shadow-[0_0_12px_rgba(45,212,191,0.2)] mt-1"
-                  />
-                }
-              >
-                <Sparkles className="w-[18px] h-[18px] text-[#2dd4bf] group-hover:rotate-12 transition-transform stroke-[2.2]" />
-                <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2dd4bf] opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2dd4bf]" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={12}>
-                AI Legal Assistant (Click to open)
-              </TooltipContent>
-            </Tooltip>
           </nav>
         </div>
 
@@ -349,21 +321,6 @@ export function AppShell({ children, caseId, customBreadcrumbs }: AppShellProps)
               <span>{isAiActive ? 'AI active' : 'AI paused'}</span>
             </div>
           )}
-
-          {/* Direct AI Chatbot Header Trigger */}
-          <button
-            type="button"
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('open-ai-chat'));
-              }
-            }}
-            title="Open AI Legal Assistant"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#2dd4bf]/10 hover:bg-[#2dd4bf]/20 text-[#0d9488] dark:text-[#2dd4bf] border border-[#2dd4bf]/30 text-xs font-semibold transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Chatbot</span>
-          </button>
         </div>
 
         {/* Right: Tokens Display & Add Tokens Button */}
@@ -388,9 +345,6 @@ export function AppShell({ children, caseId, customBreadcrumbs }: AppShellProps)
       <main className="pl-14 sm:pl-16 pt-13 min-h-screen">
         {children}
       </main>
-
-      {/* ── Global AI Chatbot Doodle (Visible and interactive everywhere) ──── */}
-      <MatterChatDoodle caseId={caseId} />
 
     </div>
   );

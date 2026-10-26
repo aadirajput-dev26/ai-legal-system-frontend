@@ -47,6 +47,7 @@ import { format, parseISO, formatDistanceToNow, differenceInCalendarDays } from 
 import { ContactsTab } from '@/components/cases/ContactsTab';
 import { FeesTab } from '@/components/cases/FeesTab';
 import { FactsTab } from '@/components/cases/FactsTab';
+import { MatterChatDoodle } from '@/components/chat/MatterChatDoodle';
 
 export default function CaseDetailPage() {
   const router = useRouter();
@@ -74,6 +75,18 @@ export default function CaseDetailPage() {
   useViasocketEvents(caseId, () => {
     fetchToolsData();
   });
+
+  // Auto-open AI Chatbot if opened with ?chat=true
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('chat=true')) {
+      const timer = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('open-ai-chat', {
+          detail: { caseId, caseTitle: caseData?.title }
+        }));
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [caseId, caseData?.title]);
 
   // Modals state
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -1642,6 +1655,9 @@ export default function CaseDetailPage() {
         loading={servingDoc}
         onConfirm={handleConfirmServeDoc}
       />
+
+      {/* ── AI Chatbot Doodle (Exclusively accessible when a case is opened) ── */}
+      <MatterChatDoodle caseId={caseId} caseTitle={caseData?.title} />
 
     </AppShell>
   );
