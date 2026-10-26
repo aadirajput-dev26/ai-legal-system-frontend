@@ -9,12 +9,31 @@ interface User {
   email: string;
 }
 
+export interface SignupPayload {
+  name: string;
+  email: string;
+  password: string;
+  accountType?: string;
+  mobile?: string;
+  state?: string;
+  city?: string;
+  firmName?: string;
+  gstin?: string;
+}
+
+export type GoogleLoginParams = string | {
+  accessToken?: string;
+  credential?: string;
+  accountType?: string;
+  firmName?: string;
+};
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
-  googleLogin: (accessToken: string) => Promise<void>;
+  signup: (payload: SignupPayload | string, email?: string, password?: string) => Promise<void>;
+  googleLogin: (params: GoogleLoginParams) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -51,16 +70,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(res.data.user);
   };
 
-  const signup = async (name: string, email: string, password: string) => {
-    await authApi.signup({ name, email, password });
-    await login(email, password);
+  const signup = async (payload: SignupPayload | string, emailParam?: string, passwordParam?: string) => {
+    const body: SignupPayload = typeof payload === 'string'
+      ? { name: payload, email: emailParam || '', password: passwordParam || '' }
+      : payload;
+
+    await authApi.signup(body);
+    await login(body.email, body.password);
   };
 
-  const googleLogin = async (accessToken: string) => {
-    // TODO(api): Backend POST /auth/google endpoint must be implemented.
-    // It should verify the access token with Google, create/find the user,
-    // and return { data: { accessToken, user } } the same way /auth/login does.
-    const res = await authApi.googleAuth(accessToken);
+  const googleLogin = async (params: GoogleLoginParams) => {
+    const res = await authApi.googleAuth(params);
     localStorage.setItem('accessToken', res.data.accessToken);
     setUser(res.data.user);
   };

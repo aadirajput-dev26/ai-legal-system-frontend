@@ -1,14 +1,21 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, ShieldCheck, ArrowRight } from 'lucide-react';
+import { auth as authApi } from '@/lib/api';
 
 function VerifyContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || '';
   const token = searchParams.get('token') || '';
+
+  useEffect(() => {
+    if (email || token) {
+      authApi.verifyEmail({ email, token }).catch(() => {});
+    }
+  }, [email, token]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">

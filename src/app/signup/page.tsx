@@ -26,6 +26,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { auth as authApi } from '@/lib/api';
 import { useGoogleLogin } from '@react-oauth/google';
 import './signup.css';
 
@@ -129,18 +130,22 @@ async function sendVerificationEmail(email: string, name: string) {
 </html>`;
 
   try {
-    await fetch(VERIFY_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: email.trim(),
-        subject: 'Verify your LegalDesk email address',
-        html,
-      }),
-    });
-  } catch (err) {
-    // Non-blocking — don't fail signup if webhook is unavailable
-    console.warn('[signup] Verification email webhook failed:', err);
+    await authApi.sendVerificationEmail({ email: email.trim(), name: name.trim() });
+  } catch (backendErr) {
+    // Fallback directly to webhook if backend endpoint fails
+    try {
+      await fetch(VERIFY_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email.trim(),
+          subject: 'Verify your LegalDesk email address',
+          html,
+        }),
+      });
+    } catch (err) {
+      console.warn('[signup] Verification email delivery failed:', err);
+    }
   }
 }
 
@@ -274,11 +279,15 @@ export default function SignupPage() {
     }
 
     if (isGoogleSignup) {
-      // Google users: skip email verify + password → go straight to creating account
+      // Google users: skip email verify + password → create account via backend Google OAuth
       setBusy(true);
       setServerError('');
       try {
-        await googleLogin(googleAccessToken);
+        await googleLogin({
+          accessToken: googleAccessToken,
+          accountType: kind || 'individual',
+          firmName: isFirm ? firmName.trim() : undefined,
+        });
         go(5);
       } catch (err) {
         setServerError(err instanceof Error ? err.message : 'We could not create your account. Please try again.');
@@ -307,27 +316,17 @@ export default function SignupPage() {
    */
   async function submitSignup() {
     const payload = {
-      accountType: kind,
+      accountType: kind || 'individual',
       name: name.trim(),
       email: email.trim(),
       mobile: `${cc}${mobile.replace(/\D/g, '')}`,
       state,
       city,
-      ...(isFirm ? { firmName: firmName.trim(), gstin: gstin.trim().toUpperCase() || null } : {}),
+      ...(isFirm ? { firmName: firmName.trim(), gstin: gstin.trim().toUpperCase() || undefined } : {}),
       password: pw1,
     };
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(
-        '[signup] Backend accepts { name, email, password } only. Dropped for now:',
-        { accountType: payload.accountType, mobile: payload.mobile, state, city,
-          firmName: isFirm ? payload.firmName : undefined, gstin: isFirm ? payload.gstin : undefined }
-      );
-    }
-
-    // TODO(api): replace with POST /auth/signup/activate carrying the full payload
-    // and the verification token, so the organisation is created server-side.
-    await signup(payload.name, payload.email, payload.password);
+    await signup(payload);
   }
 
   async function onCreateAccount() {
