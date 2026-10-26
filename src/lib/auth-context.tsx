@@ -14,6 +14,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
+  googleLogin: (accessToken: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -55,6 +56,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await login(email, password);
   };
 
+  const googleLogin = async (accessToken: string) => {
+    // TODO(api): Backend POST /auth/google endpoint must be implemented.
+    // It should verify the access token with Google, create/find the user,
+    // and return { data: { accessToken, user } } the same way /auth/login does.
+    const res = await authApi.googleAuth(accessToken);
+    localStorage.setItem('accessToken', res.data.accessToken);
+    setUser(res.data.user);
+  };
+
   const logout = async () => {
     try {
       await authApi.logout();
@@ -64,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, googleLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

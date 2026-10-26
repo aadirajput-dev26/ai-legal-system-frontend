@@ -5,7 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { OrgProvider } from "@/lib/org-context";
 import { BillingProvider } from "@/lib/billing-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
-
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const sans = Plus_Jakarta_Sans({
@@ -44,15 +44,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${sans.variable} ${heading.variable} ${serif.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground transition-colors duration-200">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <AuthProvider>
-            <OrgProvider>
-              <BillingProvider>
-                <TooltipProvider>{children}</TooltipProvider>
-              </BillingProvider>
-            </OrgProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <AuthProvider>
+              <OrgProvider>
+                <BillingProvider>
+                  <TooltipProvider>{children}</TooltipProvider>
+                </BillingProvider>
+              </OrgProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

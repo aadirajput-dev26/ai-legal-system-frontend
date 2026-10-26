@@ -209,3 +209,25 @@
   [data-auth] *,[data-auth] *::before,[data-auth] *::after{
     animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}
 }
+
+/* ── Required asterisk ────────────────────────────── */
+.au-req{color:var(--err);margin-left:3px;font-weight:700}
+
+/* ── Divider ──────────────────────────────────────── */
+.au-divider{display:flex;align-items:center;text-align:center;margin:20px 0 16px;color:var(--t3);font-size:12px;text-transform:uppercase;letter-spacing:0.05em}
+.au-divider::before,.au-divider::after{content:'';flex:1;border-bottom:1px solid var(--line)}
+.au-divider span{padding:0 12px}
+
+/* ── Google Sign Up Button ────────────────────────── */
+.au-google-wrap{margin-bottom:12px}
+.au-google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:10px 16px;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--t1);font-size:14px;font-weight:500;cursor:pointer;transition:all 180ms ease}
+.au-google-btn:hover{background:var(--bg2);border-color:var(--line2)}
+.au-google-ico{width:18px;height:18px;flex-shrink:0}
+
+/* ── Password Checklist ───────────────────────────── */
+.au-pw-checklist{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;font-size:12px}
+.au-pw-check{display:flex;align-items:center;gap:8px;color:var(--t3);transition:color 150ms ease}
+.au-pw-check.pass{color:var(--ok)}
+.au-pw-check svg{width:14px;height:14px;flex-shrink:0;stroke:currentColor;fill:none}
+.au-pw-check:not(.pass) svg circle{fill:var(--line2);stroke:none}
+

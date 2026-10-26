@@ -78,6 +78,15 @@ export const auth = {
     request<any>('/auth/logout', { method: 'POST' }),
   me: () =>
     request<any>('/auth/me'),
+  /**
+   * TODO(api): Backend must implement POST /auth/google.
+   * Expected body: { accessToken: string }
+   * Expected response: { data: { accessToken: string, user: { id, name, email } } }
+   * The backend should verify the Google access token, upsert the user,
+   * create their organisation if new, and return a LegalDesk session token.
+   */
+  googleAuth: (accessToken: string) =>
+    request<any>('/auth/google', { method: 'POST', body: JSON.stringify({ accessToken }) }),
 };
 
 // ── Organisations ──────────────────────────────────────────────────
