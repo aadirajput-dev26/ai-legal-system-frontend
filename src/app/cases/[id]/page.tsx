@@ -29,7 +29,11 @@ import {
   Layers,
   Cpu,
   Send,
-  Scale
+  Scale,
+  User,
+  Building2,
+  ArrowRight,
+  ChevronRight
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -646,21 +650,27 @@ export default function CaseDetailPage() {
     >
       <div className="flex flex-col h-full w-full px-6 sm:px-8 py-8 space-y-6">
         
-        {/* ── Top Header Section (Matches Hearing Brief in Artifact) ──── */}
+        {/* ── Top Header Section ───────────────────────────────────── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 min-w-0">
             {hearingDate && (
-              <div className="text-[11px] font-mono tracking-wider uppercase font-semibold text-[#f59e0b]">
-                {format(hearingDate, 'EEE d MMM · HH:mm').toUpperCase()} · {daysLabel}
+              <div className="text-[11px] font-mono tracking-wider uppercase font-semibold text-amber-500 flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{format(hearingDate, 'EEE d MMM · HH:mm').toUpperCase()}</span>
+                <span className="text-[10px] px-2 py-0.2 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold">
+                  {daysLabel}
+                </span>
               </div>
             )}
-            <h1 className="text-3xl sm:text-4xl font-serif tracking-tight text-foreground">
-              Hearing brief
+            <h1 className="text-2xl sm:text-3xl font-serif tracking-tight text-foreground font-semibold truncate" title={caseData.title}>
+              {caseData.title}
             </h1>
-            <p className="text-xs text-muted-foreground">
-              {[caseData.court, caseData.stage || 'Pleadings', caseData.judge ? `before Judge ${caseData.judge}` : '']
+            <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+              <span className="font-mono text-primary font-semibold">{caseData.case_number || 'CNR Pending'}</span>
+              <span>·</span>
+              <span>{[caseData.court, caseData.stage || 'Pleadings Active', caseData.judge ? `Bench: ${caseData.judge}` : '']
                 .filter(Boolean)
-                .join(' · ')}
+                .join(' · ')}</span>
             </p>
           </div>
           
@@ -677,41 +687,42 @@ export default function CaseDetailPage() {
               className="h-9 px-3.5 text-xs bg-teal-500/10 hover:bg-teal-500/20 text-[#0d9488] dark:text-[#2dd4bf] border border-teal-500/30 font-semibold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              AI Chatbot
+              AI Assistant
             </Button>
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => alert('Exporting hearing brief...')}
+              onClick={() => window.print()}
               className="h-9 px-4 text-xs bg-card hover:bg-accent border border-border text-foreground rounded-lg shadow-sm cursor-pointer"
             >
-              Export
+              Export Brief
             </Button>
             <Button 
               size="sm"
-              onClick={() => alert('Hearing brief approved for filing.')}
-              className="h-9 px-5 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium rounded-lg shadow-sm cursor-pointer"
+              onClick={() => setEditCaseModalOpen(true)}
+              className="h-9 px-4 text-xs bg-primary text-primary-foreground font-medium rounded-lg shadow-sm cursor-pointer hover:opacity-90"
             >
-              Approve
+              <Edit3 className="w-3.5 h-3.5 mr-1" />
+              Edit Matter
             </Button>
           </div>
         </div>
 
         {/* ── Tabs Bar ───────────────────────────────────────────────── */}
-        <div className="flex gap-4 border-b border-[#1e2323] overflow-x-auto text-xs pb-1">
+        <div className="flex gap-4 border-b border-border overflow-x-auto text-xs pb-1">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id === 'Brief' ? 'Overview' : tab.id)}
-              className={`pb-2.5 px-1 font-medium border-b-2 transition-all relative flex items-center gap-1.5 whitespace-nowrap
+              className={`pb-2.5 px-1 font-medium border-b-2 transition-all relative flex items-center gap-1.5 whitespace-nowrap cursor-pointer
                 ${(activeTab === 'Overview' && tab.id === 'Brief') || activeTab === tab.id
-                  ? 'border-[#2dd4bf] text-[#2dd4bf]' 
-                  : 'border-transparent text-[#6f7a7a] hover:text-[#f3f4f5]'}
+                  ? 'border-primary text-primary' 
+                  : 'border-transparent text-muted-foreground hover:text-foreground'}
               `}
             >
               {tab.id}
               {tab.count !== null && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded-md font-mono bg-[#161a1a] text-[#879292]">
+                <span className="text-[10px] px-1.5 py-0.2 rounded-md font-mono bg-muted text-muted-foreground">
                   {tab.count}
                 </span>
               )}
@@ -719,162 +730,461 @@ export default function CaseDetailPage() {
           ))}
         </div>
 
-        {/* ── Tab: Brief / Overview (Hearing Brief from Artifact) ───── */}
+        {/* ── Tab: Brief / Overview (Executive Matter Brief) ───── */}
         {(activeTab === 'Overview' || activeTab === 'Brief') && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             
-            {/* Legend Box */}
-            <div className="bg-[#121515] border border-[#1e2323] rounded-xl p-4 sm:p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3.5 text-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-[3px] h-3.5 bg-[#2dd4bf] rounded-full flex-shrink-0" />
-                  <span className="text-[#c5cccc]">Supported by a document you can open</span>
+            {/* 1. Executive Matter Profile Strip */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              
+              {/* Client Represented */}
+              <div className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-wider uppercase text-muted-foreground font-semibold">
+                  <User className="w-3 h-3 text-primary" />
+                  CLIENT / CLAIMANT
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-[3px] h-3.5 bg-[#f59e0b] rounded-full flex-shrink-0" />
-                  <span className="text-[#c5cccc]">Stated by the client, no document yet</span>
+                <div className="text-sm font-semibold text-foreground truncate" title={caseData.client_name || 'Not specified'}>
+                  {caseData.client_name || 'Client not specified'}
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-[3px] h-3.5 bg-[#60a5fa] rounded-full flex-shrink-0" />
-                  <span className="text-[#c5cccc]">The other side&apos;s position</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-[3px] h-3.5 bg-[#a78bfa] rounded-full flex-shrink-0" />
-                  <span className="text-[#c5cccc]">Written by LegalDesk — not evidence</span>
+                <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                  Represented by Chambers
                 </div>
               </div>
+
+              {/* Adverse Party */}
+              <div className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-wider uppercase text-muted-foreground font-semibold">
+                  <Building2 className="w-3 h-3 text-muted-foreground" />
+                  OPPOSING PARTY
+                </div>
+                <div className="text-sm font-semibold text-foreground truncate" title={caseData.opposing_party || 'Not specified'}>
+                  {caseData.opposing_party || 'Opposing party not stated'}
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  Respondent / Defendant
+                </div>
+              </div>
+
+              {/* Forum & Bench */}
+              <div className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-wider uppercase text-muted-foreground font-semibold">
+                  <Scale className="w-3 h-3 text-primary" />
+                  COURT & BENCH
+                </div>
+                <div className="text-sm font-semibold text-foreground truncate" title={caseData.court || 'Court pending'}>
+                  {caseData.court || 'Court to be assigned'}
+                </div>
+                <div className="text-[11px] text-muted-foreground truncate">
+                  {caseData.judge ? `Bench: ${caseData.judge}` : (caseData.case_type || 'Civil / Commercial')}
+                </div>
+              </div>
+
+              {/* Procedural Stage & Status */}
+              <div className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-wider uppercase text-muted-foreground font-semibold">
+                  <Clock className="w-3 h-3 text-amber-500" />
+                  STAGE & STATUS
+                </div>
+                <div className="text-sm font-semibold text-foreground truncate">
+                  {caseData.stage || 'Pleadings Active'}
+                </div>
+                <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                  <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold uppercase ${
+                    caseData.status === 'OPEN'
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {caseData.status}
+                  </span>
+                  {caseData.filing_date && (
+                    <span className="font-mono text-[10px]">Filed {formatDate(caseData.filing_date)}</span>
+                  )}
+                </div>
+              </div>
+
             </div>
 
-            {/* Main Two-Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
-              
-              {/* Left Column: Facts Relied On */}
-              <div className="space-y-4">
-                <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a] mb-2">
-                  FACTS RELIED ON
+            {/* 2. Matter Synopsis & Theory */}
+            <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] font-mono tracking-wider uppercase text-muted-foreground font-semibold flex items-center gap-1.5">
+                  <FileText className="w-3 h-3 text-primary" />
+                  CASE THEORY & MATTER SYNOPSIS
                 </div>
-
-                {/* Fact 1 - Green (Supported) */}
-                <div className="border-l-[3px] border-[#2dd4bf] bg-[#141717] p-5 rounded-r-xl space-y-2">
-                  <p className="text-base font-serif text-[#f3f4f5] leading-relaxed">
-                    Invoice 4471 records a payment of ₹42,000 by the claimant on 3 March 2026.
-                  </p>
-                  <p className="text-xs text-[#2dd4bf]">
-                    Exhibit A, page 2 · &ldquo;Total paid: 42,000.00&rdquo;
-                  </p>
-                </div>
-
-                {/* Fact 2 - Green (Supported) */}
-                <div className="border-l-[3px] border-[#2dd4bf] bg-[#141717] p-5 rounded-r-xl space-y-2">
-                  <p className="text-base font-serif text-[#f3f4f5] leading-relaxed">
-                    The fit-out agreement is dated 10 February 2026 and provides for completion within eight weeks.
-                  </p>
-                  <p className="text-xs text-[#2dd4bf]">
-                    Exhibit C, page 1 · clause 3.1
-                  </p>
-                </div>
-
-                {/* Fact 3 - Amber (Client statement, gap) */}
-                <div className="border-l-[3px] border-[#f59e0b] bg-[#141717] p-5 rounded-r-xl space-y-3">
-                  <p className="text-base font-serif text-[#f3f4f5] leading-relaxed">
-                    <span className="text-[#f59e0b]">The client states that</span> the salesperson guaranteed a full refund if delivery slipped past the agreed date.
-                  </p>
-                  <p className="text-xs text-[#879292]">
-                    Consultation, 12 March 2026 · no supporting document
-                  </p>
-                  <div className="bg-[#1c1610] border border-[#3d2c18] rounded-lg p-3 text-xs text-[#f59e0b]">
-                    This cannot be pleaded as a fact, and LegalDesk will not write it into a draft as one.
-                  </div>
-                </div>
-
-                {/* Fact 4 - Blue (Respondent contention) */}
-                <div className="border-l-[3px] border-[#60a5fa] bg-[#141717] p-5 rounded-r-xl space-y-2">
-                  <p className="text-base font-serif text-[#f3f4f5] leading-relaxed">
-                    <span className="text-[#60a5fa]">The respondent contends that</span> the delay followed scope changes requested by the claimant in writing on 2 April 2026.
-                  </p>
-                  <p className="text-xs text-[#879292]">
-                    Reply, paragraph 7
-                  </p>
-                </div>
-
-                {/* Fact 5 - Purple (LegalDesk analysis) */}
-                <div className="border-l-[3px] border-[#a78bfa] bg-[#131624] border border-[#2b3360] p-5 rounded-xl space-y-2">
-                  <p className="text-base font-serif text-[#f3f4f5] leading-relaxed">
-                    <span className="text-[#818cf8]">It appears from the material that</span> {caseData.description || 'the invoice total and inspection records differ by ₹14,400, which may bear on the scope-change defence.'}
-                  </p>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditCaseModalOpen(true)}
+                  className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground font-mono cursor-pointer"
+                >
+                  <Edit3 className="w-3 h-3 mr-1" /> Edit
+                </Button>
               </div>
 
-              {/* Right Column: Exhibits & Gap Callout */}
+              {caseData.description ? (
+                <p className="font-serif text-base text-foreground/90 leading-relaxed whitespace-pre-line">
+                  {caseData.description}
+                </p>
+              ) : (
+                <div className="py-3 text-center sm:text-left space-y-2">
+                  <p className="text-xs text-muted-foreground italic">
+                    No executive case synopsis recorded for this matter yet.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditCaseModalOpen(true)}
+                    className="h-7 text-xs border-dashed cursor-pointer"
+                  >
+                    + Add Matter Synopsis
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Core Brief Split (Left: Facts & Pleadings, Strategy / Right: Hearings, Evidence, Tasks) */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
+              
+              {/* Left Column: Facts Relied On & Counsel Instructions */}
               <div className="space-y-6">
-                
-                {/* Exhibits List */}
-                <div className="space-y-3">
-                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#6f7a7a]">
-                    EXHIBITS
+
+                {/* Real Facts of the Case */}
+                <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
+                    <div>
+                      <div className="text-[10px] font-mono tracking-wider uppercase text-muted-foreground font-semibold">
+                        FACTUAL BASIS & ADMITTED RECORD
+                      </div>
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Key Facts on Record
+                      </h4>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab('Facts')}
+                      className="h-7 px-2.5 text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 cursor-pointer"
+                    >
+                      Manage Facts <ArrowRight className="w-3 h-3" />
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    {documents.length > 0 ? (
-                      documents.map((doc, idx) => {
+
+                  {caseData.facts ? (
+                    <div className="space-y-3">
+                      {caseData.facts
+                        .split('\n\n')
+                        .filter(Boolean)
+                        .map((factBlock, idx) => (
+                          <div 
+                            key={idx} 
+                            className="p-3.5 rounded-xl border border-border/70 bg-muted/20 space-y-1 hover:border-primary/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                              <span className="text-[10px] font-mono text-muted-foreground font-semibold">
+                                PROPOSITION {idx + 1}
+                              </span>
+                            </div>
+                            <p className="text-xs text-foreground/90 leading-relaxed font-sans pl-3.5 whitespace-pre-line">
+                              {factBlock}
+                            </p>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 border border-dashed border-border rounded-xl space-y-2 bg-muted/10">
+                      <FileText className="w-6 h-6 text-muted-foreground mx-auto opacity-50" />
+                      <p className="text-xs font-medium text-foreground">No facts compiled for this matter yet</p>
+                      <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+                        Counsel can import client consultation notes or extract factual chronologies from case records.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setActiveTab('Facts')}
+                        className="h-7 text-xs mt-1 cursor-pointer"
+                      >
+                        Open Facts Workspace
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Counsel Instructions & Trial Strategy */}
+                <div className="p-5 rounded-2xl border border-border bg-card shadow-sm space-y-3.5">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
+                    <div>
+                      <div className="text-[10px] font-mono tracking-wider uppercase text-muted-foreground font-semibold">
+                        COUNSEL DIRECTIVES
+                      </div>
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Trial Strategy & Instructions
+                      </h4>
+                    </div>
+
+                    {!editingInstructions ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setTempInstructions(caseData.instructions || '');
+                          setEditingInstructions(true);
+                        }}
+                        className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground font-mono cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3 mr-1" /> Edit
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingInstructions(false)}
+                          className="h-7 px-2 text-xs text-muted-foreground cursor-pointer"
+                          disabled={savingInstructions}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleSaveInstructions}
+                          className="h-7 px-3 text-xs bg-primary text-primary-foreground font-medium cursor-pointer"
+                          disabled={savingInstructions}
+                        >
+                          {savingInstructions ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                          Save
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {editingInstructions ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={tempInstructions}
+                        onChange={(e) => setTempInstructions(e.target.value)}
+                        placeholder="Enter strategic focus, legal propositions to argue, precedents relied upon, or client marching orders..."
+                        rows={5}
+                        className="w-full text-xs p-3 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary font-sans leading-relaxed resize-none"
+                      />
+                    </div>
+                  ) : caseData.instructions ? (
+                    <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5">
+                      <p className="text-xs text-foreground/90 leading-relaxed font-sans whitespace-pre-line">
+                        {caseData.instructions}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="py-4 text-center border border-dashed border-border rounded-xl space-y-1.5 bg-muted/10">
+                      <p className="text-xs text-muted-foreground italic">
+                        No specific counsel instructions or strategic orders recorded.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTempInstructions('');
+                          setEditingInstructions(true);
+                        }}
+                        className="h-7 text-xs border-dashed cursor-pointer"
+                      >
+                        + Add Strategy Note
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              {/* Right Column: Hearing Radar, Exhibits, Immediate Pre-Hearing Tasks */}
+              <div className="space-y-5">
+
+                {/* Upcoming Hearing Radar */}
+                <div className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-mono tracking-wider uppercase text-muted-foreground font-semibold flex items-center gap-1.5">
+                      <Calendar className="w-3 h-3 text-amber-500" />
+                      COURT APPEARANCE
+                    </div>
+                    {hearingDate && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/30">
+                        {daysLabel}
+                      </span>
+                    )}
+                  </div>
+
+                  {hearingDate ? (
+                    <div className="space-y-2">
+                      <div className="text-base font-semibold text-foreground">
+                        {format(hearingDate, 'EEEE, d MMMM yyyy')}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-mono">
+                        Time: {format(hearingDate, 'hh:mm a')}
+                      </div>
+                      {caseData.court && (
+                        <div className="text-xs text-muted-foreground">
+                          Forum: <span className="text-foreground font-medium">{caseData.court}</span>
+                        </div>
+                      )}
+                      {hearings[0]?.notes && (
+                        <div className="p-2.5 rounded-lg bg-muted/40 border border-border text-[11px] text-muted-foreground leading-relaxed">
+                          <span className="font-semibold text-foreground">Listing Agenda: </span>
+                          {hearings[0].notes}
+                        </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveTab('Hearings')}
+                        className="w-full h-7 text-[11px] text-muted-foreground hover:text-foreground justify-between font-mono pt-1 cursor-pointer"
+                      >
+                        <span>Hearings Log ({hearings.length})</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 space-y-2">
+                      <p className="text-xs text-muted-foreground">No upcoming hearing date listed.</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setHearingModalOpen(true)}
+                        className="h-7 text-xs cursor-pointer"
+                      >
+                        + Schedule Hearing
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Primary Exhibits & Record */}
+                <div className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-mono tracking-wider uppercase text-muted-foreground font-semibold flex items-center gap-1.5">
+                      <FileText className="w-3 h-3 text-teal-500" />
+                      PRIMARY EXHIBITS
+                    </div>
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      {documents.length} filed
+                    </span>
+                  </div>
+
+                  {documents.length > 0 ? (
+                    <div className="space-y-2">
+                      {documents.slice(0, 4).map((doc, idx) => {
                         const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
                         const letter = letters[idx] || `${idx + 1}`;
                         return (
-                          <div key={doc.id || idx} className="flex items-center justify-between p-3 rounded-lg bg-[#141717] border border-[#1e2323] text-xs">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <span className="font-mono text-[#2dd4bf] font-bold">{letter}</span>
-                              <span className="text-[#f3f4f5] truncate font-medium">{doc.title}</span>
+                          <div 
+                            key={doc.id || doc._id || idx}
+                            className="flex items-center justify-between p-2.5 rounded-lg border border-border/80 bg-muted/20 text-xs hover:border-primary/40 transition-colors"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="w-5 h-5 rounded flex items-center justify-center font-mono text-[10px] font-bold bg-primary/10 text-primary">
+                                {letter}
+                              </span>
+                              <span className="font-medium text-foreground truncate" title={doc.title}>
+                                {doc.title}
+                              </span>
                             </div>
-                            <span className="text-[#6f7a7a] font-mono flex-shrink-0 text-[11px]">{(doc as any).pages || 3} pp</span>
+                            <span className="text-[10px] font-mono text-muted-foreground flex-shrink-0">
+                              {doc.type || 'DOC'}
+                            </span>
                           </div>
                         );
-                      })
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-[#141717] border border-[#1e2323] text-xs">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span className="font-mono text-[#2dd4bf] font-bold">A</span>
-                            <span className="text-[#f3f4f5] truncate font-medium">Invoice 4471</span>
-                          </div>
-                          <span className="text-[#6f7a7a] font-mono text-[11px]">3 pp</span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-[#141717] border border-[#1e2323] text-xs">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span className="font-mono text-[#2dd4bf] font-bold">B</span>
-                            <span className="text-[#f3f4f5] truncate font-medium">Inspection report</span>
-                          </div>
-                          <span className="text-[#6f7a7a] font-mono text-[11px]">11 pp</span>
-                        </div>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-[#141717] border border-[#1e2323] text-xs">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span className="font-mono text-[#2dd4bf] font-bold">C</span>
-                            <span className="text-[#f3f4f5] truncate font-medium">Fit-out agreement</span>
-                          </div>
-                          <span className="text-[#6f7a7a] font-mono text-[11px]">9 pp</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                      })}
+                      {documents.length > 4 && (
+                        <p className="text-[10px] text-muted-foreground font-mono text-center pt-0.5">
+                          + {documents.length - 4} additional exhibits on file
+                        </p>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveTab('Documents')}
+                        className="w-full h-7 text-[11px] text-primary hover:text-primary/80 justify-between font-mono pt-1 cursor-pointer"
+                      >
+                        <span>Open Document Vault</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 space-y-2">
+                      <p className="text-xs text-muted-foreground">No documents uploaded yet.</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setDocModalOpen(true)}
+                        className="h-7 text-xs cursor-pointer"
+                      >
+                        + Upload First Exhibit
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
-                {/* Gap Alert Card */}
-                <div className="bg-[#1c1612] border border-[#3d2c18] rounded-xl p-5 space-y-3.5">
-                  <div className="text-[11px] font-mono tracking-wider uppercase text-[#f59e0b] font-semibold">
-                    ONE GAP BEFORE FILING
+                {/* Pre-Hearing Readiness & Outstanding Tasks */}
+                <div className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-mono tracking-wider uppercase text-muted-foreground font-semibold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                      PRE-HEARING TASKS
+                    </div>
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      {tasks.filter(t => t.status !== 'COMPLETED').length} pending
+                    </span>
                   </div>
-                  <p className="text-xs text-[#d1d5db] leading-relaxed">
-                    The refund undertaking rests on the client&apos;s account alone. If an email or message records it, adding that document moves the statement into the supported column.
-                  </p>
-                  <Button 
-                    onClick={() => setDocModalOpen(true)}
-                    className="w-full bg-[#141717] hover:bg-[#1e2424] border border-[#2b3333] text-[#f3f4f5] text-xs font-medium h-9 rounded-lg"
-                  >
-                    Upload the document
-                  </Button>
+
+                  {tasks.filter(t => t.status !== 'COMPLETED').length > 0 ? (
+                    <div className="space-y-2">
+                      {tasks
+                        .filter(t => t.status !== 'COMPLETED')
+                        .slice(0, 3)
+                        .map((task) => (
+                          <div 
+                            key={task.id}
+                            className="p-2.5 rounded-lg border border-border/70 bg-muted/20 text-xs flex items-start gap-2"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-foreground truncate" title={task.title}>
+                                {task.title}
+                              </p>
+                              {task.due_date && (
+                                <p className="text-[10px] font-mono text-muted-foreground">
+                                  Due: {formatDate(task.due_date)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveTab('Tasks')}
+                        className="w-full h-7 text-[11px] text-muted-foreground hover:text-foreground justify-between font-mono pt-1 cursor-pointer"
+                      >
+                        <span>View Tasks Board ({tasks.length})</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
+                      <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                        Matter Ready for Listing
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        All scheduled pre-hearing compliance items are complete.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
               </div>
 
             </div>
+
           </div>
         )}
 

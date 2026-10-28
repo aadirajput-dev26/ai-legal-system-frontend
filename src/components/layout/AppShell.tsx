@@ -23,8 +23,9 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { useOrg } from '@/lib/org-context';
 import { useBilling } from '@/lib/billing-context';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { NotificationPopover } from '@/components/notifications/NotificationPopover';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -265,20 +266,20 @@ export function AppShell({ children, caseId, customBreadcrumbs }: AppShellProps)
       </aside>
 
       {/* ── Top Header Bar ────────────────────────── */}
-      <header className="fixed top-0 left-14 sm:left-16 right-0 h-13 bg-[#0d0f0f]/95 backdrop-blur-md border-b border-[#1a1e1e] flex items-center justify-between px-6 sm:px-8 z-30">
+      <header className="fixed top-0 left-14 sm:left-16 right-0 h-13 bg-background/95 dark:bg-[#0d0f0f]/95 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sm:px-8 z-30 transition-colors">
         
         {/* Left: Breadcrumbs & AI Status Pill */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex items-center gap-2 text-sm text-[#879292] font-normal truncate">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground font-normal truncate">
             {breadcrumbs.map((crumb, idx) => (
               <React.Fragment key={idx}>
-                {idx > 0 && <span className="text-[#3a4242]">/</span>}
+                {idx > 0 && <span className="text-muted-foreground/40">/</span>}
                 {crumb.href ? (
-                  <Link href={crumb.href} className="hover:text-[#f3f4f5] transition-colors truncate">
+                  <Link href={crumb.href} className="hover:text-foreground transition-colors truncate">
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span className={`truncate ${idx === breadcrumbs.length - 1 ? 'text-[#f3f4f5] font-medium' : ''}`}>
+                  <span className={`truncate ${idx === breadcrumbs.length - 1 ? 'text-foreground font-medium' : ''}`}>
                     {crumb.label}
                   </span>
                 )}
@@ -299,21 +300,26 @@ export function AppShell({ children, caseId, customBreadcrumbs }: AppShellProps)
           )}
         </div>
 
-        {/* Right: Tokens Display & Add Tokens Button */}
+        {/* Right: Tokens Display, Add Tokens Button & Notifications Popover */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="flex items-center gap-2 text-xs">
-            <span className="tracking-wider uppercase text-[#6f7a7a] font-medium">TOKENS</span>
-            <span className={`font-semibold tabular-nums ${tokenCredits < 0 ? 'text-[#f87171]' : 'text-[#f3f4f5]'}`}>
+            <span className="tracking-wider uppercase text-muted-foreground font-medium">TOKENS</span>
+            <span className={`font-semibold tabular-nums ${tokenCredits < 0 ? 'text-destructive' : 'text-foreground'}`}>
               {tokenCredits.toLocaleString()}
             </span>
           </div>
 
           <Link
             href="/billing"
-            className="text-xs font-medium bg-[#151818] hover:bg-[#1d2222] border border-[#262c2c] text-[#f3f4f5] px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+            className="text-xs font-medium bg-muted/60 hover:bg-muted border border-border text-foreground px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
           >
             Add tokens
           </Link>
+
+          <div className="h-4 w-px bg-border" />
+
+          {/* Sleek Notifications Popover */}
+          <NotificationPopover />
         </div>
       </header>
 
