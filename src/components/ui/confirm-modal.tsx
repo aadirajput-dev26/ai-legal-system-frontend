@@ -41,29 +41,29 @@ export function ConfirmModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent overlayClassName="z-[90]" className="max-w-sm p-6 bg-[#141717] border border-[#272b2b] text-[#f3f4f5] z-[100]">
+      <DialogContent overlayClassName="z-[90]" className="max-w-md p-6 bg-card border border-border text-foreground z-[100] rounded-2xl">
         <DialogHeader>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${
             variant === 'destructive'
-              ? 'bg-red-500/10 text-red-400'
-              : 'bg-[#2dd4bf]/10 text-[#2dd4bf]'
+              ? 'bg-destructive/10 text-destructive border border-destructive/20'
+              : 'bg-primary/10 text-primary border border-primary/20'
           }`}>
             <AlertTriangle className="w-5 h-5" />
           </div>
-          <DialogTitle className="text-lg font-serif font-normal text-foreground">
+          <DialogTitle className="text-xl font-serif font-normal text-foreground tracking-tight">
             {title}
           </DialogTitle>
-          <DialogDescription className="text-xs text-[#879292] font-sans leading-relaxed">
+          <DialogDescription className="text-xs text-muted-foreground font-sans leading-relaxed">
             {description}
           </DialogDescription>
         </DialogHeader>
 
-        <DialogFooter className="pt-4 gap-2">
+        <DialogFooter className="mt-4 gap-2.5">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             disabled={loading}
-            className="text-xs text-[#879292] hover:text-foreground cursor-pointer"
+            className="text-xs h-9 px-4 font-medium border-border text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer rounded-lg"
             onClick={() => onOpenChange(false)}
           >
             {cancelLabel}
@@ -72,10 +72,10 @@ export function ConfirmModal({
             type="button"
             disabled={loading}
             onClick={handleConfirm}
-            className={`text-xs h-8 font-semibold cursor-pointer ${
+            className={`text-xs h-9 px-4 font-semibold cursor-pointer rounded-lg shadow-sm ${
               variant === 'destructive'
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18]'
+                ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+                : 'bg-primary hover:bg-primary/90 text-primary-foreground'
             }`}
           >
             {loading && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />}

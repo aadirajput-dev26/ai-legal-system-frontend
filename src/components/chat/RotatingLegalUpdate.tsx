@@ -191,20 +191,20 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
 
       {/* ── View All Legal Intelligence Dialog ─────────────────────────── */}
       <Dialog open={viewAllOpen} onOpenChange={setViewAllOpen}>
-        <DialogContent className="sm:max-w-2xl bg-[#141717] border-[#272b2b] text-[#f3f4f5] p-6 rounded-2xl shadow-2xl max-h-[85vh] flex flex-col">
-          <DialogHeader className="pb-3 border-b border-[#272b2b]">
+        <DialogContent className="sm:max-w-2xl bg-card border border-border text-foreground p-6 rounded-2xl shadow-2xl max-h-[85vh] flex flex-col font-sans">
+          <DialogHeader className="pb-3 border-b border-border">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 flex items-center justify-center text-[#2dd4bf]">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                 <Scale className="w-5 h-5" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-serif font-normal text-white flex items-center gap-2">
+                <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight flex items-center gap-2">
                   Legal Intelligence & Statutory Updates
-                  <Badge variant="outline" className="text-[10px] font-mono text-[#2dd4bf] bg-[#1e2424] border-[#2dd4bf]/30 py-0">
+                  <Badge variant="outline" className="text-[10px] font-mono text-primary bg-primary/10 border-primary/30 py-0">
                     {updates.length} Updates
                   </Badge>
                 </DialogTitle>
-                <DialogDescription className="text-xs text-[#879292] mt-0.5">
+                <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
                   Full text of recent statutory amendments, procedural guidelines, and legal frameworks relevant to your matters.
                 </DialogDescription>
               </div>
@@ -212,13 +212,13 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
 
             {/* Search Filter */}
             <div className="relative mt-3">
-              <Search className="w-3.5 h-3.5 text-[#879292] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search updates by act, keyword, or summary..."
                 value={modalSearch}
                 onChange={e => setModalSearch(e.target.value)}
-                className="w-full bg-[#101313] border border-[#272b2b] rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#f3f4f5] placeholder:text-[#879292]/50 focus:outline-none focus:border-[#2dd4bf]/60 font-sans"
+                className="w-full bg-background border border-input rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none font-sans"
               />
             </div>
           </DialogHeader>

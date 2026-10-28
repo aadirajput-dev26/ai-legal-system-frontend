@@ -430,33 +430,33 @@ function SettingsContent() {
 
       {/* ── INVITE MEMBER MODAL ──────────────────────────────────────── */}
       <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
-        <DialogContent className="bg-card border-border text-foreground max-w-md p-6">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-serif font-semibold text-foreground">Invite Counsel to Chambers</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Invite Counsel to Chambers</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Grant team access to {currentOrg?.name}.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleInviteMember} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono uppercase text-muted-foreground">Email Address *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Email Address *</Label>
               <Input
                 required
                 type="email"
                 placeholder="colleague@lawfirm.com"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                className="bg-background border-border h-9 text-sm text-foreground focus:border-[#2dd4bf]"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono uppercase text-muted-foreground">Role</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Role</Label>
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as any)}
-                className="w-full bg-background border border-border rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none focus:border-[#2dd4bf]"
+                className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans"
               >
                 <option value="ADMIN">ADMIN</option>
                 <option value="EDITOR">EDITOR</option>
@@ -465,13 +465,13 @@ function SettingsContent() {
             </div>
 
             {inviteError && (
-              <p className="text-xs text-red-500">{inviteError}</p>
+              <p className="text-xs text-red-500 font-sans">{inviteError}</p>
             )}
 
-            <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setInviteModalOpen(false)} className="text-muted-foreground hover:text-foreground">Cancel</Button>
-              <Button type="submit" disabled={submittingInvite} className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold cursor-pointer">
-                {submittingInvite ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setInviteModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
+              <Button type="submit" disabled={submittingInvite} className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90 cursor-pointer">
+                {submittingInvite ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 Send Invite
               </Button>
             </DialogFooter>

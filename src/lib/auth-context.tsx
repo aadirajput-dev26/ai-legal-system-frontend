@@ -12,7 +12,7 @@ interface User {
 export interface SignupPayload {
   name: string;
   email: string;
-  password: string;
+  password?: string;
   accountType?: string;
   mobile?: string;
   state?: string;
@@ -32,7 +32,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (payload: SignupPayload | string, email?: string, password?: string) => Promise<void>;
+  signup: (payload: SignupPayload | string, email?: string, password?: string) => Promise<any>;
   googleLogin: (params: GoogleLoginParams) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -72,11 +72,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = async (payload: SignupPayload | string, emailParam?: string, passwordParam?: string) => {
     const body: SignupPayload = typeof payload === 'string'
-      ? { name: payload, email: emailParam || '', password: passwordParam || '' }
+      ? { name: payload, email: emailParam || '', password: passwordParam }
       : payload;
 
-    await authApi.signup(body);
-    await login(body.email, body.password);
+    const res = await authApi.signup(body);
+    if (res.data?.accessToken) {
+      localStorage.setItem('accessToken', res.data.accessToken);
+    }
+    if (res.data?.user) {
+      setUser(res.data.user);
+    }
+    return res;
   };
 
   const googleLogin = async (params: GoogleLoginParams) => {

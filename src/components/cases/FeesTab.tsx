@@ -10,6 +10,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
+  DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
 
@@ -193,17 +194,21 @@ export function FeesTab({ caseId }: { caseId: string }) {
 
       {/* Schedule Modal */}
       <Dialog open={scheduleModalOpen} onOpenChange={setScheduleModalOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Update Total Fee</DialogTitle>
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Update Total Fee</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
+              Set the overall fee agreed with the client for this matter.
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdateSchedule} className="space-y-4">
+          <form onSubmit={handleUpdateSchedule} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs text-[#879292] font-mono">Total Agreed Amount (₹)</Label>
-              <Input type="number" required value={totalAgreedFee} onChange={e => setTotalAgreedFee(e.target.value)} className="bg-[#101313] border-[#272b2b] text-white" />
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Total Agreed Amount (₹)</Label>
+              <Input type="number" required value={totalAgreedFee} onChange={e => setTotalAgreedFee(e.target.value)} className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg" />
             </div>
-            <DialogFooter>
-              <Button type="submit" disabled={submitting} className="bg-[#2dd4bf] text-[#091b18] hover:bg-[#34d399] font-semibold w-full">Save</Button>
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setScheduleModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
+              <Button type="submit" disabled={submitting} className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90">Save Fee</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -211,25 +216,29 @@ export function FeesTab({ caseId }: { caseId: string }) {
 
       {/* Milestone Modal */}
       <Dialog open={milestoneModalOpen} onOpenChange={setMilestoneModalOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Add Milestone</DialogTitle>
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Add Milestone</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
+              Define a billing event or procedural stage milestone.
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCreateMilestone} className="space-y-4">
+          <form onSubmit={handleCreateMilestone} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs text-[#879292] font-mono">Stage / Event Name</Label>
-              <Input required placeholder="e.g. Filing Fees" value={milestoneForm.stage_name} onChange={e => setMilestoneForm({...milestoneForm, stage_name: e.target.value})} className="bg-[#101313] border-[#272b2b] text-white" />
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Stage / Event Name</Label>
+              <Input required placeholder="e.g. Filing Fees" value={milestoneForm.stage_name} onChange={e => setMilestoneForm({...milestoneForm, stage_name: e.target.value})} className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-[#879292] font-mono">Amount (₹)</Label>
-              <Input type="number" required value={milestoneForm.amount} onChange={e => setMilestoneForm({...milestoneForm, amount: e.target.value})} className="bg-[#101313] border-[#272b2b] text-white" />
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Amount (₹)</Label>
+              <Input type="number" required value={milestoneForm.amount} onChange={e => setMilestoneForm({...milestoneForm, amount: e.target.value})} className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-[#879292] font-mono">Due Date (Optional)</Label>
-              <Input type="date" value={milestoneForm.due_date} onChange={e => setMilestoneForm({...milestoneForm, due_date: e.target.value})} className="bg-[#101313] border-[#272b2b] text-white" />
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Due Date (Optional)</Label>
+              <Input type="date" value={milestoneForm.due_date} onChange={e => setMilestoneForm({...milestoneForm, due_date: e.target.value})} className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg" />
             </div>
-            <DialogFooter>
-              <Button type="submit" disabled={submitting} className="bg-[#2dd4bf] text-[#091b18] hover:bg-[#34d399] font-semibold w-full">Create Milestone</Button>
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setMilestoneModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
+              <Button type="submit" disabled={submitting} className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90">Create Milestone</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -237,19 +246,22 @@ export function FeesTab({ caseId }: { caseId: string }) {
 
       {/* Payment Modal */}
       <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Record Payment</DialogTitle>
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Record Payment</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
+              Log an incoming fee payment from the client.
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleRecordPayment} className="space-y-4">
+          <form onSubmit={handleRecordPayment} className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5 col-span-2">
-                <Label className="text-xs text-[#879292] font-mono">Amount Paid (₹)</Label>
-                <Input type="number" required value={paymentForm.amount_paid} onChange={e => setPaymentForm({...paymentForm, amount_paid: e.target.value})} className="bg-[#101313] border-[#272b2b] text-white" />
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Amount Paid (₹)</Label>
+                <Input type="number" required value={paymentForm.amount_paid} onChange={e => setPaymentForm({...paymentForm, amount_paid: e.target.value})} className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-[#879292] font-mono">Payment Mode</Label>
-                <select value={paymentForm.payment_mode} onChange={e => setPaymentForm({...paymentForm, payment_mode: e.target.value})} className="w-full bg-[#101313] border border-[#272b2b] rounded-lg h-8 px-3 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/60">
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Payment Mode</Label>
+                <select value={paymentForm.payment_mode} onChange={e => setPaymentForm({...paymentForm, payment_mode: e.target.value})} className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans">
                   <option value="BANK_TRANSFER">Bank Transfer</option>
                   <option value="CASH">Cash</option>
                   <option value="CHEQUE">Cheque</option>
@@ -257,12 +269,12 @@ export function FeesTab({ caseId }: { caseId: string }) {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-[#879292] font-mono">Receipt / Ref No.</Label>
-                <Input value={paymentForm.receipt_number} onChange={e => setPaymentForm({...paymentForm, receipt_number: e.target.value})} className="bg-[#101313] border-[#272b2b] text-white" />
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Receipt / Ref No.</Label>
+                <Input value={paymentForm.receipt_number} onChange={e => setPaymentForm({...paymentForm, receipt_number: e.target.value})} className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg" />
               </div>
               <div className="space-y-1.5 col-span-2">
-                <Label className="text-xs text-[#879292] font-mono">Link to Milestone (Optional)</Label>
-                <select value={paymentForm.milestone_id} onChange={e => setPaymentForm({...paymentForm, milestone_id: e.target.value})} className="w-full bg-[#101313] border border-[#272b2b] rounded-lg h-8 px-3 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/60">
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Link to Milestone (Optional)</Label>
+                <select value={paymentForm.milestone_id} onChange={e => setPaymentForm({...paymentForm, milestone_id: e.target.value})} className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans">
                   <option value="">-- None --</option>
                   {milestones.filter((m: any) => m.status === 'PENDING').map((m: any) => (
                     <option key={m.id} value={m.id}>{m.stage_name} (₹{m.amount})</option>
@@ -270,8 +282,9 @@ export function FeesTab({ caseId }: { caseId: string }) {
                 </select>
               </div>
             </div>
-            <DialogFooter className="pt-2">
-              <Button type="submit" disabled={submitting} className="bg-[#2dd4bf] text-[#091b18] hover:bg-[#34d399] font-semibold w-full">Confirm Payment</Button>
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setPaymentModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
+              <Button type="submit" disabled={submitting} className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90">Confirm Payment</Button>
             </DialogFooter>
           </form>
         </DialogContent>

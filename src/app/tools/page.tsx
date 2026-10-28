@@ -357,25 +357,25 @@ export default function ToolsPage() {
 
       {/* Create Tool Modal */}
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
-        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader className="pb-2">
-            <DialogTitle className="text-lg font-serif font-semibold text-white">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">
               Connect Automation Tool
             </DialogTitle>
-            <DialogDescription className="text-xs text-[#879292]">
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Select a matter to associate this tool with, then launch the builder.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 my-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-mono text-[#879292] uppercase">
+              <label className="text-xs font-medium text-muted-foreground font-sans">
                 Associate with Matter *
               </label>
               <select
                 value={createCaseId}
                 onChange={(e) => setCreateCaseId(e.target.value)}
-                className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none cursor-pointer"
+                className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans"
               >
                 <option value="">Select a matter...</option>
                 {casesList.map(c => (
@@ -387,15 +387,15 @@ export default function ToolsPage() {
             </div>
           </div>
 
-          <DialogFooter className="pt-2 gap-2">
-            <Button type="button" variant="ghost" onClick={() => setCreateModalOpen(false)} className="text-[#879292] hover:text-white">Cancel</Button>
+          <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+            <Button type="button" variant="outline" onClick={() => setCreateModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
             <Button
               disabled={!createCaseId || launchingViasocket}
               onClick={() => handleLaunchViasocket(createCaseId)}
-              className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold"
+              className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90"
             >
               {launchingViasocket ? (
-                <><Loader2 className="w-4 h-4 animate-spin mr-1.5" /> Launching...</>
+                <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Launching...</>
               ) : (
                 'Launch Builder'
               )}
@@ -407,23 +407,23 @@ export default function ToolsPage() {
       {/* Import Tool Modal */}
       {importTargetTool && (
         <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
-          <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
+          <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
             <DialogHeader className="pb-2">
-              <DialogTitle className="text-base font-serif font-semibold text-white">
+              <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">
                 Import Tool to Matter
               </DialogTitle>
-              <DialogDescription className="text-xs text-[#879292]">
+              <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
                 Import {importTargetTool.title || 'this tool'} into another matter.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3 my-2">
               <div className="space-y-1.5">
-                <label className="text-xs font-mono text-[#879292] uppercase">Target Matter *</label>
+                <label className="text-xs font-medium text-muted-foreground font-sans">Target Matter *</label>
                 <select
                   value={importTargetCaseId}
                   onChange={(e) => { setImportTargetCaseId(e.target.value); setImportSuccess(false); }}
-                  className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none cursor-pointer"
+                  className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans"
                 >
                   <option value="">Select a matter...</option>
                   {casesList
@@ -435,15 +435,15 @@ export default function ToolsPage() {
               </div>
             </div>
 
-            <DialogFooter className="pt-2 gap-2">
-              <Button type="button" variant="ghost" onClick={() => { setImportModalOpen(false); setImportTargetTool(null); }} className="text-[#879292] hover:text-white">Cancel</Button>
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => { setImportModalOpen(false); setImportTargetTool(null); }} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
               <Button
                 disabled={!importTargetCaseId || importing}
                 onClick={handleImportTool}
-                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold"
+                className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90"
               >
                 {importing ? (
-                  <><Loader2 className="w-4 h-4 animate-spin mr-1.5" /> Importing...</>
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Importing...</>
                 ) : importSuccess ? (
                   '✓ Imported!'
                 ) : (

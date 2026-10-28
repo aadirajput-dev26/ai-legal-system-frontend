@@ -730,55 +730,55 @@ export default function CasesPage() {
 
       {/* ── CREATE CASE MODAL ───────────────────────────────────────── */}
       <Dialog open={newCaseModalOpen} onOpenChange={setNewCaseModalOpen}>
-        <DialogContent className="bg-[#141717] border-[#232727] text-[#f3f4f5] max-w-lg p-6">
+        <DialogContent className="max-w-lg p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-serif text-[#f3f4f5]">New legal matter</DialogTitle>
-            <DialogDescription className="text-xs text-[#879292]">
+            <DialogTitle className="text-xl font-serif text-foreground tracking-tight">New Legal Matter</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans">
               Register a new matter with court, judge, and client particulars.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateNewCase} className="space-y-4 mt-2 max-h-[75vh] overflow-y-auto pr-1">
+          <form onSubmit={handleCreateNewCase} className="space-y-4 mt-2 max-h-[75vh] overflow-y-auto pr-1 font-sans">
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Matter Title *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Matter Title *</Label>
               <Input 
                 required
                 placeholder="e.g. Aster Textiles v. Cedar Retail" 
                 value={newCaseForm.title}
                 onChange={(e) => setNewCaseForm({ ...newCaseForm, title: e.target.value })}
-                className="bg-[#121515] border-[#222828] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/50"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Reference / Case No.</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Reference / Case No.</Label>
                 <Input 
                   placeholder="e.g. QA/CIV/2026/001" 
                   value={newCaseForm.case_number}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, case_number: e.target.value })}
-                  className="bg-[#121515] border-[#222828] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/50"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Court</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Court</Label>
                 <Input 
                   placeholder="e.g. Commercial Court, Ahmedabad" 
                   value={newCaseForm.court}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, court: e.target.value })}
-                  className="bg-[#121515] border-[#222828] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/50"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Stage</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Stage</Label>
                 <select 
                   value={newCaseForm.stage}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, stage: e.target.value })}
-                  className="w-full bg-[#121515] border border-[#222828] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/50"
+                  className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs font-sans text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="">Select Stage</option>
                   <option value="Pleadings">Pleadings</option>
@@ -789,23 +789,23 @@ export default function CasesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Judge / Bench</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Judge / Bench</Label>
                 <Input 
                   placeholder="e.g. Mira Sen" 
                   value={newCaseForm.judge}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, judge: e.target.value })}
-                  className="bg-[#121515] border-[#222828] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/50"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Case Type</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Case Type</Label>
                 <select 
                   value={newCaseForm.case_type}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, case_type: e.target.value })}
-                  className="w-full bg-[#121515] border border-[#222828] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/50"
+                  className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs font-sans text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="Commercial Dispute">Commercial Dispute</option>
                   <option value="Civil Suit">Civil Suit</option>
@@ -816,38 +816,38 @@ export default function CasesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Next Hearing</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Next Hearing</Label>
                 <Input 
                   type="datetime-local"
                   value={newCaseForm.next_hearing_date}
                   onChange={(e) => setNewCaseForm({ ...newCaseForm, next_hearing_date: e.target.value })}
-                  className="bg-[#121515] border-[#222828] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/50"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono tracking-wider uppercase text-[#6f7a7a]">Summary / Facts</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Summary / Facts</Label>
               <textarea 
                 rows={3}
                 placeholder="Residential fit-out agreement dated..." 
                 value={newCaseForm.description}
                 onChange={(e) => setNewCaseForm({ ...newCaseForm, description: e.target.value })}
-                className="w-full bg-[#121515] border border-[#222828] rounded-lg p-2.5 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/50 resize-none"
+                className="w-full bg-background border border-input rounded-lg p-2.5 text-xs font-sans text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
               />
             </div>
 
-            <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setNewCaseModalOpen(false)} className="text-[#879292] hover:text-[#f3f4f5]">
+            <DialogFooter className="mt-4 gap-2.5">
+              <Button type="button" variant="outline" onClick={() => setNewCaseModalOpen(false)} className="text-xs h-9 px-4 font-medium border-border text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg">
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={submittingNewCase}
-                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-medium"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-4 rounded-lg shadow-sm"
               >
-                {submittingNewCase ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                Create matter
+                {submittingNewCase ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
+                Create Matter
               </Button>
             </DialogFooter>
           </form>
@@ -856,32 +856,32 @@ export default function CasesPage() {
 
       {/* ── EDIT CASE MODAL ─────────────────────────────────────────── */}
       <Dialog open={editCaseModalOpen} onOpenChange={setEditCaseModalOpen}>
-        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-lg p-6">
+        <DialogContent className="max-w-lg p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-serif font-normal text-white">Edit Case Details</DialogTitle>
-            <DialogDescription className="text-xs text-[#879292]">
+            <DialogTitle className="text-xl font-serif text-foreground tracking-tight">Edit Case Details</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans">
               Update case metadata, status, or next scheduled hearing.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleEditCase} className="space-y-4 mt-2 max-h-[75vh] overflow-y-auto pr-1">
+          <form onSubmit={handleEditCase} className="space-y-4 mt-2 max-h-[75vh] overflow-y-auto pr-1 font-sans">
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Title</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Title</Label>
               <Input 
                 required
                 value={editCaseForm.title}
                 onChange={(e) => setEditCaseForm({ ...editCaseForm, title: e.target.value })}
-                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Status</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Status</Label>
                 <select 
                   value={editCaseForm.status}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, status: e.target.value })}
-                  className="w-full bg-[#101313] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/60"
+                  className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs font-sans text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="OPEN">OPEN / ACTIVE</option>
                   <option value="CLOSED">CLOSED</option>
@@ -890,85 +890,85 @@ export default function CasesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Stage</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Stage</Label>
                 <Input 
                   value={editCaseForm.stage}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, stage: e.target.value })}
-                  className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Court</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Court</Label>
                 <Input 
                   value={editCaseForm.court}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, court: e.target.value })}
-                  className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Judge</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Judge</Label>
                 <Input 
                   value={editCaseForm.judge}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, judge: e.target.value })}
-                  className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Client</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Client</Label>
                 <Input 
                   value={editCaseForm.client_name}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, client_name: e.target.value })}
-                  className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Opposing</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Opposing</Label>
                 <Input 
                   value={editCaseForm.opposing_party}
                   onChange={(e) => setEditCaseForm({ ...editCaseForm, opposing_party: e.target.value })}
-                  className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Next Hearing Date</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Next Hearing Date</Label>
               <Input 
                 type="datetime-local"
                 value={editCaseForm.next_hearing_date}
                 onChange={(e) => setEditCaseForm({ ...editCaseForm, next_hearing_date: e.target.value })}
-                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Summary / Description</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Summary / Description</Label>
               <textarea 
                 rows={3}
                 value={editCaseForm.description}
                 onChange={(e) => setEditCaseForm({ ...editCaseForm, description: e.target.value })}
-                className="w-full bg-[#101313] border border-[#272b2b] rounded-lg p-2.5 text-sm text-[#f3f4f5] focus:outline-none focus:border-[#2dd4bf]/60 resize-none font-sans"
+                className="w-full bg-background border border-input rounded-lg p-2.5 text-xs font-sans text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
               />
             </div>
 
-            <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" className="text-xs text-[#879292] hover:text-white" onClick={() => setEditCaseModalOpen(false)}>
+            <DialogFooter className="mt-4 gap-2.5">
+              <Button type="button" variant="outline" className="text-xs h-9 px-4 font-medium border-border text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" onClick={() => setEditCaseModalOpen(false)}>
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={submittingEdit}
-                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs h-8"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-4 rounded-lg shadow-sm"
               >
-                {submittingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                {submittingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
                 Save Changes
               </Button>
             </DialogFooter>
@@ -976,76 +976,48 @@ export default function CasesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── DELETE CASE CONFIRMATION DIALOG ─────────────────────────── */}
-      <Dialog open={deleteConfirmModalOpen} onOpenChange={setDeleteConfirmModalOpen}>
-        <DialogContent className="bg-[#141717] border-red-500/30 text-[#f3f4f5] max-w-sm p-6">
-          <DialogHeader>
-            <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center mb-2">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-            <DialogTitle className="text-lg font-serif font-normal text-white">Delete Matter?</DialogTitle>
-            <DialogDescription className="text-xs text-[#879292]">
-              Are you sure you want to delete <span className="font-semibold text-white">{selectedCase?.title}</span>? This will permanently remove all associated tasks and documents.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="pt-4 gap-2">
-            <Button type="button" variant="ghost" className="text-xs text-[#879292] hover:text-white" onClick={() => setDeleteConfirmModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              type="button" 
-              onClick={handleDeleteCase}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs h-8"
-            >
-              Delete Case
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* ── QUICK ADD TASK MODAL (FOR SELECTED CASE) ────────────────── */}
       <Dialog open={quickTaskModalOpen} onOpenChange={setQuickTaskModalOpen}>
-        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-serif font-normal text-white">Add Task</DialogTitle>
-            <DialogDescription className="text-xs text-[#879292]">
-              For: <span className="text-white font-medium">{selectedCase?.title}</span>
+            <DialogTitle className="text-xl font-serif text-foreground tracking-tight">Add Task</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans">
+              For: <span className="text-foreground font-medium">{selectedCase?.title}</span>
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateQuickTask} className="space-y-4 mt-2">
+          <form onSubmit={handleCreateQuickTask} className="space-y-4 mt-2 font-sans">
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Task Title *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Task Title *</Label>
               <Input 
                 required
                 placeholder="e.g. Prepare list of dates and synopsis" 
                 value={quickTaskTitle}
                 onChange={(e) => setQuickTaskTitle(e.target.value)}
-                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Due Date</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Due Date</Label>
               <Input 
                 type="date"
                 value={quickTaskDue}
                 onChange={(e) => setQuickTaskDue(e.target.value)}
-                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
-            <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" className="text-xs text-[#879292] hover:text-white" onClick={() => setQuickTaskModalOpen(false)}>
+            <DialogFooter className="mt-4 gap-2.5">
+              <Button type="button" variant="outline" className="text-xs h-9 px-4 font-medium border-border text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" onClick={() => setQuickTaskModalOpen(false)}>
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={submittingQuickTask}
-                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs h-8"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-4 rounded-lg shadow-sm"
               >
-                {submittingQuickTask ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                {submittingQuickTask ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
                 Add Task
               </Button>
             </DialogFooter>
@@ -1055,46 +1027,46 @@ export default function CasesPage() {
 
       {/* ── QUICK ADD HEARING MODAL (FOR SELECTED CASE) ─────────────── */}
       <Dialog open={quickHearingModalOpen} onOpenChange={setQuickHearingModalOpen}>
-        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-md p-6">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-serif font-normal text-white">Schedule Next Hearing</DialogTitle>
-            <DialogDescription className="text-xs text-[#879292]">
-              For: <span className="text-white font-medium">{selectedCase?.title}</span>
+            <DialogTitle className="text-xl font-serif text-foreground tracking-tight">Schedule Next Hearing</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans">
+              For: <span className="text-foreground font-medium">{selectedCase?.title}</span>
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateQuickHearing} className="space-y-4 mt-2">
+          <form onSubmit={handleCreateQuickHearing} className="space-y-4 mt-2 font-sans">
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Date & Time *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Date & Time *</Label>
               <Input 
                 required
                 type="datetime-local"
                 value={quickHearingDate}
                 onChange={(e) => setQuickHearingDate(e.target.value)}
-                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-mono uppercase tracking-wider text-[#879292]">Agenda / Notes</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Agenda / Notes</Label>
               <Input 
                 placeholder="e.g. Cross examination of respondent" 
                 value={quickHearingNotes}
                 onChange={(e) => setQuickHearingNotes(e.target.value)}
-                className="bg-[#101313] border-[#272b2b] text-[#f3f4f5] h-9 text-sm focus:border-[#2dd4bf]/60"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
-            <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" className="text-xs text-[#879292] hover:text-white" onClick={() => setQuickHearingModalOpen(false)}>
+            <DialogFooter className="mt-4 gap-2.5">
+              <Button type="button" variant="outline" className="text-xs h-9 px-4 font-medium border-border text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" onClick={() => setQuickHearingModalOpen(false)}>
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={submittingQuickHearing}
-                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs h-8"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-4 rounded-lg shadow-sm"
               >
-                {submittingQuickHearing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                {submittingQuickHearing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
                 Save Hearing
               </Button>
             </DialogFooter>

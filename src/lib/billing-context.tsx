@@ -44,6 +44,34 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchBilling();
+
+    const handleBillingUpdate = () => {
+      // Immediate fetch
+      fetchBilling();
+      // Delayed follow-up fetches to capture async backend meter commits
+      const t1 = setTimeout(fetchBilling, 800);
+      const t2 = setTimeout(fetchBilling, 2200);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    };
+
+    const handleFocus = () => {
+      fetchBilling();
+    };
+
+    window.addEventListener('billing:updated', handleBillingUpdate);
+    window.addEventListener('focus', handleFocus);
+
+    // Periodic sync every 20 seconds
+    const interval = setInterval(fetchBilling, 20000);
+
+    return () => {
+      window.removeEventListener('billing:updated', handleBillingUpdate);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
   }, [fetchBilling]);
 
   const isExhausted = state ? (state.balance.balanceCredits < state.minBalanceCredits && state.enforcementEnabled) : false;
