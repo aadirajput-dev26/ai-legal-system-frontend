@@ -122,9 +122,9 @@ function LoginContent() {
 
             {/* Divider */}
             <div className="relative flex items-center gap-3 pt-1">
-              <div className="flex-1 h-px bg-[#272b2b]" />
-              <span className="text-[10px] text-[#879292] font-mono uppercase tracking-wider">or</span>
-              <div className="flex-1 h-px bg-[#272b2b]" />
+              <div className="flex-1 h-px bg-border dark:bg-[#272b2b]" />
+              <span className="text-[10px] text-slate-500 dark:text-[#879292] font-mono uppercase tracking-wider">or</span>
+              <div className="flex-1 h-px bg-border dark:bg-[#272b2b]" />
             </div>
 
             {/* Google Sign In Button (Pure Backend Redirect) */}
@@ -132,7 +132,7 @@ function LoginContent() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full h-10 flex items-center justify-center gap-3 rounded-lg border border-[#272b2b] bg-[#1a1d1d] hover:bg-[#1e2424] hover:border-[#384040] text-[#c9d1d1] text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full h-10 flex items-center justify-center gap-3 rounded-lg border border-border dark:border-[#272b2b] bg-white dark:bg-[#1a1d1d] hover:bg-slate-50 dark:hover:bg-[#1e2424] hover:border-slate-300 dark:hover:border-[#384040] text-slate-800 dark:text-[#c9d1d1] text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm dark:shadow-none"
             >
               <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

@@ -170,21 +170,21 @@ export default function SignupPage() {
                   onClick={() => setKind('individual')}
                   className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                     kind === 'individual'
-                      ? 'border-[#2dd4bf] bg-[#1a2322] shadow-[0_0_15px_rgba(45,212,191,0.1)]'
-                      : 'border-[#272b2b] bg-[#1a1d1d] hover:border-[#384040]'
+                      ? 'border-[#2dd4bf] bg-teal-50 dark:bg-[#1a2322] shadow-[0_0_15px_rgba(45,212,191,0.1)]'
+                      : 'border-border dark:border-[#272b2b] bg-slate-50 dark:bg-[#1a1d1d] hover:border-slate-300 dark:hover:border-[#384040]'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full mb-2">
-                    <User className={`w-5 h-5 ${kind === 'individual' ? 'text-[#2dd4bf]' : 'text-[#879292]'}`} />
+                    <User className={`w-5 h-5 ${kind === 'individual' ? 'text-teal-700 dark:text-[#2dd4bf]' : 'text-slate-400 dark:text-[#879292]'}`} />
                     <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                      kind === 'individual' ? 'border-[#2dd4bf] bg-[#2dd4bf]' : 'border-[#3a4242]'
+                      kind === 'individual' ? 'border-[#2dd4bf] bg-[#2dd4bf]' : 'border-slate-300 dark:border-[#3a4242]'
                     }`}>
                       {kind === 'individual' && <div className="w-1.5 h-1.5 rounded-full bg-[#091b18]" />}
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-white">Individual</div>
-                    <div className="text-[11px] text-[#879292] leading-tight mt-0.5">
+                    <div className="text-sm font-semibold text-slate-900 dark:text-white">Individual</div>
+                    <div className="text-[11px] text-slate-600 dark:text-[#879292] leading-tight mt-0.5">
                       Solo advocate, counsel, or consultant
                     </div>
                   </div>
@@ -195,21 +195,21 @@ export default function SignupPage() {
                   onClick={() => setKind('firm')}
                   className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                     kind === 'firm'
-                      ? 'border-[#2dd4bf] bg-[#1a2322] shadow-[0_0_15px_rgba(45,212,191,0.1)]'
-                      : 'border-[#272b2b] bg-[#1a1d1d] hover:border-[#384040]'
+                      ? 'border-[#2dd4bf] bg-teal-50 dark:bg-[#1a2322] shadow-[0_0_15px_rgba(45,212,191,0.1)]'
+                      : 'border-border dark:border-[#272b2b] bg-slate-50 dark:bg-[#1a1d1d] hover:border-slate-300 dark:hover:border-[#384040]'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full mb-2">
-                    <Building className={`w-5 h-5 ${kind === 'firm' ? 'text-[#2dd4bf]' : 'text-[#879292]'}`} />
+                    <Building className={`w-5 h-5 ${kind === 'firm' ? 'text-teal-700 dark:text-[#2dd4bf]' : 'text-slate-400 dark:text-[#879292]'}`} />
                     <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                      kind === 'firm' ? 'border-[#2dd4bf] bg-[#2dd4bf]' : 'border-[#3a4242]'
+                      kind === 'firm' ? 'border-[#2dd4bf] bg-[#2dd4bf]' : 'border-slate-300 dark:border-[#3a4242]'
                     }`}>
                       {kind === 'firm' && <div className="w-1.5 h-1.5 rounded-full bg-[#091b18]" />}
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-white">Law Firm</div>
-                    <div className="text-[11px] text-[#879292] leading-tight mt-0.5">
+                    <div className="text-sm font-semibold text-slate-900 dark:text-white">Law Firm</div>
+                    <div className="text-[11px] text-slate-600 dark:text-[#879292] leading-tight mt-0.5">
                       Chambers, partnerships, or teams
                     </div>
                   </div>
@@ -226,9 +226,9 @@ export default function SignupPage() {
 
               {/* Divider */}
               <div className="relative flex items-center gap-3 pt-1">
-                <div className="flex-1 h-px bg-[#272b2b]" />
-                <span className="text-[10px] text-[#879292] font-mono uppercase tracking-wider">or</span>
-                <div className="flex-1 h-px bg-[#272b2b]" />
+                <div className="flex-1 h-px bg-border dark:bg-[#272b2b]" />
+                <span className="text-[10px] text-slate-500 dark:text-[#879292] font-mono uppercase tracking-wider">or</span>
+                <div className="flex-1 h-px bg-border dark:bg-[#272b2b]" />
               </div>
 
               {/* Google Sign Up Button (Pure Backend Redirect) */}
@@ -236,7 +236,7 @@ export default function SignupPage() {
                 type="button"
                 onClick={handleGoogleSignup}
                 disabled={loading}
-                className="w-full h-10 flex items-center justify-center gap-3 rounded-lg border border-[#272b2b] bg-[#1a1d1d] hover:bg-[#1e2424] hover:border-[#384040] text-[#c9d1d1] text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="w-full h-10 flex items-center justify-center gap-3 rounded-lg border border-border dark:border-[#272b2b] bg-white dark:bg-[#1a1d1d] hover:bg-slate-50 dark:hover:bg-[#1e2424] hover:border-slate-300 dark:hover:border-[#384040] text-slate-800 dark:text-[#c9d1d1] text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm dark:shadow-none"
               >
                 <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

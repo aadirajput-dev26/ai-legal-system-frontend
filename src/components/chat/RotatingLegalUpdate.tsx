@@ -82,17 +82,17 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
       <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`my-3 p-4 bg-gradient-to-br from-[#1b152e] via-[#141222] to-[#0e0d16] border border-[#A855F7]/35 rounded-2xl shadow-xl relative overflow-hidden transition-all duration-300 ${className || ''}`}
+        className={`my-3 p-4 bg-gradient-to-br from-purple-50/90 via-white to-pink-50/50 dark:from-[#1b152e] dark:via-[#141222] dark:to-[#0e0d16] border border-purple-200/80 dark:border-[#A855F7]/35 rounded-2xl shadow-sm dark:shadow-xl relative overflow-hidden transition-all duration-300 ${className || ''}`}
       >
         {/* Ambient Top Glow Bar */}
         <div className="absolute top-0 left-0 h-[2px] bg-gradient-to-r from-[#A855F7] via-[#EC4899] to-[#A855F7] w-full animate-pulse" />
 
         {/* Header: Title, Pause/Play, Manual Controls & "View All" */}
         <div className="flex items-center justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#C084FC]">
+          <div className="flex items-center gap-2 text-xs font-semibold text-purple-700 dark:text-[#C084FC]">
             <Sparkles className="w-3.5 h-3.5 text-[#A855F7] flex-shrink-0 animate-spin" style={{ animationDuration: '6s' }} />
             <span>Legal Intelligence Digest</span>
-            <Badge variant="outline" className="text-[9px] uppercase tracking-wider text-[#A855F7] bg-[#A855F7]/10 border-[#A855F7]/30 py-0 h-4 font-semibold">
+            <Badge variant="outline" className="text-[9px] uppercase tracking-wider text-purple-700 dark:text-[#A855F7] bg-purple-100/80 dark:bg-[#A855F7]/10 border-purple-300 dark:border-[#A855F7]/30 py-0 h-4 font-semibold">
               {current.type || 'Statute'}
             </Badge>
           </div>
@@ -104,7 +104,7 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
               variant="ghost"
               size="sm"
               onClick={() => setViewAllOpen(true)}
-              className="h-6 px-2 text-[10px] text-[#C084FC] hover:bg-[#A855F7]/15 hover:text-white rounded-md gap-1 font-medium"
+              className="h-6 px-2 text-[10px] text-purple-700 dark:text-[#C084FC] hover:bg-purple-100/60 dark:hover:bg-[#A855F7]/15 hover:text-purple-900 dark:hover:text-white rounded-md gap-1 font-medium"
               title="View all legal updates in full"
             >
               <BookOpen className="w-3 h-3" />
@@ -115,7 +115,7 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
             <button
               type="button"
               onClick={() => setIsPaused(prev => !prev)}
-              className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
+              className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
               title={isPaused ? 'Resume auto-rotation' : 'Pause rotation to read'}
             >
               {isPaused ? <Play className="w-2.5 h-2.5 text-[#4ADE80]" /> : <Pause className="w-2.5 h-2.5" />}
@@ -123,11 +123,11 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
 
             {/* Prev / Next Arrows */}
             {updates.length > 1 && (
-              <div className="flex items-center gap-0.5 bg-white/5 rounded-md p-0.5 border border-white/5">
+              <div className="flex items-center gap-0.5 bg-black/5 dark:bg-white/5 rounded-md p-0.5 border border-black/5 dark:border-white/5">
                 <button
                   type="button"
                   onClick={handlePrev}
-                  className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
+                  className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                   title="Previous update"
                 >
                   <ChevronLeft className="w-3 h-3" />
@@ -138,7 +138,7 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
+                  className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                   title="Next update"
                 >
                   <ChevronRight className="w-3 h-3" />
@@ -150,22 +150,22 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
 
         {/* Content: FULL Title & UN-TRUNCATED Summary */}
         <div className="space-y-2 py-0.5">
-          <div className="text-xs sm:text-sm font-semibold text-foreground/95 flex items-start gap-2 leading-snug">
+          <div className="text-xs sm:text-sm font-semibold flex items-start gap-2 leading-snug">
             <Scale className="w-4 h-4 text-[#A855F7] flex-shrink-0 mt-0.5" />
-            <span className="text-white font-medium">{current.title}</span>
+            <span className="text-slate-900 dark:text-white font-medium">{current.title}</span>
           </div>
 
           {/* Fully visible complete summary (no line-clamp) */}
-          <p className="text-[12px] text-muted-foreground/95 leading-relaxed pl-6 whitespace-normal select-text">
+          <p className="text-[12px] text-slate-600 dark:text-muted-foreground/95 leading-relaxed pl-6 whitespace-normal select-text">
             {current.summary}
           </p>
         </div>
 
         {/* Footer: Source, Date, and Inquire Button */}
-        <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-muted-foreground">
+        <div className="mt-3 pt-2.5 border-t border-purple-200/50 dark:border-white/5 flex items-center justify-between text-[11px] text-muted-foreground">
           <div className="flex items-center gap-2 truncate max-w-[65%]">
             {current.source && (
-              <span className="text-muted-foreground/80 font-medium truncate flex items-center gap-1">
+              <span className="text-muted-foreground font-medium truncate flex items-center gap-1">
                 <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                 {current.source}
               </span>
@@ -179,7 +179,7 @@ export function RotatingLegalUpdate({ updates, onInquire, className }: RotatingL
               variant="outline"
               size="sm"
               onClick={() => onInquire(current)}
-              className="h-6 px-2.5 text-[10px] border-[#A855F7]/30 bg-[#A855F7]/10 hover:bg-[#A855F7]/25 text-[#C084FC] hover:text-white rounded-md gap-1 font-medium transition-all"
+              className="h-6 px-2.5 text-[10px] border-purple-300 dark:border-[#A855F7]/30 bg-purple-100/70 dark:bg-[#A855F7]/10 hover:bg-purple-200/70 dark:hover:bg-[#A855F7]/25 text-purple-800 dark:text-[#C084FC] rounded-md gap-1 font-medium transition-all"
               title="Ask AI how this law applies to your matter"
             >
               <MessageSquare className="w-3 h-3" />
