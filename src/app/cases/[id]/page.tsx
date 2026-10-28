@@ -33,8 +33,11 @@ import {
   User,
   Building2,
   ArrowRight,
-  ChevronRight
+  ChevronRight,
+  Lock
 } from 'lucide-react';
+import { useBilling } from '@/lib/billing-context';
+import { TokenOverModal } from '@/components/billing/TokenOverModal';
 import { 
   Dialog, 
   DialogContent, 
@@ -60,7 +63,9 @@ export default function CaseDetailPage() {
 
   const { currentOrg } = useOrg();
   const { loadScript } = useEmbedScriptLoader();
+  const { isZeroTokens, tokenCredits } = useBilling();
 
+  const [tokenModalOpen, setTokenModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('Overview');
   const [caseData, setCaseData] = useState<CaseItem | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -678,16 +683,29 @@ export default function CaseDetailPage() {
             <Button 
               size="sm"
               onClick={() => {
+                if (isZeroTokens || tokenCredits <= 0) {
+                  setTokenModalOpen(true);
+                  return;
+                }
                 if (typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('open-ai-chat', {
                     detail: { caseId, caseTitle: caseData?.title }
                   }));
                 }
               }}
-              className="h-9 px-3.5 text-xs bg-teal-500/10 hover:bg-teal-500/20 text-[#0d9488] dark:text-[#2dd4bf] border border-teal-500/30 font-semibold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer transition-all"
+              title={isZeroTokens || tokenCredits <= 0 ? 'Tokens are over (0 tokens remaining). Click to add tokens.' : 'Open AI Assistant'}
+              className={`h-9 px-3.5 text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer transition-all ${
+                isZeroTokens || tokenCredits <= 0
+                  ? 'bg-muted border border-border text-muted-foreground opacity-80 hover:opacity-100 hover:border-amber-500/50'
+                  : 'bg-teal-500/10 hover:bg-teal-500/20 text-[#0d9488] dark:text-[#2dd4bf] border border-teal-500/30'
+              }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              AI Assistant
+              {isZeroTokens || tokenCredits <= 0 ? (
+                <Lock className="w-3.5 h-3.5 text-amber-500" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5" />
+              )}
+              {isZeroTokens || tokenCredits <= 0 ? 'AI Assistant (0 Tokens)' : 'AI Assistant'}
             </Button>
             <Button 
               variant="outline" 
@@ -1966,6 +1984,13 @@ export default function CaseDetailPage() {
 
       {/* ── AI Chatbot Doodle (Exclusively accessible when a case is opened) ── */}
       <MatterChatDoodle caseId={caseId} caseTitle={caseData?.title} />
+
+      {/* ── Token Over Warning Modal ── */}
+      <TokenOverModal
+        open={tokenModalOpen}
+        onOpenChange={setTokenModalOpen}
+        feature="The AI Chambers Assistant"
+      />
 
     </AppShell>
   );

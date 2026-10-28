@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash2, ChevronRight, Clock, FileEdit, ExternalLink } from 'lucide-react';
+import { Loader2, Plus, Trash2, ChevronRight, Clock, FileEdit, ExternalLink, Lock } from 'lucide-react';
+import { useBilling } from '@/lib/billing-context';
+import { TokenOverModal } from '@/components/billing/TokenOverModal';
 import {
   Dialog,
   DialogContent,
@@ -53,10 +55,14 @@ interface CaseDraftsTabProps {
 
 export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
   const router = useRouter();
+  const { isZeroTokens, tokenCredits } = useBilling();
+  const [tokenModalOpen, setTokenModalOpen] = useState(false);
   const [draftsList, setDraftsList] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
   const [draftToDelete, setDraftToDelete] = useState<Draft | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const hasNoTokens = isZeroTokens || tokenCredits <= 0;
 
   const fetchDrafts = async () => {
     try {
@@ -93,6 +99,10 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
   };
 
   const handleCreateNew = () => {
+    if (hasNoTokens) {
+      setTokenModalOpen(true);
+      return;
+    }
     router.push(`/drafts?caseId=${caseId}&new=true`);
   };
 
@@ -116,10 +126,15 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
           <Button
             size="sm"
             onClick={handleCreateNew}
-            className="h-8 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold gap-1.5"
+            title={hasNoTokens ? 'Tokens are over (0 tokens remaining). Click to add tokens.' : 'Create new draft'}
+            className={`h-8 text-xs font-semibold gap-1.5 cursor-pointer ${
+              hasNoTokens
+                ? 'bg-muted border border-border text-muted-foreground opacity-80 hover:opacity-100 hover:border-amber-500/50'
+                : 'bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18]'
+            }`}
           >
-            <Plus className="w-3.5 h-3.5" />
-            New Draft
+            {hasNoTokens ? <Lock className="w-3.5 h-3.5 text-amber-500" /> : <Plus className="w-3.5 h-3.5" />}
+            {hasNoTokens ? 'New Draft (0 Tokens)' : 'New Draft'}
           </Button>
         </div>
       </div>
@@ -145,10 +160,15 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
           <Button
             size="sm"
             onClick={handleCreateNew}
-            className="mt-2 h-8 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold gap-1.5"
+            title={hasNoTokens ? 'Tokens are over (0 tokens remaining).' : 'Create first draft'}
+            className={`mt-2 h-8 text-xs font-semibold gap-1.5 cursor-pointer ${
+              hasNoTokens
+                ? 'bg-muted border border-border text-muted-foreground opacity-80 hover:opacity-100 hover:border-amber-500/50'
+                : 'bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18]'
+            }`}
           >
-            <Plus className="w-3.5 h-3.5" />
-            Create First Draft
+            {hasNoTokens ? <Lock className="w-3.5 h-3.5 text-amber-500" /> : <Plus className="w-3.5 h-3.5" />}
+            {hasNoTokens ? 'Create First Draft (0 Tokens)' : 'Create First Draft'}
           </Button>
         </div>
       ) : (
@@ -276,6 +296,13 @@ export function CaseDraftsTab({ caseId }: CaseDraftsTabProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Token Over Warning Modal */}
+      <TokenOverModal
+        open={tokenModalOpen}
+        onOpenChange={setTokenModalOpen}
+        feature="Creating a new legal draft"
+      />
     </div>
   );
 }

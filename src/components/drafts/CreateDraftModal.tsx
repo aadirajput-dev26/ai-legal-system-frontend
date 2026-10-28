@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Sparkles, Check } from 'lucide-react';
+import { Loader2, Sparkles, Check, Lock, Coins } from 'lucide-react';
 import type { DraftType } from '@/lib/api';
 import { useBilling } from '@/lib/billing-context';
 import { useRouter } from 'next/navigation';
@@ -30,8 +30,10 @@ export function CreateDraftModal({ open, onOpenChange, onSubmit }: CreateDraftMo
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const { isExhausted } = useBilling();
+  const { isExhausted, isZeroTokens, tokenCredits } = useBilling();
   const router = useRouter();
+
+  const hasNoTokens = isZeroTokens || tokenCredits <= 0 || isExhausted;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,13 +154,17 @@ export function CreateDraftModal({ open, onOpenChange, onSubmit }: CreateDraftMo
             <Button type="button" variant="outline" className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            {isExhausted ? (
+            {hasNoTokens ? (
               <Button
                 type="button"
-                className="bg-red-600 hover:bg-red-700 text-white font-semibold h-9 text-xs px-4 rounded-lg font-sans"
-                onClick={() => router.push('/billing')}
+                className="bg-amber-500 hover:bg-amber-600 text-black font-semibold h-9 text-xs px-4 rounded-lg font-sans flex items-center gap-1.5 cursor-pointer"
+                onClick={() => {
+                  onOpenChange(false);
+                  router.push('/billing');
+                }}
               >
-                AI Paused. Top Up
+                <Coins className="w-3.5 h-3.5" />
+                Tokens are over · Add Tokens
               </Button>
             ) : (
               <Button

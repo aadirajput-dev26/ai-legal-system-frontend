@@ -63,7 +63,8 @@ export function DraftEditorModal({
   const [saving, setSaving] = useState(false);
   const [savingStatus, setSavingStatus] = useState<DraftStatus | null>(null);
   
-  const { isExhausted } = useBilling();
+  const { isExhausted, isZeroTokens, tokenCredits } = useBilling();
+  const hasNoTokens = isZeroTokens || tokenCredits <= 0 || isExhausted;
   const router = useRouter();
 
   // AI Refinement Prompt
@@ -420,19 +421,19 @@ export function DraftEditorModal({
                   <p className="text-[9px] font-mono text-[#879292]/60 uppercase font-medium tracking-wide">Custom Instruction</p>
                   <textarea
                     rows={5}
-                    placeholder={isExhausted ? "AI features paused. Please add funds." : "e.g. Add Section 138 Negotiable Instruments Act clause and demand cheque dishonor compensation..."}
+                    placeholder={hasNoTokens ? "Tokens are over. Please add tokens to use AI refinement." : "e.g. Add Section 138 Negotiable Instruments Act clause and demand cheque dishonor compensation..."}
                     value={refinePrompt}
                     onChange={e => setRefinePrompt(e.target.value)}
-                    disabled={refining || isStreaming || isExhausted}
+                    disabled={refining || isStreaming || hasNoTokens}
                     className="flex-1 w-full bg-[#141717] border border-[#272b2b] rounded-lg p-2.5 text-[11px] text-[#f3f4f5] focus:outline-none focus:border-[#818cf8]/60 resize-none placeholder:text-[#879292]/40 leading-relaxed disabled:opacity-40 font-sans"
                   />
-                  {isExhausted ? (
+                  {hasNoTokens ? (
                     <Button
-                      className="w-full bg-destructive/20 text-destructive border border-destructive/30 hover:border-destructive hover:bg-destructive/30 text-xs font-semibold gap-1.5 h-8"
+                      className="w-full bg-amber-500/15 text-amber-500 border border-amber-500/30 hover:border-amber-500 hover:bg-amber-500/25 text-xs font-semibold gap-1.5 h-8 cursor-pointer"
                       variant="outline"
                       onClick={() => router.push('/billing')}
                     >
-                      AI Paused. Top Up
+                      Tokens are over · Add Tokens
                     </Button>
                   ) : (
                     <Button

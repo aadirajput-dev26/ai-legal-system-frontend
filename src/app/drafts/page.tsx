@@ -21,7 +21,9 @@ import {
   Bot,
   Send,
   ChevronDown,
+  Lock,
 } from 'lucide-react';
+import { TokenOverModal } from '@/components/billing/TokenOverModal';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,7 +68,9 @@ function DraftsContent() {
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { currentOrg } = useOrg();
-  const { isExhausted } = useBilling();
+  const { isExhausted, isZeroTokens, tokenCredits } = useBilling();
+  const [tokenModalOpen, setTokenModalOpen] = useState(false);
+  const hasNoTokens = isZeroTokens || tokenCredits <= 0;
 
   // URL query params
   const initialCaseId = searchParams.get('caseId') || '';
@@ -170,13 +174,17 @@ function DraftsContent() {
 
   useEffect(() => {
     if (openNewParam && casesList.length > 0) {
+      if (hasNoTokens) {
+        setTokenModalOpen(true);
+        return;
+      }
       setNewDraftForm(prev => ({
         ...prev,
         caseId: initialCaseId || casesList[0]?.id || '',
       }));
       setCreateModalOpen(true);
     }
-  }, [openNewParam, casesList, initialCaseId]);
+  }, [openNewParam, casesList, initialCaseId, hasNoTokens]);
 
   // Open Draft in Studio
   const openDraftInStudio = async (draft: Draft) => {
@@ -245,6 +253,11 @@ function DraftsContent() {
   // Create Draft Submit & Stream
   const handleCreateDraftSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasNoTokens) {
+      setCreateModalOpen(false);
+      setTokenModalOpen(true);
+      return;
+    }
     if (!newDraftForm.caseId || !newDraftForm.title.trim()) return;
 
     setCreating(true);
@@ -317,6 +330,10 @@ function DraftsContent() {
 
   // Assistant Chat: Refine or update document
   const handleSendChatMessage = async (presetText?: string) => {
+    if (hasNoTokens) {
+      setTokenModalOpen(true);
+      return;
+    }
     const text = (presetText || chatInput).trim();
     if (!text || !activeDraft || !activeDraft.id || chatSending) return;
 
@@ -741,6 +758,10 @@ function DraftsContent() {
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => {
+                if (hasNoTokens) {
+                  setTokenModalOpen(true);
+                  return;
+                }
                 setNewDraftForm({
                   caseId: casesList[0]?.id || '',
                   title: '',
@@ -750,13 +771,15 @@ function DraftsContent() {
                 });
                 setCreateModalOpen(true);
               }}
-              className={`h-8 text-xs font-semibold px-4 rounded-lg transition-colors flex items-center gap-1 ${
-                isExhausted
-                  ? 'bg-[#141717] border border-[#272b2b] text-[#879292] hover:text-[#f3f4f5]'
+              title={hasNoTokens ? 'Tokens are over (0 tokens remaining). Click to add tokens.' : 'Create new legal draft'}
+              className={`h-8 text-xs font-semibold px-4 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer ${
+                hasNoTokens
+                  ? 'bg-muted border border-border text-muted-foreground opacity-80 hover:opacity-100 hover:border-amber-500/50'
                   : 'bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18]'
               }`}
             >
-              {isExhausted ? 'New draft — paused' : 'New draft'}
+              {hasNoTokens && <Lock className="w-3.5 h-3.5 text-amber-500" />}
+              {hasNoTokens ? 'New draft (0 Tokens)' : 'New draft'}
             </button>
           </div>
         </div>
@@ -798,6 +821,10 @@ function DraftsContent() {
             </p>
             <button
               onClick={() => {
+                if (hasNoTokens) {
+                  setTokenModalOpen(true);
+                  return;
+                }
                 setNewDraftForm({
                   caseId: casesList[0]?.id || '',
                   title: '',
@@ -807,9 +834,15 @@ function DraftsContent() {
                 });
                 setCreateModalOpen(true);
               }}
-              className="mt-2 h-8 text-xs bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold px-4 rounded-lg"
+              title={hasNoTokens ? 'Tokens are over (0 tokens remaining).' : 'Create new draft'}
+              className={`mt-2 h-8 text-xs font-semibold px-4 rounded-lg flex items-center gap-1.5 mx-auto cursor-pointer ${
+                hasNoTokens
+                  ? 'bg-muted border border-border text-muted-foreground opacity-80 hover:opacity-100 hover:border-amber-500/50'
+                  : 'bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18]'
+              }`}
             >
-              New draft
+              {hasNoTokens && <Lock className="w-3.5 h-3.5 text-amber-500" />}
+              {hasNoTokens ? 'New draft (0 Tokens)' : 'New draft'}
             </button>
           </div>
         ) : (
@@ -1116,6 +1149,13 @@ function DraftsContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Token Over Warning Modal */}
+      <TokenOverModal
+        open={tokenModalOpen}
+        onOpenChange={setTokenModalOpen}
+        feature="Creating a new legal draft"
+      />
     </AppShell>
   );
 }

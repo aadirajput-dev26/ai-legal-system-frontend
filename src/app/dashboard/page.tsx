@@ -487,6 +487,22 @@ export default function DashboardPage() {
     return tasks.filter(t => t.status !== 'COMPLETED');
   }, [tasks]);
 
+  const currentMonthEvents = useMemo(() => {
+    return allEvents.filter(e => isSameMonth(e.date, calendarDate));
+  }, [allEvents, calendarDate]);
+
+  const monthHearingsCount = useMemo(() => {
+    return currentMonthEvents.filter(e => e.type === 'HEARING').length;
+  }, [currentMonthEvents]);
+
+  const monthMeetingsCount = useMemo(() => {
+    return currentMonthEvents.filter(e => e.type === 'MEETING').length;
+  }, [currentMonthEvents]);
+
+  const monthTasksCount = useMemo(() => {
+    return currentMonthEvents.filter(e => e.type === 'TASK').length;
+  }, [currentMonthEvents]);
+
   const filteredEvents = useMemo(() => {
     if (calendarFilter === 'ALL') return allEvents;
     if (calendarFilter === 'HEARINGS') return allEvents.filter(e => e.type === 'HEARING');
@@ -1145,7 +1161,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Event Type Filters */}
+              {/* Event Type Filters (Current Month Metrics Only) */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   type="button"
@@ -1156,7 +1172,7 @@ export default function DashboardPage() {
                       : 'bg-muted text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  All ({allEvents.length})
+                  All ({currentMonthEvents.length})
                 </button>
                 <button
                   type="button"
@@ -1167,18 +1183,18 @@ export default function DashboardPage() {
                       : 'bg-muted text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  Hearings ({allEvents.filter(e => e.type === 'HEARING').length})
+                  Hearings ({monthHearingsCount})
                 </button>
                 <button
                   type="button"
                   onClick={() => setCalendarFilter('MEETINGS')}
                   className={`text-[10px] font-mono px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                     calendarFilter === 'MEETINGS'
-                      ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/35 font-semibold'
+                      ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/35 font-semibold'
                       : 'bg-muted text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  Meetings ({allEvents.filter(e => e.type === 'MEETING').length})
+                  Meetings ({monthMeetingsCount})
                 </button>
                 <button
                   type="button"
@@ -1189,7 +1205,7 @@ export default function DashboardPage() {
                       : 'bg-muted text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  Tasks ({allEvents.filter(e => e.type === 'TASK').length})
+                  Tasks ({monthTasksCount})
                 </button>
               </div>
 

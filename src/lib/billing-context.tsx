@@ -11,6 +11,8 @@ interface BillingContextType {
   error: string | null;
   refreshBilling: () => Promise<void>;
   isExhausted: boolean;
+  isZeroTokens: boolean;
+  tokenCredits: number;
 }
 
 const BillingContext = createContext<BillingContextType | undefined>(undefined);
@@ -74,10 +76,14 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     };
   }, [fetchBilling]);
 
-  const isExhausted = state ? (state.balance.balanceCredits < state.minBalanceCredits && state.enforcementEnabled) : false;
+  const tokenCredits = state?.balance?.balanceCredits ?? 0;
+  const isZeroTokens = Boolean(!loading && state && tokenCredits <= 0);
+  const isExhausted = Boolean(
+    state && (tokenCredits <= 0 || (tokenCredits < state.minBalanceCredits && state.enforcementEnabled))
+  );
 
   return (
-    <BillingContext.Provider value={{ state, loading, error, refreshBilling: fetchBilling, isExhausted }}>
+    <BillingContext.Provider value={{ state, loading, error, refreshBilling: fetchBilling, isExhausted, isZeroTokens, tokenCredits }}>
       {children}
     </BillingContext.Provider>
   );

@@ -12,10 +12,13 @@ import {
   ChevronDown,
   Minimize2,
   Maximize2,
-  FileText
+  FileText,
+  Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { chat as chatApi } from '@/lib/api';
+import { useBilling } from '@/lib/billing-context';
+import { TokenOverModal } from '@/components/billing/TokenOverModal';
 
 interface MatterChatDoodleProps {
   caseId?: string | null;
@@ -30,6 +33,8 @@ interface ChatMessage {
 }
 
 export function MatterChatDoodle({ caseId: initialCaseId, caseTitle: initialCaseTitle }: MatterChatDoodleProps) {
+  const { isZeroTokens, tokenCredits } = useBilling();
+  const [tokenModalOpen, setTokenModalOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [activeCaseId, setActiveCaseId] = useState<string | null>(initialCaseId || null);
   const [activeCaseTitle, setActiveCaseTitle] = useState<string | null>(initialCaseTitle || null);
@@ -167,6 +172,10 @@ export function MatterChatDoodle({ caseId: initialCaseId, caseTitle: initialCase
   // Global event listener to open chatbot from any button
   useEffect(() => {
     const handleOpen = (e?: any) => {
+      if (isZeroTokens || tokenCredits <= 0) {
+        setTokenModalOpen(true);
+        return;
+      }
       if (e?.detail?.caseId) {
         setActiveCaseId(e.detail.caseId);
       }
@@ -177,7 +186,7 @@ export function MatterChatDoodle({ caseId: initialCaseId, caseTitle: initialCase
     };
     window.addEventListener('open-ai-chat', handleOpen);
     return () => window.removeEventListener('open-ai-chat', handleOpen);
-  }, []);
+  }, [isZeroTokens, tokenCredits]);
 
   const chips = [
     'Summarize this matter',
@@ -186,38 +195,61 @@ export function MatterChatDoodle({ caseId: initialCaseId, caseTitle: initialCase
     'Draft response outline',
   ];
 
+  const hasNoTokens = isZeroTokens || tokenCredits <= 0;
+
   return (
     <>
       {/* ── 1. Floating AI Chatbot Opening Doodle (Always visible in bottom-right) ──── */}
       {!isOpen && (
         <div className="fixed right-6 bottom-6 z-[99999] animate-in fade-in duration-300">
           <button
-            onClick={() => setIsOpen(true)}
-            title="Open AI Legal Assistant"
-            className="group relative flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 hover:from-teal-400 hover:to-emerald-500 text-[#091b18] font-bold text-xs shadow-[0_10px_35px_rgba(45,212,191,0.45)] hover:shadow-[0_15px_45px_rgba(45,212,191,0.65)] hover:scale-[1.05] active:scale-[0.98] transition-all cursor-pointer border-2 border-white/40 ring-4 ring-teal-500/20"
+            onClick={() => {
+              if (hasNoTokens) {
+                setTokenModalOpen(true);
+                return;
+              }
+              setIsOpen(true);
+            }}
+            title={hasNoTokens ? 'Tokens are over (0 tokens remaining). Click to add tokens.' : 'Open AI Legal Assistant'}
+            className={`group relative flex items-center gap-2.5 px-4 py-3 rounded-full transition-all cursor-pointer ${
+              hasNoTokens
+                ? 'bg-muted/95 border-2 border-amber-500/30 text-muted-foreground opacity-80 hover:opacity-100 hover:border-amber-500/60 shadow-[0_4px_20px_rgba(0,0,0,0.25)]'
+                : 'bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 hover:from-teal-400 hover:to-emerald-500 text-[#091b18] font-bold text-xs shadow-[0_10px_35px_rgba(45,212,191,0.45)] hover:shadow-[0_15px_45px_rgba(45,212,191,0.65)] hover:scale-[1.05] active:scale-[0.98] border-2 border-white/40 ring-4 ring-teal-500/20'
+            }`}
           >
             {/* Live animated pulsing doodle dot */}
             <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-90" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-90 ${hasNoTokens ? 'bg-amber-400' : 'bg-white'}`} />
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${hasNoTokens ? 'bg-amber-500' : 'bg-white'}`} />
             </span>
 
-            {/* Doodle Sparkles Icon */}
-            <Sparkles className="w-4 h-4 text-[#091b18] group-hover:rotate-12 transition-transform stroke-[2.5]" />
+            {/* Doodle Sparkles or Lock Icon */}
+            {hasNoTokens ? (
+              <Lock className="w-4 h-4 text-amber-500 stroke-[2.2]" />
+            ) : (
+              <Sparkles className="w-4 h-4 text-[#091b18] group-hover:rotate-12 transition-transform stroke-[2.5]" />
+            )}
 
             {/* Label */}
-            <span className="tracking-tight text-xs font-bold uppercase">
-              AI Chatbot
+            <span className={`tracking-tight text-xs font-bold uppercase ${hasNoTokens ? 'text-foreground' : 'text-[#091b18]'}`}>
+              {hasNoTokens ? 'AI Chatbot (0 Tokens)' : 'AI Chatbot'}
             </span>
 
             {activeCaseTitle && (
-              <span className="hidden sm:inline-block max-w-[130px] truncate text-[11px] font-medium opacity-90 pl-1.5 border-l border-[#091b18]/30">
+              <span className={`hidden sm:inline-block max-w-[130px] truncate text-[11px] font-medium opacity-90 pl-1.5 border-l ${hasNoTokens ? 'border-border text-muted-foreground' : 'border-[#091b18]/30'}`}>
                 {activeCaseTitle}
               </span>
             )}
           </button>
         </div>
       )}
+
+      {/* ── Token Over Warning Modal ── */}
+      <TokenOverModal
+        open={tokenModalOpen}
+        onOpenChange={setTokenModalOpen}
+        feature="Opening the AI Legal Assistant"
+      />
 
       {/* ── 2. Interactive AI Chatbot Window ────────────────────────────────────────── */}
       {isOpen && (
