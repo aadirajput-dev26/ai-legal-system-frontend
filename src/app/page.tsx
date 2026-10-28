@@ -77,7 +77,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0f0f] text-[#f3f4f5] selection:bg-[#2dd4bf]/20 selection:text-[#2dd4bf] overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0d0f0f] text-slate-900 dark:text-[#f3f4f5] selection:bg-[#2dd4bf]/20 selection:text-[#2dd4bf] overflow-x-hidden font-sans">
       
       {/* ── Ambient Background Glows ──────────────────────────────────── */}
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -87,7 +87,7 @@ export default function HomePage() {
       </div>
 
       {/* ── Header Navigation ────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 w-full border-b border-[#1e2323] bg-[#0d0f0f]/90 backdrop-blur-md">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-white/90 dark:bg-[#0d0f0f]/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
           {/* Brand Logo */}
@@ -96,7 +96,7 @@ export default function HomePage() {
               <Scale className="w-4 h-4 stroke-[2.4]" />
             </div>
             <div className="flex flex-col">
-              <span className="font-serif font-semibold text-lg tracking-tight text-white leading-none">
+              <span className="font-serif font-semibold text-lg tracking-tight text-foreground dark:text-white leading-none">
                 LegalDesk
               </span>
               <span className="text-[9px] font-mono tracking-widest text-[#6f7a7a] uppercase mt-0.5">
@@ -106,12 +106,12 @@ export default function HomePage() {
           </Link>
 
           {/* Navigation Anchors */}
-          <nav className="hidden md:flex items-center gap-7 text-xs font-medium text-[#879292]">
-            <a href="#product" className="hover:text-[#2dd4bf] transition-colors">Product</a>
-            <a href="#features" className="hover:text-[#2dd4bf] transition-colors">Features</a>
-            <a href="#roi" className="hover:text-[#2dd4bf] transition-colors">ROI Calculator</a>
-            <a href="#pricing" className="hover:text-[#2dd4bf] transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-[#2dd4bf] transition-colors">FAQ</a>
+          <nav className="hidden md:flex items-center gap-7 text-xs font-medium text-slate-600 dark:text-[#879292]">
+            <a href="#product" className="hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors">Product</a>
+            <a href="#features" className="hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors">Features</a>
+            <a href="#roi" className="hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors">ROI Calculator</a>
+            <a href="#pricing" className="hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors">Pricing</a>
+            <a href="#faq" className="hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors">FAQ</a>
           </nav>
 
           {/* User Auth Buttons */}
@@ -128,7 +128,7 @@ export default function HomePage() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="text-xs font-medium text-[#a0abab] hover:text-white px-3.5 py-2 rounded-lg hover:bg-white/[0.08] transition-all cursor-pointer"
+                  className="text-xs font-medium text-slate-600 dark:text-[#a0abab] hover:text-foreground dark:hover:text-white px-3.5 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/[0.08] transition-all cursor-pointer"
                 >
                   Sign In
                 </Link>
@@ -231,7 +231,7 @@ export default function HomePage() {
             </div>
 
             {/* Screen Switcher Tabs */}
-            <div className="flex items-center gap-1 bg-[#121515] p-1 rounded-xl border border-[#222828] shadow-inner self-start md:self-auto">
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#121515] p-1 rounded-xl border border-slate-200 dark:border-[#222828] shadow-inner self-start md:self-auto">
               {[
                 { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
                 { id: 'cases', label: 'Matters', icon: FolderClosed },
@@ -243,8 +243,8 @@ export default function HomePage() {
                   onClick={() => setActiveScreen(tab.id as any)}
                   className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
                     activeScreen === tab.id
-                      ? 'bg-[#152321] text-[#2dd4bf] border border-[#2dd4bf]/30 shadow-[0_0_12px_rgba(45,212,191,0.15)] font-semibold'
-                      : 'text-[#879292] hover:text-white hover:bg-[#181c1c]'
+                      ? 'bg-white dark:bg-[#152321] text-teal-700 dark:text-[#2dd4bf] border border-teal-500/30 shadow-sm font-semibold'
+                      : 'text-slate-600 dark:text-[#879292] hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#181c1c]'
                   }`}
                 >
                   <tab.icon className="w-3.5 h-3.5" />
@@ -255,10 +255,10 @@ export default function HomePage() {
           </div>
 
           {/* Product Workstation Shell (100% Identical to Internal AppShell) */}
-          <div className="rounded-2xl border border-[#232727] bg-[#0c0e0e] shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden">
+          <div className="rounded-2xl border border-slate-200 dark:border-[#232727] bg-white dark:bg-[#0c0e0e] shadow-xl dark:shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden">
             
             {/* ── Internal Top Header Bar (AppShell Header) ── */}
-            <div className="h-13 bg-[#0d0f0f]/95 border-b border-[#1a1e1e] flex items-center justify-between px-5 sm:px-7">
+            <div className="h-13 bg-slate-50 dark:bg-[#0d0f0f]/95 border-b border-slate-200 dark:border-[#1a1e1e] flex items-center justify-between px-5 sm:px-7">
               {/* Left: Breadcrumbs & AI Status Pill */}
               <div className="flex items-center gap-3 min-w-0">
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-[#879292] font-normal truncate">
@@ -569,57 +569,57 @@ export default function HomePage() {
                         </div>
 
                         <div className="space-y-2.5">
-                          <div className="flex items-start gap-3 p-2 rounded-lg bg-[#141717]/60 border border-[#1e2222]">
+                          <div className="flex items-start gap-3 p-2 rounded-lg bg-slate-100 dark:bg-[#141717]/60 border border-slate-200 dark:border-[#1e2222]">
                             <div className="mt-0.5 w-4 h-4 rounded bg-[#2dd4bf] border border-[#2dd4bf] text-[#091b18] flex items-center justify-center">
                               <Check className="w-3 h-3 stroke-[3]" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs line-through text-[#6f7a7a]">Pleadings filed on record</p>
-                              <p className="text-[11px] text-[#525e5e]">Union of India v. Apex Mega Infrastructure · filed 14 Oct</p>
+                              <p className="text-xs line-through text-slate-400 dark:text-[#6f7a7a]">Pleadings filed on record</p>
+                              <p className="text-[11px] text-slate-400 dark:text-[#525e5e]">Union of India v. Apex Mega Infrastructure · filed 14 Oct</p>
                             </div>
                           </div>
 
-                          <div className="flex items-start gap-3 p-2 rounded-lg bg-[#141717]/60 border border-[#1e2222]">
+                          <div className="flex items-start gap-3 p-2 rounded-lg bg-slate-100 dark:bg-[#141717]/60 border border-slate-200 dark:border-[#1e2222]">
                             <div className="mt-0.5 w-4 h-4 rounded bg-[#2dd4bf] border border-[#2dd4bf] text-[#091b18] flex items-center justify-center">
                               <Check className="w-3 h-3 stroke-[3]" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs line-through text-[#6f7a7a]">Senior Counsel conference brief delivered</p>
-                              <p className="text-[11px] text-[#525e5e]">Union of India v. Apex Mega Infrastructure · completed</p>
+                              <p className="text-xs line-through text-slate-400 dark:text-[#6f7a7a]">Senior Counsel conference brief delivered</p>
+                              <p className="text-[11px] text-slate-400 dark:text-[#525e5e]">Union of India v. Apex Mega Infrastructure · completed</p>
                             </div>
                           </div>
 
                           <div 
                             onClick={() => toggleTask('seniorNotes')}
-                            className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#141717] cursor-pointer transition-colors border border-transparent hover:border-[#222828] group"
+                            className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#141717] cursor-pointer transition-colors border border-transparent hover:border-slate-200 dark:hover:border-[#222828] group"
                           >
                             <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                              tasks.seniorNotes ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#091b18]' : 'border-[#424d4d] group-hover:border-[#2dd4bf]'
+                              tasks.seniorNotes ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#091b18]' : 'border-slate-300 dark:border-[#424d4d] group-hover:border-[#2dd4bf]'
                             }`}>
                               {tasks.seniorNotes && <Check className="w-3 h-3 stroke-[3]" />}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className={`text-xs ${tasks.seniorNotes ? 'line-through text-[#6f7a7a]' : 'text-[#f3f4f5]'}`}>
+                              <p className={`text-xs ${tasks.seniorNotes ? 'line-through text-slate-400 dark:text-[#6f7a7a]' : 'text-slate-800 dark:text-[#f3f4f5]'}`}>
                                 Senior Advocate conference notes verified
                               </p>
-                              <p className="text-[11px] text-[#6f7a7a]">Union of India v. Apex Mega Infrastructure · due today</p>
+                              <p className="text-[11px] text-slate-500 dark:text-[#6f7a7a]">Union of India v. Apex Mega Infrastructure · due today</p>
                             </div>
                           </div>
 
                           <div 
                             onClick={() => toggleTask('invoices')}
-                            className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#141717] cursor-pointer transition-colors border border-transparent hover:border-[#222828] group"
+                            className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#141717] cursor-pointer transition-colors border border-transparent hover:border-slate-200 dark:hover:border-[#222828] group"
                           >
                             <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                              tasks.invoices ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#091b18]' : 'border-[#424d4d] group-hover:border-[#2dd4bf]'
+                              tasks.invoices ? 'bg-[#2dd4bf] border-[#2dd4bf] text-[#091b18]' : 'border-slate-300 dark:border-[#424d4d] group-hover:border-[#2dd4bf]'
                             }`}>
                               {tasks.invoices && <Check className="w-3 h-3 stroke-[3]" />}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className={`text-xs ${tasks.invoices ? 'line-through text-[#6f7a7a]' : 'text-[#f3f4f5]'}`}>
+                              <p className={`text-xs ${tasks.invoices ? 'line-through text-slate-400 dark:text-[#6f7a7a]' : 'text-slate-800 dark:text-[#f3f4f5]'}`}>
                                 Reconcile invoices against inspection report
                               </p>
-                              <p className="text-[11px] text-[#6f7a7a]">Sharma BioTech v. Drug Controller General · due tomorrow</p>
+                              <p className="text-[11px] text-slate-500 dark:text-[#6f7a7a]">Sharma BioTech v. Drug Controller General · due tomorrow</p>
                             </div>
                           </div>
                         </div>
@@ -1060,14 +1060,14 @@ export default function HomePage() {
       </section>
 
       {/* ── Interactive Chambers ROI Calculator ──────────────────────── */}
-      <section id="roi" className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 border-t border-[#1e2323] bg-[#0c0e0e]/50">
-        <div className="max-w-4xl mx-auto rounded-2xl bg-[#141717] border border-[#272b2b] p-6 sm:p-8 shadow-xl">
+      <section id="roi" className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 border-t border-border bg-slate-50/70 dark:bg-[#0c0e0e]/50">
+        <div className="max-w-4xl mx-auto rounded-2xl bg-white dark:bg-[#141717] border border-border p-6 sm:p-8 shadow-xl">
           
           <div className="mb-6">
-            <span className="text-[10px] font-mono tracking-widest uppercase text-[#2dd4bf] bg-[#152321] px-2.5 py-1 rounded-full border border-[#2dd4bf]/20">
+            <span className="text-[10px] font-mono tracking-widest uppercase text-teal-700 dark:text-[#2dd4bf] bg-teal-50 dark:bg-[#152321] px-2.5 py-1 rounded-full border border-teal-200 dark:border-[#2dd4bf]/20">
               Capacity Calculator
             </span>
-            <h2 className="text-2xl font-serif text-[#f3f4f5] mt-2">
+            <h2 className="text-2xl font-serif text-slate-900 dark:text-[#f3f4f5] mt-2">
               Quantify billable hours saved in your chambers.
             </h2>
           </div>
@@ -1078,8 +1078,8 @@ export default function HomePage() {
             <div className="lg:col-span-7 space-y-5">
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#879292]">Active Matters per Month</span>
-                  <span className="font-mono text-[#2dd4bf] font-bold">{mattersCount} Matters</span>
+                  <span className="text-slate-600 dark:text-[#879292]">Active Matters per Month</span>
+                  <span className="font-mono text-teal-700 dark:text-[#2dd4bf] font-bold">{mattersCount} Matters</span>
                 </div>
                 <input
                   type="range"
@@ -1087,14 +1087,14 @@ export default function HomePage() {
                   max="60"
                   value={mattersCount}
                   onChange={(e) => setMattersCount(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#1e2424] rounded-lg appearance-none cursor-pointer accent-[#2dd4bf]"
+                  className="w-full h-1.5 bg-slate-200 dark:bg-[#1e2424] rounded-lg appearance-none cursor-pointer accent-[#2dd4bf]"
                 />
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#879292]">Drafting Hours per Matter</span>
-                  <span className="font-mono text-[#2dd4bf] font-bold">{hoursPerMatter} Hours</span>
+                  <span className="text-slate-600 dark:text-[#879292]">Drafting Hours per Matter</span>
+                  <span className="font-mono text-teal-700 dark:text-[#2dd4bf] font-bold">{hoursPerMatter} Hours</span>
                 </div>
                 <input
                   type="range"
@@ -1102,22 +1102,22 @@ export default function HomePage() {
                   max="12"
                   value={hoursPerMatter}
                   onChange={(e) => setHoursPerMatter(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#1e2424] rounded-lg appearance-none cursor-pointer accent-[#2dd4bf]"
+                  className="w-full h-1.5 bg-slate-200 dark:bg-[#1e2424] rounded-lg appearance-none cursor-pointer accent-[#2dd4bf]"
                 />
               </div>
             </div>
 
             {/* Output */}
-            <div className="lg:col-span-5 p-5 rounded-xl bg-gradient-to-br from-[#152321] to-[#141717] border border-[#2dd4bf]/30 text-center space-y-4">
+            <div className="lg:col-span-5 p-5 rounded-xl bg-gradient-to-br from-teal-50/90 to-emerald-50/60 dark:from-[#152321] dark:to-[#141717] border border-teal-200 dark:border-[#2dd4bf]/30 text-center space-y-4 shadow-sm dark:shadow-none">
               <div>
-                <div className="text-[10px] font-mono uppercase text-[#2dd4bf] tracking-widest">Monthly Hours Saved</div>
-                <div className="text-3xl sm:text-4xl font-serif font-bold text-[#f3f4f5] mt-1">
-                  {hoursSaved} <span className="text-sm font-sans font-normal text-[#879292]">hrs</span>
+                <div className="text-[10px] font-mono uppercase text-teal-700 dark:text-[#2dd4bf] tracking-widest font-semibold">Monthly Hours Saved</div>
+                <div className="text-3xl sm:text-4xl font-serif font-bold text-slate-900 dark:text-[#f3f4f5] mt-1">
+                  {hoursSaved} <span className="text-sm font-sans font-normal text-slate-600 dark:text-[#879292]">hrs</span>
                 </div>
               </div>
-              <div className="pt-3 border-t border-[#2dd4bf]/20">
-                <div className="text-[10px] font-mono uppercase text-[#2dd4bf] tracking-widest">Billable Capacity Returned</div>
-                <div className="text-2xl font-serif font-bold text-[#2dd4bf] mt-1">
+              <div className="pt-3 border-t border-teal-200/60 dark:border-[#2dd4bf]/20">
+                <div className="text-[10px] font-mono uppercase text-teal-700 dark:text-[#2dd4bf] tracking-widest font-semibold">Billable Capacity Returned</div>
+                <div className="text-2xl font-serif font-bold text-teal-700 dark:text-[#2dd4bf] mt-1">
                   ₹{revenueGained.toLocaleString('en-IN')}
                 </div>
               </div>
@@ -1216,11 +1216,11 @@ export default function HomePage() {
           </div>
 
           {/* Top-up Packs Strip */}
-          <div className="mt-8 p-4 rounded-xl bg-[#0e1010] border border-[#1e2222] flex flex-col sm:flex-row items-center justify-between text-xs gap-3">
-            <span className="text-[#879292]">
-              Need extra tokens? Top up anytime via Razorpay: <strong className="text-white">50,000 tokens for ₹500</strong>. Tokens never expire while plan is active.
+          <div className="mt-8 p-4 rounded-xl bg-slate-50 dark:bg-[#0e1010] border border-slate-200 dark:border-[#1e2222] flex flex-col sm:flex-row items-center justify-between text-xs gap-3">
+            <span className="text-slate-600 dark:text-[#879292]">
+              Need extra tokens? Top up anytime via Razorpay: <strong className="text-slate-900 dark:text-white">50,000 tokens for ₹500</strong>. Tokens never expire while plan is active.
             </span>
-            <Link href="/billing" className="text-[#2dd4bf] hover:underline font-medium shrink-0">
+            <Link href="/billing" className="text-teal-700 dark:text-[#2dd4bf] hover:underline font-medium shrink-0">
               View Token Packs &rarr;
             </Link>
           </div>
@@ -1285,13 +1285,13 @@ export default function HomePage() {
       </section>
 
       {/* ── Final Conversion Banner ──────────────────────────────────── */}
-      <section className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 border-t border-[#1e2323]">
-        <div className="max-w-4xl mx-auto rounded-2xl bg-gradient-to-br from-[#141d1b] via-[#141717] to-[#0c0e0e] border border-[#2dd4bf]/40 p-8 sm:p-10 text-center relative overflow-hidden shadow-[0_0_40px_rgba(45,212,191,0.12)]">
+      <section className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 border-t border-border">
+        <div className="max-w-4xl mx-auto rounded-2xl bg-gradient-to-br from-teal-50/90 via-slate-50 to-emerald-50/60 dark:from-[#141d1b] dark:via-[#141717] dark:to-[#0c0e0e] border border-teal-200/80 dark:border-[#2dd4bf]/40 p-8 sm:p-10 text-center relative overflow-hidden shadow-lg dark:shadow-[0_0_40px_rgba(45,212,191,0.12)]">
           <div className="max-w-xl mx-auto space-y-4">
-            <h2 className="text-2xl sm:text-4xl font-serif text-[#f3f4f5] leading-tight">
+            <h2 className="text-2xl sm:text-4xl font-serif text-slate-900 dark:text-[#f3f4f5] leading-tight">
               Modernize your litigation practice today.
             </h2>
-            <p className="text-xs sm:text-sm text-[#879292]">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-[#879292]">
               Join advocates and litigation chambers leveraging AI for precision pleadings, court docket automation, and spotless case dossiers.
             </p>
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -1304,7 +1304,7 @@ export default function HomePage() {
               </Link>
               <Link
                 href="/login"
-                className="w-full sm:w-auto px-5 py-3 bg-[#1e2424] hover:bg-[#283232] text-[#f3f4f5] hover:text-[#2dd4bf] border border-[#2a3030] hover:border-[#2dd4bf]/40 text-xs font-medium rounded-xl transition-all cursor-pointer"
+                className="w-full sm:w-auto px-5 py-3 bg-white hover:bg-slate-100 text-slate-800 dark:bg-[#1e2424] dark:hover:bg-[#283232] dark:text-[#f3f4f5] hover:text-[#0d9488] dark:hover:text-[#2dd4bf] border border-slate-200 dark:border-[#2a3030] text-xs font-medium rounded-xl transition-all cursor-pointer shadow-sm dark:shadow-none"
               >
                 Counsel Sign In
               </Link>
@@ -1314,27 +1314,27 @@ export default function HomePage() {
       </section>
 
       {/* ── Chambers Footer ──────────────────────────────────────────── */}
-      <footer className="relative z-10 border-t border-[#1e2323] bg-[#090b0b] pt-12 pb-8 text-xs text-[#6f7a7a]">
+      <footer className="relative z-10 border-t border-border bg-slate-50 dark:bg-[#090b0b] pt-12 pb-8 text-xs text-[#6f7a7a]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-8 border-b border-[#1a1e1e]">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-8 border-b border-border">
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-6 rounded-lg bg-[#2dd4bf] text-[#091b18] flex items-center justify-center">
                 <Scale className="w-3.5 h-3.5 stroke-[2.3]" />
               </div>
-              <span className="font-serif font-semibold text-base text-white">LegalDesk</span>
-              <span className="text-[10px] font-mono text-[#2dd4bf] ml-3 bg-[#152321] px-2 py-0.5 rounded border border-[#2dd4bf]/20">
+              <span className="font-serif font-semibold text-base text-foreground dark:text-white">LegalDesk</span>
+              <span className="text-[10px] font-mono text-teal-700 dark:text-[#2dd4bf] ml-3 bg-teal-50 dark:bg-[#152321] px-2 py-0.5 rounded border border-teal-200 dark:border-[#2dd4bf]/20">
                 All Chambers Systems Operational
               </span>
             </div>
-            <div className="flex items-center gap-6 text-[11px] text-[#879292]">
-              <Link href="/dashboard" className="hover:text-[#2dd4bf] transition-colors">Dashboard</Link>
-              <Link href="/cases" className="hover:text-[#2dd4bf] transition-colors">Matters</Link>
-              <Link href="/drafts" className="hover:text-[#2dd4bf] transition-colors">Drafts</Link>
-              <Link href="/billing" className="hover:text-[#2dd4bf] transition-colors">Billing</Link>
-              <Link href="/login" className="hover:text-[#2dd4bf] transition-colors">Sign In</Link>
+            <div className="flex items-center gap-6 text-[11px] text-slate-600 dark:text-[#879292]">
+              <Link href="/dashboard" className="hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors">Dashboard</Link>
+              <Link href="/cases" className="hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors">Matters</Link>
+              <Link href="/drafts" className="hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors">Drafts</Link>
+              <Link href="/billing" className="hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors">Billing</Link>
+              <Link href="/login" className="hover:text-[#0d9488] dark:hover:text-[#2dd4bf] transition-colors">Sign In</Link>
             </div>
           </div>
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px]">
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-[#6f7a7a]">
             <span>© 2026 LegalDesk Systems, Inc. Sovereign Legal Operating System.</span>
             <span>Advocate-Client Privilege Protected • Zero Retention Policy</span>
           </div>
