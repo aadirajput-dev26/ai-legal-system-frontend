@@ -563,22 +563,22 @@ export default function DocumentsPage() {
 
       {/* ── UPLOAD / INDEX DOCUMENT MODAL ────────────────────────────── */}
       <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
-        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-lg p-6">
+        <DialogContent className="max-w-lg p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader className="pb-2">
-            <DialogTitle className="text-lg font-serif font-semibold text-white">Add Evidence Document</DialogTitle>
-            <DialogDescription className="text-xs text-[#879292]">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Add Evidence Document</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Attach documents, transcripts, or authorities to a matter for AI citation.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleUploadSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono text-[#879292] uppercase">Target Matter *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Target Matter *</Label>
               <select
                 required
                 value={uploadForm.caseId}
                 onChange={(e) => setUploadForm({ ...uploadForm, caseId: e.target.value })}
-                className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none"
+                className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans"
               >
                 <option value="">Select a matter...</option>
                 {casesList.map(c => (
@@ -588,23 +588,23 @@ export default function DocumentsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono text-[#879292] uppercase">Document Title *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Document Title *</Label>
               <Input
                 required
                 placeholder="e.g. Invoice 4471 or Cross-examination transcript"
                 value={uploadForm.title}
                 onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
-                className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono text-[#879292] uppercase">Type</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Type</Label>
                 <select
                   value={uploadForm.type}
                   onChange={(e) => setUploadForm({ ...uploadForm, type: e.target.value })}
-                  className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none"
+                  className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans"
                 >
                   <option value="TEXT">Text</option>
                   <option value="LINK">Link</option>
@@ -613,57 +613,57 @@ export default function DocumentsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono text-[#879292] uppercase">Source / Provenance</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Source / Provenance</Label>
                 <Input
                   placeholder="e.g. from the client, from respondent"
                   value={uploadForm.description}
                   onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
-                  className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             {uploadForm.type === 'LINK' ? (
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono text-[#879292] uppercase">Citation URL *</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Citation URL *</Label>
                 <Input
                   required
                   type="url"
                   placeholder="https://indiankanoon.org/doc/..."
                   value={uploadForm.url}
                   onChange={(e) => setUploadForm({ ...uploadForm, url: e.target.value })}
-                  className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             ) : uploadForm.type === 'PDF' ? (
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono text-[#879292] uppercase">Upload PDF File *</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Upload PDF File *</Label>
                 <Input
                   required
                   type="file"
                   accept="application/pdf"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  className="w-full bg-[#0d0f0f] border-[#272b2b] h-9 text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-white/10 file:text-[#f3f4f5] cursor-pointer pt-1"
+                  className="w-full bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-muted file:text-foreground cursor-pointer pt-1"
                 />
               </div>
             ) : (
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono text-[#879292] uppercase">Content / Transcript *</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Content / Transcript *</Label>
                 <textarea
                   required
                   rows={4}
                   placeholder="Paste testimony notes, witness statements, or legal clauses..."
                   value={uploadForm.content}
                   onChange={(e) => setUploadForm({ ...uploadForm, content: e.target.value })}
-                  className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg p-2.5 text-sm text-[#f3f4f5] focus:outline-none resize-none font-sans leading-relaxed"
+                  className="w-full bg-background border border-input rounded-lg p-2.5 text-xs text-foreground focus:outline-none resize-none font-sans leading-relaxed"
                 />
               </div>
             )}
 
-            <DialogFooter className="pt-2 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setUploadModalOpen(false)} className="text-[#879292] hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={submittingUpload} className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold">
-                {submittingUpload ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setUploadModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
+              <Button type="submit" disabled={submittingUpload} className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90 gap-1.5">
+                {submittingUpload ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 Upload & Index
               </Button>
             </DialogFooter>
@@ -674,54 +674,54 @@ export default function DocumentsPage() {
       {/* ── DOCUMENT PREVIEW MODAL ───────────────────────────────────── */}
       {selectedDoc && (
         <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
-          <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-lg p-6">
+          <DialogContent className="max-w-lg p-6 bg-card border border-border text-foreground rounded-2xl">
             <DialogHeader>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded text-[#2dd4bf] bg-[#2dd4bf]/10">
+                <span className="text-[10px] font-sans px-2 py-0.5 rounded font-medium text-primary bg-primary/10">
                   {selectedDoc.type || 'PDF'}
                 </span>
                 {selectedDoc.case_title && (
-                  <span className="text-xs font-serif text-[#879292]">
+                  <span className="text-xs font-serif text-muted-foreground">
                     {selectedDoc.case_title}
                   </span>
                 )}
               </div>
-              <DialogTitle className="text-lg font-serif font-semibold mt-2 text-white">{selectedDoc.title}</DialogTitle>
+              <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight mt-1">{selectedDoc.title}</DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4 text-xs my-2">
+            <div className="space-y-4 text-xs my-2 font-sans">
               {selectedDoc.description && (
-                <div className="bg-[#0d0f0f] border border-[#272b2b] rounded-xl p-3 text-[#879292]">
-                  <span className="font-semibold text-white block mb-0.5">Summary / Source:</span>
+                <div className="bg-muted/40 border border-border rounded-xl p-3 text-muted-foreground">
+                  <span className="font-medium text-foreground block mb-0.5">Summary / Source:</span>
                   {selectedDoc.description}
                 </div>
               )}
 
               {selectedDoc.content && (
-                <div className="bg-[#0d0f0f] border border-[#272b2b] rounded-xl p-4 max-h-[300px] overflow-y-auto">
-                  <span className="font-mono text-[#6f7a7a] block mb-1 text-[10px] uppercase tracking-wider">Indexed Content</span>
-                  <p className="text-sm font-serif leading-relaxed text-[#f3f4f5] whitespace-pre-wrap">
+                <div className="bg-muted/40 border border-border rounded-xl p-4 max-h-[300px] overflow-y-auto">
+                  <span className="text-muted-foreground block mb-1 text-[11px] font-medium uppercase tracking-wider">Indexed Content</span>
+                  <p className="text-xs font-sans leading-relaxed text-foreground whitespace-pre-wrap">
                     {selectedDoc.content}
                   </p>
                 </div>
               )}
 
               {selectedDoc.url && (
-                <div className="p-3.5 bg-[#0d0f0f] border border-[#272b2b] rounded-xl flex items-center justify-between">
+                <div className="p-3.5 bg-muted/40 border border-border rounded-xl flex items-center justify-between">
                   <div className="truncate mr-2">
-                    <span className="text-[10px] text-[#6f7a7a] block">Source URL:</span>
-                    <a href={selectedDoc.url} target="_blank" rel="noreferrer" className="text-[#2dd4bf] hover:underline truncate block">
+                    <span className="text-[11px] text-muted-foreground block">Source URL:</span>
+                    <a href={selectedDoc.url} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate block">
                       {selectedDoc.url}
                     </a>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => window.open(selectedDoc.url!, '_blank')} className="h-7 text-xs flex-shrink-0 bg-[#141717] border-[#272b2b] text-[#f3f4f5]">
+                  <Button size="sm" variant="outline" onClick={() => window.open(selectedDoc.url!, '_blank')} className="h-8 text-xs flex-shrink-0 border-border">
                     Open <ExternalLink className="w-3 h-3 ml-1" />
                   </Button>
                 </div>
               )}
             </div>
 
-            <DialogFooter className="pt-2 gap-2 flex justify-between">
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
               <Button
                 variant="ghost"
                 size="sm"
@@ -730,18 +730,18 @@ export default function DocumentsPage() {
                   setPreviewModalOpen(false);
                   setTimeout(() => setDocToDelete(toDelete), 100);
                 }}
-                className="text-[#f87171] hover:bg-[#f87171]/10 text-xs mr-auto cursor-pointer"
+                className="text-red-500 hover:bg-red-500/10 text-xs mr-auto cursor-pointer h-9 px-3 rounded-lg font-sans"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
               </Button>
-              <Button variant="ghost" onClick={() => setPreviewModalOpen(false)} className="text-[#879292] hover:text-white">Close</Button>
+              <Button variant="outline" onClick={() => setPreviewModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Close</Button>
               {selectedDoc.case_id && (
                 <Button
                   onClick={() => {
                     setPreviewModalOpen(false);
                     router.push(`/cases/${selectedDoc.case_id}`);
                   }}
-                  className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold text-xs"
+                  className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90"
                 >
                   Open Case Brief &rarr;
                 </Button>
@@ -753,43 +753,43 @@ export default function DocumentsPage() {
 
       {/* ── EDIT DOCUMENT MODAL ─────────────────────────────────────── */}
       <Dialog open={editModalOpen} onOpenChange={(open) => { setEditModalOpen(open); if (!open) { setEditReplacementFile(null); setEditSuccess(false); } }}>
-        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-lg p-6">
+        <DialogContent className="max-w-lg p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-serif font-semibold text-white">Update Document</DialogTitle>
-            <DialogDescription className="text-xs text-[#879292]">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Update Document</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Update metadata or replace file contents.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleEditSubmit} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono text-[#879292] uppercase">Document Title *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Document Title *</Label>
               <Input
                 required
                 value={editForm.title}
                 onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono text-[#879292] uppercase">Description / Source</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Description / Source</Label>
               <Input
                 value={editForm.description}
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             {/* TEXT: Replace full content */}
             {editForm.type === 'TEXT' && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono text-[#879292] uppercase">Content / Transcript</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Content / Transcript</Label>
                 <textarea
                   rows={6}
                   value={editForm.content}
                   onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                  className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg p-2.5 text-sm text-[#f3f4f5] focus:outline-none resize-none font-sans leading-relaxed"
+                  className="w-full bg-background border border-input rounded-lg p-2.5 text-xs text-foreground focus:outline-none resize-none font-sans leading-relaxed"
                 />
               </div>
             )}
@@ -797,13 +797,13 @@ export default function DocumentsPage() {
             {/* LINK: Replace URL */}
             {editForm.type === 'LINK' && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono text-[#879292] uppercase">Replace Link URL</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Replace Link URL</Label>
                 <Input
                   type="url"
                   value={editForm.url}
                   onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
                   placeholder="https://indiankanoon.org/doc/..."
-                  className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             )}
@@ -811,29 +811,29 @@ export default function DocumentsPage() {
             {/* PDF: Upload replacement file */}
             {editForm.type === 'PDF' && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono text-[#879292] uppercase">Replace PDF File</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Replace PDF File</Label>
                 <Input
                   type="file"
                   accept="application/pdf"
                   onChange={(e) => setEditReplacementFile(e.target.files?.[0] || null)}
-                  className="w-full bg-[#0d0f0f] border-[#272b2b] h-9 text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-white/10 file:text-[#f3f4f5] cursor-pointer pt-1"
+                  className="w-full bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-muted file:text-foreground cursor-pointer pt-1"
                 />
                 {editReplacementFile && (
-                  <div className="text-[11px] text-[#2dd4bf] flex items-center gap-1.5">
+                  <div className="text-[11px] text-primary flex items-center gap-1.5 font-sans">
                     <span>✓</span> {editReplacementFile.name} selected
                   </div>
                 )}
               </div>
             )}
 
-            <DialogFooter className="pt-2 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setEditModalOpen(false)} className="text-[#879292] hover:text-white">Cancel</Button>
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setEditModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
               <Button
                 type="submit"
                 disabled={submittingEdit}
-                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold"
+                className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90"
               >
-                {submittingEdit ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                {submittingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 {editSuccess ? '✓ Updated!' : 'Save Changes'}
               </Button>
             </DialogFooter>

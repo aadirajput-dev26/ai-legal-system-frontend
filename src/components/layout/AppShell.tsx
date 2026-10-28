@@ -75,7 +75,6 @@ export function AppShell({ children, caseId, customBreadcrumbs }: AppShellProps)
   const navItems = [
     { icon: LayoutDashboard, href: '/dashboard', label: 'Dashboard' },
     { icon: FolderClosed, href: '/cases', label: 'Matters' },
-    { icon: Calendar, href: '/calendar', label: 'Calendar' },
     { icon: FileText, href: '/documents', label: 'Documents' },
     { icon: FileEdit, href: '/drafts', label: 'Drafts' },
     { icon: Cpu, href: '/tools', label: 'Tools' },
@@ -187,29 +186,6 @@ export function AppShell({ children, caseId, customBreadcrumbs }: AppShellProps)
 
         {/* Bottom: Secondary icons, Theme, & Profile */}
         <div className="flex flex-col items-center gap-2 w-full px-2">
-          {/* Notifications */}
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Link
-                  href="/notifications"
-                  title="Notifications"
-                  className="relative w-10 h-10 rounded-xl flex items-center justify-center text-[#879292] hover:text-foreground hover:bg-black/5 dark:hover:bg-white/[0.08] transition-all"
-                />
-              }
-            >
-              <Bell className="w-[18px] h-[18px]" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 px-1 min-w-[14px] h-[14px] bg-[#2dd4bf] text-[#091b18] text-[9px] font-bold rounded-full flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={12}>
-              Notifications {unreadCount > 0 ? `(${unreadCount} unread)` : ''}
-            </TooltipContent>
-          </Tooltip>
-
           {/* Billing / Tokens */}
           <Tooltip>
             <TooltipTrigger

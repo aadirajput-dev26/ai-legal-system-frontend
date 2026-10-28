@@ -1188,28 +1188,28 @@ export default function CaseDetailPage() {
 
       {/* ── IMPORT VIA-SOCKET TOOL DIALOG MODAL ───────────────────────── */}
       <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-base font-semibold">Import Organization Tool</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Import Organization Tool</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Copy a previously configured ViaSocket tool from another case into this case.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2.5 my-2 max-h-[300px] overflow-y-auto pr-1">
             {importableTools.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-4 text-center">No other tools available to import in this firm.</p>
+              <p className="text-xs text-muted-foreground py-4 text-center font-sans">No other tools available to import in this firm.</p>
             ) : (
               importableTools.map((tool, idx) => (
-                <div key={tool.script_id || idx} className="p-3 bg-[#111111] border border-white/5 rounded-lg flex items-center justify-between gap-3 hover:border-white/10 transition-colors">
+                <div key={tool.script_id || idx} className="p-3 bg-muted/40 border border-border rounded-xl flex items-center justify-between gap-3 hover:border-border/80 transition-colors">
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-foreground truncate">{tool.title}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">{tool.description}</div>
+                    <div className="text-xs font-medium text-foreground truncate">{tool.title}</div>
+                    <div className="text-[11px] text-muted-foreground truncate">{tool.description}</div>
                   </div>
                   <Button
                     size="sm"
                     onClick={() => handleImportToolSubmit(tool.script_id)}
-                    className="bg-[#4ADE80] hover:bg-[#34d399] text-black font-semibold text-[10px] h-7 px-2.5 rounded-md"
+                    className="h-8 px-3 rounded-lg text-xs font-semibold bg-foreground text-background hover:bg-foreground/90"
                   >
                     Import
                   </Button>
@@ -1218,48 +1218,48 @@ export default function CaseDetailPage() {
             )}
           </div>
 
-          <DialogFooter className="pt-2">
-            <Button variant="ghost" onClick={() => setImportModalOpen(false)} className="text-xs h-8">Close</Button>
+          <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+            <Button variant="outline" onClick={() => setImportModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* ── CREATE TASK MODAL ───────────────────────────────────────── */}
       <Dialog open={taskModalOpen} onOpenChange={setTaskModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading font-semibold">New Task</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">New Task</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Assign an action item for this matter.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateTask} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Title *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Title *</Label>
               <Input 
                 required
                 placeholder="e.g. Draft reply affidavit" 
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Due Date</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Due Date</Label>
               <Input 
                 type="date"
                 value={newTaskDue}
                 onChange={(e) => setNewTaskDue(e.target.value)}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
-            <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setTaskModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={submittingTask} className="bg-[#4ADE80] text-black font-semibold">
-                {submittingTask ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setTaskModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
+              <Button type="submit" disabled={submittingTask} className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90">
+                {submittingTask ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 Save Task
               </Button>
             </DialogFooter>
@@ -1269,40 +1269,40 @@ export default function CaseDetailPage() {
 
       {/* ── SCHEDULE HEARING MODAL ──────────────────────────────────── */}
       <Dialog open={hearingModalOpen} onOpenChange={setHearingModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading font-semibold">Schedule Hearing</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Schedule Hearing</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Add upcoming court date for {caseData.title}.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateHearing} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Hearing Date & Time *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Hearing Date & Time *</Label>
               <Input 
                 required
                 type="datetime-local"
                 value={newHearingDate}
                 onChange={(e) => setNewHearingDate(e.target.value)}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Notes / Agenda</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Notes / Agenda</Label>
               <Input 
                 placeholder="e.g. Final arguments before bench" 
                 value={newHearingNotes}
                 onChange={(e) => setNewHearingNotes(e.target.value)}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
-            <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setHearingModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={submittingHearing} className="bg-[#4ADE80] text-black font-semibold">
-                {submittingHearing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setHearingModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
+              <Button type="submit" disabled={submittingHearing} className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90">
+                {submittingHearing ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 Schedule
               </Button>
             </DialogFooter>
@@ -1312,33 +1312,33 @@ export default function CaseDetailPage() {
 
       {/* ── ADD DOCUMENT MODAL ──────────────────────────────────────── */}
       <Dialog open={docModalOpen} onOpenChange={setDocModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-md p-6">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader className="pb-2">
-            <DialogTitle className="text-lg font-heading font-semibold">Add Document</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Add Document</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Index document into this case's vector collection.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateDoc} className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Document Title *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Document Title *</Label>
               <Input 
                 required
                 placeholder="e.g. Deposition of PW-3" 
                 value={docForm.title}
                 onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Type</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Type</Label>
                 <select 
                   value={docForm.type}
                   onChange={(e) => setDocForm({ ...docForm, type: e.target.value })}
-                  className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none"
+                  className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans"
                 >
                   <option value="TEXT">Text</option>
                   <option value="LINK">Link</option>
@@ -1347,57 +1347,57 @@ export default function CaseDetailPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Brief Summary</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Brief Summary</Label>
                 <Input 
                   placeholder="e.g. Witness statements" 
                   value={docForm.description}
                   onChange={(e) => setDocForm({ ...docForm, description: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             {docForm.type === 'LINK' ? (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">URL *</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">URL *</Label>
                 <Input 
                   required
                   type="url"
                   placeholder="https://..." 
                   value={docForm.url}
                   onChange={(e) => setDocForm({ ...docForm, url: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             ) : docForm.type === 'PDF' ? (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Upload PDF File *</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Upload PDF File *</Label>
                 <Input
                   required
                   type="file"
                   accept="application/pdf"
                   onChange={(e) => setSelectedDocFile(e.target.files?.[0] || null)}
-                  className="w-full bg-[#111111] border-white/10 h-9 text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-white/10 file:text-foreground hover:file:bg-white/15 cursor-pointer pt-1"
+                  className="w-full bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-muted file:text-foreground hover:file:bg-muted/80 cursor-pointer pt-1"
                 />
               </div>
             ) : (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Content / Transcript *</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Content / Transcript *</Label>
                 <textarea 
                   required
                   rows={4}
                   placeholder="Paste legal notes or transcript content here..." 
                   value={docForm.content}
                   onChange={(e) => setDocForm({ ...docForm, content: e.target.value })}
-                  className="w-full bg-[#111111] border border-white/10 rounded-lg p-2.5 text-sm text-foreground focus:outline-none resize-none font-sans"
+                  className="w-full bg-background border border-input rounded-lg p-2.5 text-xs text-foreground focus:outline-none resize-none font-sans leading-relaxed"
                 />
               </div>
             )}
 
-            <DialogFooter className="pt-2 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setDocModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={submittingDoc} className="bg-[#4ADE80] text-black font-semibold">
-                {submittingDoc ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setDocModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
+              <Button type="submit" disabled={submittingDoc} className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90">
+                {submittingDoc ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 Add
               </Button>
             </DialogFooter>
@@ -1407,32 +1407,32 @@ export default function CaseDetailPage() {
 
       {/* ── EDIT CASE MODAL ─────────────────────────────────────────── */}
       <Dialog open={editCaseModalOpen} onOpenChange={setEditCaseModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-lg p-6">
+        <DialogContent className="max-w-lg p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading font-semibold">Edit Case Details</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Edit Case Details</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Update case facts, stage, or metadata.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleEditSubmit} className="space-y-4 mt-2 max-h-[75vh] overflow-y-auto pr-1">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Title</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Title</Label>
               <Input 
                 required
                 value={editForm.title}
                 onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Status</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Status</Label>
                 <select 
                   value={editForm.status}
                   onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                  className="w-full bg-[#111111] border border-white/10 rounded-lg h-9 px-3 text-sm text-foreground focus:outline-none"
+                  className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans"
                 >
                   <option value="OPEN">OPEN</option>
                   <option value="CLOSED">CLOSED</option>
@@ -1441,81 +1441,79 @@ export default function CaseDetailPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Stage</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Stage</Label>
                 <Input 
                   value={editForm.stage}
                   onChange={(e) => setEditForm({ ...editForm, stage: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Court</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Court</Label>
                 <Input 
                   value={editForm.court}
                   onChange={(e) => setEditForm({ ...editForm, court: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Judge</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Judge</Label>
                 <Input 
                   value={editForm.judge}
                   onChange={(e) => setEditForm({ ...editForm, judge: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Client</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Client</Label>
                 <Input 
                   value={editForm.client_name}
                   onChange={(e) => setEditForm({ ...editForm, client_name: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Opposing</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Opposing</Label>
                 <Input 
                   value={editForm.opposing_party}
                   onChange={(e) => setEditForm({ ...editForm, opposing_party: e.target.value })}
-                  className="bg-[#111111] border-white/10 h-9 text-sm"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Next Hearing Date</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Next Hearing Date</Label>
               <Input 
                 type="datetime-local"
                 value={editForm.next_hearing_date}
                 onChange={(e) => setEditForm({ ...editForm, next_hearing_date: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Summary</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Summary</Label>
               <textarea 
                 rows={3}
                 value={editForm.description}
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                className="w-full bg-[#111111] border border-white/10 rounded-lg p-2.5 text-sm text-foreground focus:outline-none resize-none"
+                className="w-full bg-background border border-input rounded-lg p-2.5 text-xs text-foreground focus:outline-none resize-none font-sans leading-relaxed"
               />
             </div>
 
-
-
-            <DialogFooter className="pt-3 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setEditCaseModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={submittingEdit} className="bg-[#4ADE80] text-black font-semibold">
-                {submittingEdit ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setEditCaseModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
+              <Button type="submit" disabled={submittingEdit} className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90">
+                {submittingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 Save Changes
               </Button>
             </DialogFooter>
@@ -1525,69 +1523,69 @@ export default function CaseDetailPage() {
 
       {/* ── EDIT DOCUMENT MODAL ────────────────────────────────────────── */}
       <Dialog open={editDocModalOpen} onOpenChange={setEditDocModalOpen}>
-        <DialogContent className="bg-[#16161a] border-white/10 text-foreground max-w-lg p-6">
+        <DialogContent className="max-w-lg p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-heading font-semibold">Edit Document details</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">Edit Document details</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Modify index keywords, description, or transcript content.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleEditDocSubmit} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Document Title *</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Document Title *</Label>
               <Input
                 required
                 value={editDocForm.title}
                 onChange={(e) => setEditDocForm({ ...editDocForm, title: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase">Description / Summary</Label>
+              <Label className="text-xs font-medium text-muted-foreground font-sans">Description / Summary</Label>
               <Input
                 value={editDocForm.description}
                 onChange={(e) => setEditDocForm({ ...editDocForm, description: e.target.value })}
-                className="bg-[#111111] border-white/10 h-9 text-sm"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             {selectedDoc?.type === 'TEXT' ? (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Content / Transcript *</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Content / Transcript *</Label>
                 <textarea
                   required
                   rows={6}
                   value={editDocForm.content}
                   onChange={(e) => setEditDocForm({ ...editDocForm, content: e.target.value })}
-                  className="w-full bg-[#111111] border border-white/10 rounded-lg p-2.5 text-sm text-foreground focus:outline-none resize-none font-sans leading-relaxed"
+                  className="w-full bg-background border border-input rounded-lg p-2.5 text-xs text-foreground focus:outline-none resize-none font-sans leading-relaxed"
                 />
               </div>
             ) : selectedDoc?.type === 'PDF' ? (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground/60 uppercase">Document PDF URL (Read Only)</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Document PDF URL (Read Only)</Label>
                 <Input
                   disabled
                   value={selectedDoc.url || selectedDoc.content || ''}
-                  className="bg-[#111111]/50 border-white/5 h-9 text-xs text-muted-foreground/80 cursor-not-allowed select-all"
+                  className="bg-muted/40 border-border h-9 text-xs text-muted-foreground cursor-not-allowed select-all rounded-lg font-sans"
                 />
               </div>
             ) : selectedDoc?.type === 'LINK' ? (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground/60 uppercase">Indexed Link URL (Read Only)</Label>
+                <Label className="text-xs font-medium text-muted-foreground font-sans">Indexed Link URL (Read Only)</Label>
                 <Input
                   disabled
                   value={selectedDoc.url || selectedDoc.content || ''}
-                  className="bg-[#111111]/50 border-white/5 h-9 text-xs text-muted-foreground/80 cursor-not-allowed select-all"
+                  className="bg-muted/40 border-border h-9 text-xs text-muted-foreground cursor-not-allowed select-all rounded-lg font-sans"
                 />
               </div>
             ) : null}
 
-            <DialogFooter className="pt-2 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setEditDocModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={submittingEditDoc} className="bg-[#4ADE80] text-black font-semibold">
-                {submittingEditDoc ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setEditDocModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">Cancel</Button>
+              <Button type="submit" disabled={submittingEditDoc} className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90">
+                {submittingEditDoc ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
                 Save changes
               </Button>
             </DialogFooter>

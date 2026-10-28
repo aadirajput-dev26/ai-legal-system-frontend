@@ -71,7 +71,7 @@ export const auth = {
   signup: (body: {
     name: string;
     email: string;
-    password: string;
+    password?: string;
     accountType?: string;
     mobile?: string;
     state?: string;
@@ -95,6 +95,8 @@ export const auth = {
     request<any>('/auth/send-verification-email', { method: 'POST', body: JSON.stringify(body) }),
   verifyEmail: (body: { email?: string; token?: string }) =>
     request<any>('/auth/verify-email', { method: 'POST', body: JSON.stringify(body) }),
+  setPassword: (body: { email?: string; token?: string; password?: string }) =>
+    request<any>('/auth/set-password', { method: 'POST', body: JSON.stringify(body) }),
 };
 
 
@@ -288,6 +290,9 @@ export const chat = {
         } else if (parsed.event === 'done') {
           isInsideToolExecution = false;
           onDone?.(parsed.usage);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('billing:updated'));
+          }
         }
       } catch (err) {
         console.error("SSE Parse Error on line:", trimmed, err);
@@ -312,6 +317,11 @@ export const chat = {
     // Process any remaining buffer content if it doesn't end with a newline
     if (buffer.trim()) {
       processLine(buffer);
+    }
+
+    // Trigger real-time token deduction refresh
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('billing:updated'));
     }
   },
 };
@@ -481,6 +491,9 @@ export const drafts = {
           onDelta(parsed.content);
         } else if (parsed.event === 'done') {
           onDone?.();
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('billing:updated'));
+          }
         }
       } catch { /* non-JSON SSE lines */ }
     };
@@ -494,6 +507,10 @@ export const drafts = {
       for (const line of lines) processLine(line);
     }
     if (buffer.trim()) processLine(buffer);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('billing:updated'));
+    }
 
     return { draftId };
   },
@@ -556,7 +573,12 @@ export const drafts = {
       try {
         const parsed = JSON.parse(trimmed);
         if (parsed.event === 'delta' && parsed.content !== undefined) onDelta(parsed.content);
-        else if (parsed.event === 'done') onDone?.();
+        else if (parsed.event === 'done') {
+          onDone?.();
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('billing:updated'));
+          }
+        }
       } catch { /* non-JSON SSE lines */ }
     };
 
@@ -569,7 +591,17 @@ export const drafts = {
       for (const line of lines) processLine(line);
     }
     if (buffer.trim()) processLine(buffer);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('billing:updated'));
+    }
   },
+};
+
+// ── Legal Updates ─────────────────────────────────────────────────
+export const legalUpdates = {
+  get: () => request<{ success: boolean; updates: any[] }>('/legal-updates'),
+  list: () => request<{ success: boolean; updates: any[] }>('/legal-updates'),
 };
 
 // ── Notifications ─────────────────────────────────────────────────
@@ -594,12 +626,6 @@ export const notifications = {
     request<any>(`/notifications/${id}`, { method: 'DELETE' }),
   sync: (orgId: string) =>
     request<any>(`/notifications/sync`, { method: 'POST', body: JSON.stringify({ orgId }) }),
-};
-
-// ── Legal Updates ─────────────────────────────────────────────────
-export const legalUpdates = {
-  list: () =>
-    request<{ success: boolean; updates: any[] }>('/legal-updates'),
 };
 
 

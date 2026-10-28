@@ -968,26 +968,26 @@ function DraftsContent() {
 
       {/* New Draft Modal */}
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
-        <DialogContent className="bg-[#141717] border-[#272b2b] text-[#f3f4f5] max-w-lg p-6">
+        <DialogContent className="max-w-lg p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader className="pb-2">
-            <DialogTitle className="text-lg font-serif font-semibold text-white">
+            <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">
               Build Legal Draft
             </DialogTitle>
-            <DialogDescription className="text-xs text-[#879292]">
+            <DialogDescription className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">
               Select a matter and define the legal notice or pleading.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateDraftSubmit} className="space-y-4 my-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono text-[#879292] uppercase">
+              <Label className="text-xs font-medium text-muted-foreground font-sans">
                 Target Matter *
               </Label>
               <select
                 required
                 value={newDraftForm.caseId}
                 onChange={e => setNewDraftForm({ ...newDraftForm, caseId: e.target.value })}
-                className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none cursor-pointer"
+                className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans"
               >
                 <option value="">Select a matter...</option>
                 {casesList.map(c => (
@@ -999,7 +999,7 @@ function DraftsContent() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono text-[#879292] uppercase">
+              <Label className="text-xs font-medium text-muted-foreground font-sans">
                 Draft Title *
               </Label>
               <Input
@@ -1007,13 +1007,13 @@ function DraftsContent() {
                 placeholder="e.g. Legal notice — demand for refund"
                 value={newDraftForm.title}
                 onChange={e => setNewDraftForm({ ...newDraftForm, title: e.target.value })}
-                className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
+                className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono text-[#879292] uppercase">
+                <Label className="text-xs font-medium text-muted-foreground font-sans">
                   Document Type
                 </Label>
                 <select
@@ -1021,7 +1021,7 @@ function DraftsContent() {
                   onChange={e =>
                     setNewDraftForm({ ...newDraftForm, draftType: e.target.value as DraftType })
                   }
-                  className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg h-9 px-3 text-sm text-[#f3f4f5] focus:outline-none cursor-pointer"
+                  className="w-full bg-background border border-input rounded-lg h-9 px-3 text-xs text-foreground focus:outline-none font-sans"
                 >
                   <option value="LEGAL_NOTICE">Legal Notice</option>
                   <option value="APPLICATION">Application</option>
@@ -1032,20 +1032,20 @@ function DraftsContent() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-mono text-[#879292] uppercase">
+                <Label className="text-xs font-medium text-muted-foreground font-sans">
                   Brief Synopsis
                 </Label>
                 <Input
                   placeholder="e.g. Demand refund for delayed goods"
                   value={newDraftForm.description}
                   onChange={e => setNewDraftForm({ ...newDraftForm, description: e.target.value })}
-                  className="bg-[#0d0f0f] border-[#272b2b] h-9 text-sm text-[#f3f4f5]"
+                  className="bg-background border-input text-foreground h-9 text-xs font-sans rounded-lg"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono text-[#879292] uppercase">
+              <Label className="text-xs font-medium text-muted-foreground font-sans">
                 Instructions & Particulars
               </Label>
               <textarea
@@ -1053,21 +1053,21 @@ function DraftsContent() {
                 placeholder="Specific demands, notice period, legal sections to reference..."
                 value={newDraftForm.instructions}
                 onChange={e => setNewDraftForm({ ...newDraftForm, instructions: e.target.value })}
-                className="w-full bg-[#0d0f0f] border border-[#272b2b] rounded-lg p-2.5 text-xs text-[#f3f4f5] focus:outline-none resize-none leading-relaxed"
+                className="w-full bg-background border border-input rounded-lg p-2.5 text-xs text-foreground focus:outline-none resize-none font-sans leading-relaxed"
               />
             </div>
 
-            <DialogFooter className="pt-2 gap-2">
-              <Button type="button" variant="ghost" onClick={() => setCreateModalOpen(false)} className="text-[#879292] hover:text-white">
+            <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
+              <Button type="button" variant="outline" onClick={() => setCreateModalOpen(false)} className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted">
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={creating || !newDraftForm.caseId || !newDraftForm.title.trim()}
-                className="bg-[#2dd4bf] hover:bg-[#34d399] text-[#091b18] font-semibold gap-1.5"
+                className="h-9 px-4 text-xs font-semibold rounded-lg font-sans bg-foreground text-background hover:bg-foreground/90 gap-1.5"
               >
                 {creating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   'Launch Studio'
                 )}
@@ -1079,38 +1079,36 @@ function DraftsContent() {
 
       {/* Delete Confirmation Modal */}
       <Dialog open={!!draftToDelete} onOpenChange={open => !open && !deletingDraft && setDraftToDelete(null)}>
-        <DialogContent className="sm:max-w-md bg-[#141717] border-[#272b2b] text-[#f3f4f5] p-6 rounded-2xl">
+        <DialogContent className="max-w-md p-6 bg-card border border-border text-foreground rounded-2xl">
           <DialogHeader className="gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+            <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
               <Trash2 className="w-5 h-5" />
             </div>
             <div>
-              <DialogTitle className="text-base font-serif font-semibold text-white">
+              <DialogTitle className="font-serif text-xl font-normal text-foreground tracking-tight">
                 Delete Legal Draft
               </DialogTitle>
-              <DialogDescription className="text-xs text-[#879292] mt-1.5 leading-relaxed">
-                Are you sure you want to delete <span className="font-semibold text-white">"{draftToDelete?.title}"</span>?
+              <DialogDescription className="text-xs text-muted-foreground font-sans mt-1.5 leading-relaxed">
+                Are you sure you want to delete <span className="font-semibold text-foreground">"{draftToDelete?.title}"</span>? This will permanently remove this draft.
               </DialogDescription>
             </div>
           </DialogHeader>
 
-          <DialogFooter className="mt-6 flex flex-row items-center justify-end gap-2.5 border-t border-[#272b2b] pt-4">
+          <DialogFooter className="-mx-6 -mb-6 mt-4 flex flex-col-reverse gap-2.5 rounded-b-2xl border-t border-border bg-muted/30 p-4 sm:flex-row sm:justify-end items-center">
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => setDraftToDelete(null)}
               disabled={deletingDraft}
-              className="h-8 px-4 text-xs border-[#272b2b] bg-[#141717] text-[#879292] hover:text-white"
+              className="h-9 px-4 text-xs font-medium rounded-lg font-sans border-border text-muted-foreground hover:text-foreground hover:bg-muted"
             >
               Cancel
             </Button>
             <Button
               type="button"
-              size="sm"
               disabled={deletingDraft}
               onClick={confirmDeleteDraft}
-              className="h-8 px-4 text-xs bg-red-600 hover:bg-red-700 text-white font-medium"
+              className="h-9 px-4 text-xs bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg font-sans"
             >
               {deletingDraft ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
               Delete
