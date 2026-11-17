@@ -1341,6 +1341,54 @@ export default function HomePage() {
         </div>
       </footer>
 
+      {/* Structured Data (JSON-LD) for Search Engine Optimization */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@graph': [
+              {
+                '@type': 'SoftwareApplication',
+                '@id': 'https://legaldesk.co.in/#software',
+                name: 'LegalDesk',
+                applicationCategory: 'BusinessApplication',
+                operatingSystem: 'All (Web-based)',
+                description:
+                  'AI legal practice management and case intelligence platform for Indian advocates and law firms.',
+                offers: {
+                  '@type': 'Offer',
+                  price: '0',
+                  priceCurrency: 'INR',
+                  description: 'Free trial available with 10,000 tokens.',
+                },
+                featureList: [
+                  'AI Legal Notice & Draft Generator',
+                  'Court Hearing Cause List & Diary',
+                  'Matter Intelligence & Executive Briefs',
+                  'Case Milestones & Fee Accounting',
+                  'Document & Evidence Repository',
+                ],
+                creator: {
+                  '@id': 'https://legaldesk.co.in/#organization',
+                },
+              },
+              {
+                '@type': 'Organization',
+                '@id': 'https://legaldesk.co.in/#organization',
+                name: 'LegalDesk Technologies',
+                url: 'https://legaldesk.co.in',
+                logo: 'https://legaldesk.co.in/favicon.ico',
+                contactPoint: {
+                  '@type': 'ContactPoint',
+                  contactType: 'Customer Support',
+                  availableLanguage: ['English', 'Hindi'],
+                },
+              },
+            ],
+          }),
+        }}
+      />
     </div>
   );
 }
